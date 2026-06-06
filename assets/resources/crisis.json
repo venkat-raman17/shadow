@@ -1,0 +1,19 @@
+{
+  "lines": [
+    {
+      "label": "988 Suicide & Crisis Lifeline",
+      "action": "tel:988",
+      "kind": "call"
+    },
+    {
+      "label": "Crisis Text Line — text HOME to 741741",
+      "action": "sms:741741&body=HOME",
+      "kind": "text"
+    },
+    {
+      "label": "International crisis centres (IASP)",
+      "action": "https://www.iasp.info/resources/Crisis_Centres/",
+      "kind": "web"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "grounding.settle.v1",
+  "kind": "grounding",
+  "title": "Let's slow down",
+  "subtitle": "A moment to land before you go.",
+  "estimatedMinutes": 2,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "acknowledge",
+      "type": "passage",
+      "body": "Something intense came up. That makes sense — you were paying attention.\n\nYou don't have to resolve it. You just have to land."
+    },
+    {
+      "id": "breath",
+      "type": "pause",
+      "seconds": 20,
+      "body": "Breathe in for four counts. Hold for four. Out for four.\n\nDo this a few times, or just let the time pass."
+    },
+    {
+      "id": "anchor",
+      "type": "prompt",
+      "title": "What's in the room with you right now?",
+      "body": "Name three things you can see. Let the room be real.",
+      "inputKey": "anchor",
+      "optional": true,
+      "multiline": false,
+      "placeholder": "Three things…"
+    },
+    {
+      "id": "support",
+      "type": "resource",
+      "body": "If you're in a hard place right now, support is available. You can reach it from the Support tab anytime."
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Good. You can stay here as long as you need.",
+    "celebrate": false
+  }
+}

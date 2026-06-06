@@ -1,0 +1,208 @@
+{
+  "id": "meeting.active_imagination.v1",
+  "kind": "meeting",
+  "title": "Meet a part of you",
+  "subtitle": "You write both voices. The app holds the space.",
+  "estimatedMinutes": 15,
+  "entryGate": "entry_passage",
+  "safety": {
+    "chargeKey": "chargeAfter",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "entry_passage",
+      "type": "passage",
+      "body": "Before you begin.\n\nYou're about to sit with a part of yourself — maybe one you've kept at arm's length for a long time.\n\nThe conversation goes at your pace. You can stop whenever you need to. Nothing here will push you further than you want to go."
+    },
+    {
+      "id": "entry_breath",
+      "type": "pause",
+      "seconds": 15,
+      "body": "Take a breath. Let yourself arrive here."
+    },
+    {
+      "id": "entry_consent",
+      "type": "exitOffer",
+      "body": "Ready to begin? You can also stop here — this will be waiting when you are."
+    },
+    {
+      "id": "path_choice",
+      "type": "choice",
+      "title": "What brings you here today?",
+      "body": "Both paths are real work. Neither is harder or more important than the other.",
+      "inputKey": "path",
+      "options": [
+        {
+          "label": "Sit with something difficult",
+          "value": "difficult"
+        },
+        {
+          "label": "Meet something you've admired from afar",
+          "value": "golden",
+          "goTo": "g_subject"
+        }
+      ]
+    },
+    {
+      "id": "d_name",
+      "type": "prompt",
+      "title": "What would you call this part?",
+      "body": "Not a clinical name — just the one that fits. The Critic. The one who shuts down. Whatever comes.",
+      "inputKey": "partName",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "A name or a few words…"
+    },
+    {
+      "id": "d_image",
+      "type": "prompt",
+      "title": "If this part had a face, a body, a shape — what do you see?",
+      "body": "Let an image arrive. You don't have to analyze it — just describe what appears.",
+      "inputKey": "partImage",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Write what you see…"
+    },
+    {
+      "id": "d_age",
+      "type": "prompt",
+      "title": "How old does it feel?",
+      "body": "Parts sometimes carry the age they first appeared. It might be a number, or just a sense — young, old, ancient.",
+      "inputKey": "partAge",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "An age or a feeling…"
+    },
+    {
+      "id": "d_body",
+      "type": "prompt",
+      "title": "Where do you feel this in your body?",
+      "body": "Chest, throat, gut, shoulders — wherever the sensation lives.",
+      "inputKey": "partBodyLocation",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Somewhere in the body…"
+    },
+    {
+      "id": "d_dialogue_1",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let this part speak. Write as it — not about it. What does it want to say first?",
+      "inputKey": "dialogue_1"
+    },
+    {
+      "id": "d_dialogue_2",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What are you protecting? Ask it — and write its answer in its own words.",
+      "inputKey": "dialogue_2"
+    },
+    {
+      "id": "d_dialogue_3",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "What do you want? Not what you're supposed to want — what you actually want?",
+      "inputKey": "dialogue_3"
+    },
+    {
+      "id": "d_dialogue_4",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What do you fear most? Let it tell you honestly.",
+      "inputKey": "dialogue_4"
+    },
+    {
+      "id": "d_need",
+      "type": "prompt",
+      "title": "What does this part need from you?",
+      "body": "Not a resolution — just one honest thing. It might be small. It might be something you've never offered it before.",
+      "inputKey": "need",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Write freely…",
+      "exitOffer": true,
+      "branch": [
+        {
+          "when": { "inputKey": "path", "eq": "difficult" },
+          "goTo": "aftercare_charge"
+        }
+      ]
+    },
+    {
+      "id": "g_subject",
+      "type": "prompt",
+      "title": "Who do you admire to the point of ache?",
+      "body": "An artist, a person, a character — real or invented. The one whose work or presence stops you.",
+      "inputKey": "goldenSubject",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "A name…"
+    },
+    {
+      "id": "g_quality",
+      "type": "prompt",
+      "title": "What quality is that?",
+      "body": "Not what they do — the thing underneath it. Their directness? Their ease? The way they take up space?",
+      "inputKey": "goldenQuality",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "Name the quality…",
+      "assistChips": [
+        "boldness",
+        "ease",
+        "warmth",
+        "directness",
+        "creativity",
+        "stillness",
+        "playfulness",
+        "depth",
+        "precision"
+      ]
+    },
+    {
+      "id": "g_origin",
+      "type": "prompt",
+      "title": "When did you decide that quality wasn't allowed to be yours?",
+      "body": "You don't have to find a specific moment. Sometimes it's a feeling — that it would be too much, or not enough, or that it wasn't safe.",
+      "inputKey": "goldenOrigin",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…",
+      "exitOffer": true
+    },
+    {
+      "id": "g_experiment",
+      "type": "prompt",
+      "title": "Where could a little of it live this week?",
+      "body": "Something small, something real. Not a transformation — just one place where this quality gets to exist.",
+      "inputKey": "goldenExperiment",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Something concrete…",
+      "branch": [
+        {
+          "when": { "inputKey": "path", "eq": "golden" },
+          "goTo": "aftercare_charge"
+        }
+      ]
+    },
+    {
+      "id": "aftercare_charge",
+      "type": "scale",
+      "title": "How are you right now?",
+      "body": "After sitting with something, the charge sometimes shifts. Just notice where you are.",
+      "inputKey": "chargeAfter",
+      "min": 0,
+      "max": 10,
+      "minLabel": "settled",
+      "maxLabel": "still stirred up"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "That's enough for today. Whatever came up, it came up for a reason.",
+    "celebrate": false
+  }
+}

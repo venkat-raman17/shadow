@@ -1,0 +1,82 @@
+{
+  "id": "noticing.projection_recall.v1",
+  "kind": "noticing",
+  "title": "Who got under your skin?",
+  "subtitle": "A few minutes. No right answers.",
+  "estimatedMinutes": 4,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "who",
+      "type": "prompt",
+      "title": "Who got under your skin today?",
+      "body": "A person, a moment, a kind of person. Whatever still has a charge.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "Write freely…"
+    },
+    {
+      "id": "quality",
+      "type": "prompt",
+      "title": "What exactly bothered you — and what quality is that?",
+      "body": "Not what they did. The trait underneath it. Their arrogance? Neediness? The way they didn't seem to care?",
+      "inputKey": "quality",
+      "multiline": true,
+      "placeholder": "Name the quality…",
+      "assistChips": [
+        "arrogance",
+        "neediness",
+        "coldness",
+        "selfishness",
+        "recklessness",
+        "weakness",
+        "smugness",
+        "controlling",
+        "carelessness"
+      ]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How strong was the charge?",
+      "body": "Just for you. The strength is the signal — it points at something.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "barely",
+      "maxLabel": "couldn't let it go"
+    },
+    {
+      "id": "echo",
+      "type": "prompt",
+      "title": "Where have you felt this before?",
+      "body": "Does this reaction rhyme with anything older? You don't have to find an answer.",
+      "inputKey": "echo",
+      "optional": true,
+      "multiline": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "turn",
+      "type": "prompt",
+      "title": "Is there any way this lives in you too?",
+      "body": "No need to force a yes. Sometimes it's a clear no. Sometimes it's the part you've worked hardest never to be.",
+      "inputKey": "reclaim",
+      "optional": true,
+      "multiline": true,
+      "placeholder": "Or leave this blank…",
+      "exitOffer": true
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "That's enough. You noticed something — that's the whole practice.",
+    "celebrate": false
+  }
+}
