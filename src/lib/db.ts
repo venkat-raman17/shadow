@@ -1,6 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { encrypt, decrypt } from './crypto';
+import type { ExportEntry, ExportPart, ExportSession, ExportExperiment } from './export';
 
 function generateId(): string {
   const bytes = new Uint8Array(16);
@@ -109,10 +110,15 @@ export async function savePart(
     ? inputs.partBodyLocation
     : null;
 
+  const firstAppearedEnc =
+    typeof inputs.firstAppeared === 'string' && inputs.firstAppeared.trim()
+      ? encrypt(inputs.firstAppeared, key)
+      : null;
+
   await db.runAsync(
-    `INSERT INTO parts (id, name, form_enc, body_location, golden, created_at, last_met_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, name, encrypt(formPayload, key), bodyLocation, isGolden ? 1 : 0, now, now],
+    `INSERT INTO parts (id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, name, encrypt(formPayload, key), bodyLocation, firstAppearedEnc, isGolden ? 1 : 0, now, now],
   );
   return id;
 }
@@ -135,6 +141,7 @@ export async function saveSession(
         d2: inputs.dialogue_2,
         d3: inputs.dialogue_3,
         d4: inputs.dialogue_4,
+        d5: inputs.dialogue_5,
       });
 
   const needPayload = isGolden
@@ -152,7 +159,7 @@ export async function saveSession(
       partId,
       flowId,
       now,
-      null,
+      typeof inputs.chargeBefore === 'number' ? inputs.chargeBefore : null,
       chargeAfter,
       encrypt(dialoguePayload, key),
       needPayload ? encrypt(needPayload, key) : null,
@@ -276,5 +283,161 @@ export async function addExperiment(
     `INSERT INTO experiments (id, description_enc, created_at, status)
      VALUES (?, ?, ?, 'open')`,
     [id, encrypt(description, key), now],
+  );
+}
+
+// ─── Restore from backup ──────────────────────────────────────────────────────
+// Each function re-encrypts plaintext fields with the device key before
+// inserting. INSERT OR IGNORE means re-importing the same backup is idempotent.
+
+export async function restoreEntries(
+  db: SQLiteDatabase,
+  entries: ExportEntry[],
+  key: Uint8Array,
+): Promise<number> {
+  let inserted = 0;
+  for (const e of entries) {
+    const result = await db.runAsync(
+      `INSERT OR IGNORE INTO entries
+         (id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        e.id,
+        e.created_at,
+        e.flow_id,
+        e.subject ? encrypt(e.subject, key) : null,
+        e.quality,
+        e.charge,
+        e.echo ? encrypt(e.echo, key) : null,
+        e.reclaim ? encrypt(e.reclaim, key) : null,
+      ],
+    );
+    if (result.changes > 0) inserted++;
+  }
+  return inserted;
+}
+
+export async function restoreParts(
+  db: SQLiteDatabase,
+  parts: ExportPart[],
+  key: Uint8Array,
+): Promise<number> {
+  let inserted = 0;
+  for (const p of parts) {
+    const result = await db.runAsync(
+      `INSERT OR IGNORE INTO parts
+         (id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        p.id,
+        p.name,
+        p.form ? encrypt(p.form, key) : null,
+        p.body_location,
+        p.first_appeared ? encrypt(p.first_appeared, key) : null,
+        p.golden,
+        p.created_at,
+        p.last_met_at,
+      ],
+    );
+    if (result.changes > 0) inserted++;
+  }
+  return inserted;
+}
+
+export async function restoreSessions(
+  db: SQLiteDatabase,
+  sessions: ExportSession[],
+  key: Uint8Array,
+): Promise<number> {
+  let inserted = 0;
+  for (const s of sessions) {
+    const result = await db.runAsync(
+      `INSERT OR IGNORE INTO sessions
+         (id, part_id, flow_id, created_at, charge_before, charge_after, dialogue_enc, need_enc)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        s.id,
+        s.part_id,
+        s.flow_id,
+        s.created_at,
+        s.charge_before,
+        s.charge_after,
+        s.dialogue ? encrypt(s.dialogue, key) : null,
+        s.need ? encrypt(s.need, key) : null,
+      ],
+    );
+    if (result.changes > 0) inserted++;
+  }
+  return inserted;
+}
+
+export async function restoreExperiments(
+  db: SQLiteDatabase,
+  experiments: ExportExperiment[],
+  key: Uint8Array,
+): Promise<number> {
+  let inserted = 0;
+  for (const e of experiments) {
+    const result = await db.runAsync(
+      `INSERT OR IGNORE INTO experiments
+         (id, source_session_id, description_enc, created_at, status, reflection_enc)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        e.id,
+        e.source_session_id,
+        e.description ? encrypt(e.description, key) : null,
+        e.created_at,
+        e.status,
+        e.reflection ? encrypt(e.reflection, key) : null,
+      ],
+    );
+    if (result.changes > 0) inserted++;
+  }
+  return inserted;
+}
+
+// ─── Experiment helpers ───────────────────────────────────────────────────────
+
+/**
+ * Load a single experiment by primary key, decrypting its description.
+ * Returns null if no experiment with that id exists.
+ */
+export async function getExperimentById(
+  db: SQLiteDatabase,
+  id: string,
+  key: Uint8Array,
+): Promise<ExperimentItem | null> {
+  const row = await db.getFirstAsync<{
+    id: string;
+    description_enc: string | null;
+    created_at: number;
+    status: string;
+  }>(
+    `SELECT id, description_enc, created_at, status FROM experiments WHERE id = ?`,
+    [id],
+  );
+  if (!row) return null;
+  return {
+    id: row.id,
+    description: row.description_enc ? decrypt(row.description_enc, key) : '',
+    created_at: row.created_at,
+    status: row.status as ExperimentItem['status'],
+  };
+}
+
+/**
+ * Save a reflection on an experiment and update its status.
+ * Encrypts the reflection text before writing.
+ */
+export async function saveExperimentReflection(
+  db: SQLiteDatabase,
+  id: string,
+  reflection: string,
+  status: 'open' | 'done' | 'let-go',
+  key: Uint8Array,
+): Promise<void> {
+  await db.runAsync(
+    `UPDATE experiments SET reflection_enc = ?, status = ? WHERE id = ?`,
+    [encrypt(reflection, key), status, id],
   );
 }

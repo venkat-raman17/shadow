@@ -1,0 +1,77 @@
+{
+  "id": "noticing.persona.v1",
+  "kind": "noticing",
+  "title": "Who are you when no one's watching?",
+  "subtitle": "A few minutes. No right answers.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "The self we present to the world requires maintenance. What we exclude from that presentation doesn't disappear — it goes underground, becoming shadow.\n\nThis is about noticing the gap."
+    },
+    {
+      "id": "outside",
+      "type": "prompt",
+      "title": "How do the people in your life tend to see you?",
+      "body": "What role or quality do they expect from you?",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "How you come across…"
+    },
+    {
+      "id": "underneath",
+      "type": "prompt",
+      "title": "What's something true about you that most people who know you wouldn't guess?",
+      "body": "What lives underneath the version they know.",
+      "inputKey": "quality",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "What's underneath…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How much energy does maintaining the expected version of you take?",
+      "body": "Just for you.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "almost none",
+      "maxLabel": "exhausting"
+    },
+    {
+      "id": "cost",
+      "type": "prompt",
+      "title": "What does keeping this gap cost you?",
+      "body": "In closeness, in aliveness, in creativity.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "invite",
+      "type": "prompt",
+      "title": "Is there one place where more of the hidden self could come through?",
+      "body": "Even slightly.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "The gap between who you perform and who you are is where most of the work lives. You've started naming it.",
+    "celebrate": false
+  }
+}

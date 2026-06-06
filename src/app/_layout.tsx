@@ -2,7 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Stack, SplashScreen } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
+import * as Notifications from 'expo-notifications';
 import { getItem } from '@/lib/kv';
+
+// Show notifications when the app is in the foreground (e.g. user is in the app
+// when a scheduled reminder fires). Without this, foreground notifications are silently dropped.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 import { colors } from '@/constants/theme';
 import { migrateDbIfNeeded } from '@/lib/db';
@@ -54,6 +66,15 @@ function RootNavigator() {
           name="flow/[id]"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
         />
+        <Stack.Screen
+          name="settings"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Home' }}
+        />
+        <Stack.Screen
+          name="reflect/[id]"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Integration' }}
+        />
+        <Stack.Screen name="history" />
       </Stack.Protected>
       <Stack.Protected guard={!onboardingDone}>
         <Stack.Screen name="onboarding" />

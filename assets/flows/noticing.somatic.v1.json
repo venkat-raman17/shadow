@@ -1,0 +1,77 @@
+{
+  "id": "noticing.somatic.v1",
+  "kind": "noticing",
+  "title": "What's the body holding?",
+  "subtitle": "No person needed — just a sensation.",
+  "estimatedMinutes": 3,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "You don't need a trigger for this.\n\nSometimes something is there — in the chest, the gut, the shoulders — without a name or a story yet.\n\nThis is just a few minutes to notice what the body is carrying."
+    },
+    {
+      "id": "locate",
+      "type": "prompt",
+      "title": "Where in your body is it?",
+      "body": "Anywhere that feels tighter, heavier, or more awake than usual.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "Chest, throat, gut…"
+    },
+    {
+      "id": "quality",
+      "type": "prompt",
+      "title": "If that sensation had a quality — a word, an emotion, a texture — what would it be?",
+      "body": "Not what caused it. Just what it feels like.",
+      "inputKey": "quality",
+      "multiline": false,
+      "placeholder": "Name it…",
+      "assistChips": [
+        "tightness",
+        "heaviness",
+        "restlessness",
+        "numbness",
+        "grief",
+        "dread",
+        "anger",
+        "longing",
+        "shame"
+      ]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How present is it?",
+      "body": "Not good or bad — just the intensity right now.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "barely there",
+      "maxLabel": "right at the surface"
+    },
+    {
+      "id": "echo",
+      "type": "prompt",
+      "title": "What might it be pointing at?",
+      "body": "You don't have to know. This is just a question to sit with.",
+      "inputKey": "echo",
+      "optional": true,
+      "multiline": true,
+      "placeholder": "Or leave this blank…",
+      "exitOffer": true
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "That's enough. You let something surface — that's the work.",
+    "celebrate": false
+  }
+}

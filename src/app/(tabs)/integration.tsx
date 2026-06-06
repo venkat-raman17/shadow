@@ -8,10 +8,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
+import { router } from 'expo-router';
 
 import { colors, typography, Spacing, BottomTabInset } from '@/constants/theme';
 import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
-import { updateExperimentStatus, ExperimentItem, PartListItem, SurfacingPattern } from '@/lib/db';
+import { useRecentEntries } from '@/hooks/useEntries';
+import {
+  updateExperimentStatus,
+  ExperimentItem,
+  PartListItem,
+  SurfacingPattern,
+  EntryListItem,
+} from '@/lib/db';
+
+const HISTORY_LIMIT = 5;
 
 function formatDate(ms: number): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -19,6 +29,37 @@ function formatDate(ms: number): string {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(ms));
+}
+
+function formatDateTime(ms: number): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(ms));
+}
+
+function ChargeDots({ charge }: { charge: number }) {
+  return (
+    <View style={styles.dots}>
+      {Array.from({ length: 10 }, (_, i) => (
+        <View key={i} style={[styles.dot, i < charge ? styles.dotFilled : styles.dotEmpty]} />
+      ))}
+    </View>
+  );
+}
+
+function EntryRow({ entry }: { entry: EntryListItem }) {
+  return (
+    <View style={styles.entryRow}>
+      <View style={styles.entryMeta}>
+        <Text style={styles.entryDate}>{formatDateTime(entry.created_at)}</Text>
+        {entry.quality ? <Text style={styles.entryQuality}>{entry.quality}</Text> : null}
+      </View>
+      {entry.charge !== null ? <ChargeDots charge={entry.charge} /> : null}
+    </View>
+  );
 }
 
 function patternSentence(quality: string, count: number): string {
@@ -48,6 +89,8 @@ function PatternRow({ pattern }: { pattern: SurfacingPattern }) {
   );
 }
 
+const REFLECT_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
 function ExperimentCard({
   experiment,
   onStatusChange,
@@ -56,6 +99,7 @@ function ExperimentCard({
   onStatusChange: (id: string, status: 'done' | 'let-go') => void;
 }) {
   const isOpen = experiment.status === 'open';
+  const needsReflection = isOpen && Date.now() - experiment.created_at > REFLECT_AGE_MS;
 
   return (
     <View style={[styles.card, !isOpen && styles.cardMuted]}>
@@ -81,6 +125,12 @@ function ExperimentCard({
           </TouchableOpacity>
         </View>
       )}
+      {needsReflection && (
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: '/reflect/[id]', params: { id: experiment.id } })}>
+          <Text style={styles.reflectLink}>Reflect on this →</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -90,11 +140,20 @@ export default function IntegrationScreen() {
   const parts = useParts();
   const patterns = useSurfacingPatterns();
   const { experiments, setExperiments } = useExperiments();
+  const entries = useRecentEntries(HISTORY_LIMIT + 1);
 
   const openExperiments = experiments.filter((e) => e.status === 'open');
   const closedExperiments = experiments.filter((e) => e.status !== 'open');
 
-  const isEmpty = parts.length === 0 && patterns.length === 0 && experiments.length === 0;
+  const hasPriorWork = parts.length > 0 || experiments.length > 0;
+  const isEmpty =
+    parts.length === 0 &&
+    patterns.length === 0 &&
+    experiments.length === 0 &&
+    entries.length === 0;
+
+  const shownEntries = entries.slice(0, HISTORY_LIMIT);
+  const hasMoreEntries = entries.length > HISTORY_LIMIT;
 
   async function handleStatusChange(id: string, status: 'done' | 'let-go') {
     await updateExperimentStatus(db, id, status);
@@ -115,6 +174,18 @@ export default function IntegrationScreen() {
           <Text style={styles.empty}>
             Nothing here yet. Come back after noticing a few reactions or sitting with a part.
           </Text>
+        )}
+
+        {hasPriorWork && (
+          <TouchableOpacity
+            style={styles.carryCard}
+            onPress={() => router.push('/flow/integration.after_meeting.v1')}>
+            <Text style={styles.carryLabel}>Carry something forward</Text>
+            <Text style={styles.carryBody}>
+              Turn what you've sat with into one small thing you can do this week.
+            </Text>
+            <Text style={styles.carryCta}>Begin →</Text>
+          </TouchableOpacity>
         )}
 
         {parts.length > 0 && (
@@ -149,6 +220,22 @@ export default function IntegrationScreen() {
             ))}
           </View>
         )}
+
+        {entries.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Recently noticed</Text>
+            {shownEntries.map((entry) => (
+              <EntryRow key={entry.id} entry={entry} />
+            ))}
+            {hasMoreEntries && (
+              <TouchableOpacity
+                style={styles.seeAllLink}
+                onPress={() => router.push('/history')}>
+                <Text style={styles.seeAllText}>See all →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,6 +268,43 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: Spacing.one,
   },
+
+  // Carry forward entry
+  carryCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: Spacing.four,
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  carryLabel: {
+    ...typography.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: colors.accent,
+  },
+  carryBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
+  carryCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
+
+  // Recently noticed
+  entryRow: {
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    padding: Spacing.three,
+    gap: Spacing.two,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  entryMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  entryDate: { ...typography.caption, color: colors.textSecondary },
+  entryQuality: { ...typography.bodySmall, fontStyle: 'italic' },
+  dots: { flexDirection: 'row', gap: 4 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  dotFilled: { backgroundColor: colors.accentWarm },
+  dotEmpty: { backgroundColor: colors.border },
+  seeAllLink: { alignSelf: 'flex-end', paddingTop: Spacing.one },
+  seeAllText: { ...typography.caption, color: colors.accent },
 
   // Part card
   card: {
@@ -229,4 +353,9 @@ const styles = StyleSheet.create({
   },
   statusBtnText: { ...typography.caption, color: colors.textSecondary },
   closedDivider: { height: 1, backgroundColor: colors.border, marginVertical: Spacing.one },
+  reflectLink: {
+    ...typography.caption,
+    color: colors.accent,
+    marginTop: Spacing.one,
+  },
 });

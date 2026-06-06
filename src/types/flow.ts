@@ -76,6 +76,7 @@ export interface DialogueStep extends BaseStep {
   type: 'dialogue';
   speaker: 'you' | 'part';
   prompt: string;
+  hint?: string;
   inputKey: string;
 }
 

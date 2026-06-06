@@ -1,0 +1,82 @@
+{
+  "id": "noticing.golden_shadow.v1",
+  "kind": "noticing",
+  "title": "Who do you admire?",
+  "subtitle": "A few minutes. No right answers.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "The qualities you most admire in others often belong to you — undeveloped, unexpressed, but present.\n\nThe ache you feel when you witness someone living a quality freely — that ache is the shadow's way of pointing home."
+    },
+    {
+      "id": "who",
+      "type": "prompt",
+      "title": "Who comes to mind?",
+      "body": "Someone you genuinely admire — a person you know, a public figure, a character. Just one name.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "A name…"
+    },
+    {
+      "id": "quality",
+      "type": "prompt",
+      "title": "What specific quality do they have that moves you?",
+      "body": "Not 'they're great.' Something precise — 'she says hard things with warmth,' 'he creates without needing approval.'",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "Name the quality…",
+      "assistChips": [
+        "speaks their mind",
+        "creates freely",
+        "takes up space",
+        "stays still",
+        "loves without holding back",
+        "plays",
+        "tells the truth",
+        "refuses nothing"
+      ]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How much does this quality move you?",
+      "body": "The strength of the pull is the signal.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a quiet pull",
+      "maxLabel": "an ache"
+    },
+    {
+      "id": "recognition",
+      "type": "prompt",
+      "title": "If that quality already existed in you — even as a seed — where would you see it?",
+      "body": "Even if it's tiny, inconsistent, or only in private.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "reclaim",
+      "type": "prompt",
+      "title": "What's kept this quality from growing in you?",
+      "body": "What was the early message about it?",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Whatever you can perceive in others, you have some capacity to perceive it with. The recognition you felt — that's already yours.",
+    "celebrate": false
+  }
+}

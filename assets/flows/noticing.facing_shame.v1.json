@@ -1,0 +1,94 @@
+{
+  "id": "noticing.facing_shame.v1",
+  "kind": "noticing",
+  "title": "What shame says about you",
+  "subtitle": "Not fixing it. Just naming it, and meeting it differently.",
+  "estimatedMinutes": 12,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 6,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "Before anything else.\n\nThis is not a practice about fixing what's wrong with you. Shame says there's something fundamentally wrong with you. That's the thing we're here to look at — not confirm.\n\nGo slow. You can stop at any point."
+    },
+    {
+      "id": "distinction",
+      "type": "passage",
+      "body": "Two things that feel similar but aren't:\n\nGuilt says: 'I did something bad.' It's about an action — something that happened, something that can be acknowledged.\n\nShame says: 'I am bad.' It's about who you are — your whole self, not what you did.\n\nWe're here with the second one."
+    },
+    {
+      "id": "locate",
+      "type": "prompt",
+      "title": "What's the shame about?",
+      "body": "You can be as general as you need. 'Something I did.' 'The way I am.' 'Something that happened to me.' Just enough to make contact with it.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "You don't have to name it precisely right now…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How present is it right now?",
+      "body": "Just a read on where you are before we go further.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a low hum",
+      "maxLabel": "overwhelming"
+    },
+    {
+      "id": "compassion_prime",
+      "type": "passage",
+      "body": "The part of you that carries this shame is not bad. It is a part that was made to feel unworthy — by someone, or something, or a long series of messages that said you weren't enough.\n\nThere is a difference between being flawed and being unloved. That part learned the wrong lesson — the one that blamed itself."
+    },
+    {
+      "id": "voice",
+      "type": "prompt",
+      "title": "Whose voice does this shame sound like?",
+      "body": "The inner critic rarely speaks in its own voice. It usually sounds like someone. A parent, a teacher, someone who should have been safe. Or sometimes just a nameless 'you should know better.'",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "A name, a type of person, or leave blank…",
+      "assistChips": [
+        "a parent",
+        "a teacher",
+        "a partner",
+        "myself",
+        "no one specific — it just feels true"
+      ]
+    },
+    {
+      "id": "witness",
+      "type": "prompt",
+      "title": "Write to the part of you that carries this.",
+      "body": "Not to fix it. Not to explain or argue with it. Speak to it as if it were a scared child who came to believe something unfair about themselves. What would you say?",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "You might start with: 'I see you…' or 'I know you've been carrying this…'"
+    },
+    {
+      "id": "underneath",
+      "type": "prompt",
+      "title": "What is this shame actually protecting?",
+      "body": "Shame often guards something real — a wound, a need, a loss. Underneath 'I am bad' there's usually something softer. What would have to be faced if the shame weren't there?",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Shame survives in silence. You named it — and you met it with something other than more shame. That's the practice.",
+    "celebrate": false
+  }
+}

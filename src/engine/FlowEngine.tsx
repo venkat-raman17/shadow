@@ -96,6 +96,11 @@ export default function FlowEngine({ flow, onComplete }: Props) {
         } else if (flow.kind === 'meeting') {
           const partId = await savePart(db, inputs, key);
           await saveSession(db, inputs, flow.id, partId, key);
+        } else if (flow.kind === 'integration') {
+          const intention = inputs.intention;
+          if (typeof intention === 'string' && intention.trim()) {
+            await addExperiment(db, intention.trim(), key);
+          }
         }
         // 'grounding' flows: nothing to persist
       } catch (e) {
@@ -222,7 +227,7 @@ export default function FlowEngine({ flow, onComplete }: Props) {
   return (
     <View style={styles.root}>
       {groundingBanner}
-      <StepRouter step={currentStep} {...stepProps} />
+      <StepRouter key={currentStep.id} step={currentStep} {...stepProps} />
     </View>
   );
 }

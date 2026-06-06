@@ -1,0 +1,76 @@
+{
+  "id": "noticing.321.v1",
+  "kind": "noticing",
+  "title": "What's pulling your attention?",
+  "subtitle": "Three moves. About eight minutes.",
+  "estimatedMinutes": 8,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "This practice has three moves.\n\nFirst, you describe someone through a strong reaction — 'he is,' 'she does.' Then you speak directly to them. Then you write as them.\n\nThe quality that charges you most in others often lives in you — in a different form, unexpressed, unrecognized."
+    },
+    {
+      "id": "face_it",
+      "type": "prompt",
+      "title": "Someone is pulling your attention.",
+      "body": "Through irritation, envy, admiration, contempt — whoever has charge right now. Describe them in third person. What are they like? What do they do?",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "Describe them as you'd describe them to someone else…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How strong is the pull?",
+      "body": "Dark or bright — the strength is the signal.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a mild interest",
+      "maxLabel": "can't let it go"
+    },
+    {
+      "id": "talk_to_it",
+      "type": "prompt",
+      "title": "Now speak directly to them.",
+      "body": "Write as 'you.' 'You are ___. When you ___, I feel ___.' Let it be unfiltered — they're not here.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "You are…"
+    },
+    {
+      "id": "be_it",
+      "type": "prompt",
+      "title": "Now become them.",
+      "body": "Write as them. 'I am ___. I carry ___. What I want you to know is ___.' You're not pretending — you're exploring what of yours they might be carrying.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "I am…"
+    },
+    {
+      "id": "recognize",
+      "type": "prompt",
+      "title": "Having moved through all three — what quality did you recognize in yourself?",
+      "body": "Name it, even if you're not sure.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "A quality…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You moved from observing, to relating, to recognizing. That's the full circuit.",
+    "celebrate": false
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "integration.after_meeting.v1",
+  "kind": "integration",
+  "title": "Carry something forward",
+  "subtitle": "Five minutes. One small commitment.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "Meeting a part is only half the work.\n\nJung called the next step 'Education' — not schooling, but bringing what you understood down into how you actually live. Insight that stays in imagination doesn't transform behavior. It needs a point of contact with reality.\n\nThis is that point."
+    },
+    {
+      "id": "what_met",
+      "type": "prompt",
+      "title": "What came up in your last meeting — or in recent work?",
+      "body": "A part, a quality, something you recognized. Briefly. Just enough to locate yourself.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "A sentence or two…"
+    },
+    {
+      "id": "intention",
+      "type": "prompt",
+      "title": "What's one thing you can do differently this week?",
+      "body": "Not a transformation. One moment, one relationship, one choice where this insight gets to live.",
+      "inputKey": "intention",
+      "multiline": true,
+      "optional": false,
+      "placeholder": "Something small, specific, and possible…"
+    },
+    {
+      "id": "obstacle",
+      "type": "prompt",
+      "title": "What's the most likely way this doesn't happen?",
+      "body": "Naming the obstacle isn't pessimism — it's preparation.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "What will pull you back toward the familiar…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Your intention is saved in the Integration tab. The distance between insight and living it closes one act at a time.",
+    "celebrate": false
+  }
+}

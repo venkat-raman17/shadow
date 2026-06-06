@@ -29,6 +29,7 @@ export default function DialogueStep({ step, onNext, onExit }: Props) {
       keyboardShouldPersistTaps="handled">
       <Text style={styles.speakerLabel}>{speakerLabel}</Text>
       <Text style={styles.prompt}>{step.prompt}</Text>
+      {step.hint ? <Text style={styles.hint}>{step.hint}</Text> : null}
 
       <TextInput
         style={styles.input}
@@ -67,6 +68,11 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   prompt: { ...typography.heading },
+  hint: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
