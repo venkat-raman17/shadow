@@ -1,67 +1,18 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
-import { colors, typography, Spacing, BottomTabInset } from '@/constants/theme';
-
-// ─── Practice catalogue ─────────────────────────────────────────────────────
-// Grouped by the kind of work, not by hierarchy. Headers name the type of
-// invitation — they are not levels to climb.
-
-interface Practice {
-  id: string;
-  title: string;
-  subtitle: string;
-}
-
-const NOTICE_PRACTICES: Practice[] = [
-  {
-    id: 'noticing.projection_recall.v1',
-    title: 'Who got under your skin?',
-    subtitle: 'Notice a reaction, name the quality underneath it.',
-  },
-  {
-    id: 'noticing.somatic.v1',
-    title: "What's the body holding?",
-    subtitle: 'No trigger needed — start from a body sensation.',
-  },
-  {
-    id: 'noticing.golden_shadow.v1',
-    title: 'Who do you admire?',
-    subtitle: 'Follow an admiration back to something unlived in you.',
-  },
-  {
-    id: 'noticing.persona.v1',
-    title: "Who are you when no one's watching?",
-    subtitle: 'The gap between the self you show and the self you hide.',
-  },
-  {
-    id: 'noticing.321.v1',
-    title: "What's pulling your attention?",
-    subtitle: 'Three moves — observe it, address it, become it.',
-  },
-  {
-    id: 'noticing.facing_shame.v1',
-    title: 'What shame says about you',
-    subtitle: 'Not fixing it. Just naming it, and meeting it differently.',
-  },
-];
-
-const DEEPER_PRACTICES: Practice[] = [
-  {
-    id: 'meeting.active_imagination.v1',
-    title: 'Meet a part of you',
-    subtitle: 'Sit with something difficult, or reclaim something admired. You write both voices.',
-  },
-];
+import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Screen, Card, SectionHeader } from '@/components/ui';
+import {
+  PRACTICES,
+  practicesByDepth,
+  getPractice,
+  type Practice,
+} from '@/lib/practices';
+import { useRecentEntries } from '@/hooks/useEntries';
+import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -72,98 +23,190 @@ function getGreeting(): string {
   return 'Late night.';
 }
 
+interface Suggestion {
+  practice: Practice;
+  label: string; // small uppercase eyebrow
+  line: string; // the contextual "why now"
+}
+
+// The adaptive "start here". Derived entirely from existing data — no tracking,
+// no new persisted state. Mirrors the three-depths progression.
+function useSuggestion(firstRun: boolean): Suggestion | null {
+  const patterns = useSurfacingPatterns(1);
+  const parts = useParts();
+  const { experiments } = useExperiments();
+
+  if (firstRun) {
+    const p = getPractice('noticing.somatic.v1');
+    return p
+      ? { practice: p, label: 'Start here', line: 'A gentle first noticing — just you and a sensation.' }
+      : null;
+  }
+
+  // Something keeps surfacing → invite the deeper "sit with" practice.
+  const strong = patterns.find((pt) => pt.count >= 2);
+  if (strong) {
+    const p = getPractice('meeting.active_imagination.v1');
+    if (p) {
+      return {
+        practice: p,
+        label: 'When you’re ready',
+        line: `“${strong.quality}” keeps coming up. Want to sit with it?`,
+      };
+    }
+  }
+
+  // You've met a part → carry it into the week.
+  const hasOpenExperiment = experiments.some((e) => e.status === 'open');
+  if (parts.length > 0 && !hasOpenExperiment) {
+    const p = getPractice('integration.after_meeting.v1');
+    if (p) {
+      return { practice: p, label: 'Next', line: 'Turn what you found into one small thing to try.' };
+    }
+  }
+
+  // Otherwise, a gentle next noticing.
+  const p = getPractice('noticing.golden_shadow.v1');
+  return p
+    ? { practice: p, label: 'A quiet invitation', line: 'Notice what you admire — it often points back to you.' }
+    : null;
+}
+
 function PracticeCard({ practice }: { practice: Practice }) {
   return (
-    <TouchableOpacity
-      style={styles.practiceCard}
-      onPress={() => router.push(`/flow/${practice.id}`)}>
-      <Text style={styles.practiceTitle}>{practice.title}</Text>
-      <Text style={styles.practiceSubtitle}>{practice.subtitle}</Text>
-    </TouchableOpacity>
+    <Card onPress={() => router.push(`/flow/${practice.id}`)} style={styles.practiceCard}>
+      <SymbolView
+        name={practice.icon}
+        size={22}
+        tintColor={colors.accent}
+        style={styles.practiceIcon}
+      />
+      <View style={styles.practiceBody}>
+        <Text style={styles.practiceTitle}>{practice.title}</Text>
+        <Text style={styles.practiceSubtitle}>{practice.blurb}</Text>
+        <Text style={styles.practiceMeta}>~{practice.estimatedMinutes} min</Text>
+      </View>
+    </Card>
+  );
+}
+
+function StartHereCard({ suggestion }: { suggestion: Suggestion }) {
+  const { practice, label, line } = suggestion;
+  return (
+    <Pressable
+      onPress={() => router.push(`/flow/${practice.id}`)}
+      style={({ pressed }) => [styles.startCard, pressed && styles.startCardPressed]}>
+      <Text style={styles.startLabel}>{label}</Text>
+      <Text style={styles.startTitle}>{practice.title}</Text>
+      <Text style={styles.startLine}>{line}</Text>
+      <Text style={styles.startCta}>Begin · ~{practice.estimatedMinutes} min →</Text>
+    </Pressable>
   );
 }
 
 export default function HomeScreen() {
+  const entries = useRecentEntries(1);
+  const parts = useParts();
+  const { experiments } = useExperiments();
+
+  const firstRun = entries.length === 0 && parts.length === 0 && experiments.length === 0;
+  const hasPriorWork = !firstRun;
+
+  const suggestion = useSuggestion(firstRun);
+  const noticePractices = practicesByDepth('notice');
+  const deeperPractices = PRACTICES.filter((p) => p.depth !== 'notice');
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.topRow}>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
-          <TouchableOpacity
-            onPress={() => router.push('/settings')}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <SymbolView
-              name={{ ios: 'gearshape', web: 'settings' }}
-              size={20}
-              tintColor={colors.textSecondary}
-            />
-          </TouchableOpacity>
-        </View>
+    <Screen withTabBar>
+      <View style={styles.topRow}>
+        <Text style={styles.greeting}>{getGreeting()}</Text>
+        <Pressable
+          onPress={() => router.push('/settings')}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <SymbolView
+            name={{ ios: 'gearshape', web: 'settings' }}
+            size={20}
+            tintColor={colors.textSecondary}
+          />
+        </Pressable>
+      </View>
 
-        <Text style={styles.tagline}>
-          A quiet space to notice what your reactions are pointing at.
+      <Text style={styles.tagline}>
+        A quiet space to notice what you&apos;re feeling — and what it&apos;s pointing at.
+      </Text>
+
+      {suggestion && <StartHereCard suggestion={suggestion} />}
+
+      <View style={styles.section}>
+        <SectionHeader>Notice</SectionHeader>
+        {noticePractices.map((p) => (
+          <PracticeCard key={p.id} practice={p} />
+        ))}
+      </View>
+
+      {hasPriorWork ? (
+        <View style={styles.section}>
+          <SectionHeader>Go deeper</SectionHeader>
+          {deeperPractices.map((p) => (
+            <PracticeCard key={p.id} practice={p} />
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.lockedHint}>
+          Deeper practices open here once you&apos;ve noticed a few things.
         </Text>
+      )}
 
-        <View style={styles.divider} />
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Notice</Text>
-          {NOTICE_PRACTICES.map((p) => (
-            <PracticeCard key={p.id} practice={p} />
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Go deeper</Text>
-          {DEEPER_PRACTICES.map((p) => (
-            <PracticeCard key={p.id} practice={p} />
-          ))}
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Nothing you write here leaves this device. No account, no cloud, no AI.
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Nothing you write here leaves this device. No account, no cloud, no AI.
+        </Text>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  container: {
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.four,
-    flexGrow: 1,
-  },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  greeting: { ...typography.heading, fontSize: 28, lineHeight: 36 },
-  tagline: { ...typography.body, color: colors.textSecondary, lineHeight: 26 },
-  divider: { height: 1, backgroundColor: colors.border },
+  greeting: { ...typography.display },
+  tagline: { ...typography.body, color: colors.textSecondary },
 
-  section: { gap: Spacing.two },
-  sectionLabel: {
+  // Start here
+  startCard: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radii.lg,
+    padding: Spacing.four,
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderColor: colors.accentMuted,
+  },
+  startCardPressed: { opacity: 0.8 },
+  startLabel: {
     ...typography.caption,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    color: colors.textSecondary,
-    marginBottom: Spacing.one,
+    color: colors.accent,
   },
+  startTitle: { ...typography.displaySmall, marginTop: Spacing.one },
+  startLine: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
+  startCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.two },
 
-  practiceCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: Spacing.three,
-    gap: Spacing.half,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+  // Sections
+  section: { gap: Spacing.two },
+  practiceCard: { flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start' },
+  practiceIcon: { marginTop: Spacing.half, width: 22, height: 22 },
+  practiceBody: { flex: 1, gap: Spacing.half },
   practiceTitle: { ...typography.body, fontWeight: '500' },
   practiceSubtitle: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 20 },
+  practiceMeta: { ...typography.caption, color: colors.textFaint, marginTop: Spacing.half },
 
-  footer: { marginTop: 'auto', paddingTop: Spacing.three },
+  lockedHint: {
+    ...typography.bodySmall,
+    color: colors.textFaint,
+    fontStyle: 'italic',
+    lineHeight: 22,
+  },
+
+  footer: { marginTop: Spacing.two, paddingTop: Spacing.three },
   footerText: { ...typography.caption, textAlign: 'center', lineHeight: 20 },
 });
