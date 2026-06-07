@@ -1,23 +1,39 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 
-import { Button, FadeSlide, Screen } from '@/components/ui';
-import { colors, Spacing, typography } from '@/constants/theme';
+import { Button, FadeSlide, Screen, TextField } from '@/components/ui';
+import { colors, radii, Spacing, typography } from '@/constants/theme';
 import { setItem } from '@/lib/kv';
+import type { Gender } from '@/hooks/useUserProfile';
 
 // Paced one-thing-per-screen panels — the same contemplative rhythm as the
 // practices, from the very first moment. The safety panel is unskippable: you
 // pass through it on the way to the acknowledge, which only lives on the last.
-const PANEL_COUNT = 4;
+const PANEL_COUNT = 6;
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: 'man', label: 'Man' },
+  { value: 'woman', label: 'Woman' },
+  { value: 'nonbinary', label: 'Not these categories' },
+];
 
 export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
+  const [name, setName] = useState('');
+  const [gender, setGender] = useState<Gender | null>(null);
   const isLast = index === PANEL_COUNT - 1;
 
+  // Disable Continue when the current panel requires input that hasn't been given.
+  const canContinue = !(index === 4 && name.trim() === '') && !(index === 5 && gender === null);
+
   async function handleAcknowledge() {
-    await setItem('shadow.onboarding_complete', 'true');
+    await Promise.all([
+      setItem('shadow.onboarding_complete', 'true'),
+      setItem('shadow.user_name', name.trim()),
+      setItem('shadow.user_gender', gender!),
+    ]);
     router.replace('/');
   }
 
@@ -82,6 +98,49 @@ export default function OnboardingScreen() {
             </Text>
           </>
         )}
+
+        {index === 4 && (
+          <>
+            <Text style={styles.title}>What should we call you?</Text>
+            <TextField
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name…"
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => { if (name.trim()) next(); }}
+            />
+            <Text style={styles.body}>
+              Just for the greeting on your home screen. Nothing is sent anywhere.
+            </Text>
+          </>
+        )}
+
+        {index === 5 && (
+          <>
+            <Text style={styles.title}>One thing about your inner landscape.</Text>
+            <Text style={styles.body}>
+              In Jungian work, the anima (in men) and the animus (in women) are inner figures worth
+              meeting. Partwise uses this to offer the right reflections for you.
+            </Text>
+            <View style={styles.genderRow}>
+              {GENDER_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => setGender(opt.value)}
+                  style={[styles.genderChip, gender === opt.value && styles.genderChipSelected]}>
+                  <Text
+                    style={[
+                      styles.genderChipLabel,
+                      gender === opt.value && styles.genderChipLabelSelected,
+                    ]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
       </FadeSlide>
 
       <View style={styles.footer}>
@@ -90,7 +149,11 @@ export default function OnboardingScreen() {
             <View key={i} style={[styles.dot, i <= index && styles.dotFilled]} />
           ))}
         </View>
-        <Button label={isLast ? 'I understand — take me in' : 'Continue'} onPress={next} />
+        <Button
+          label={isLast ? 'I understand — take me in' : 'Continue'}
+          onPress={next}
+          disabled={!canContinue}
+        />
         {index > 0 && !isLast ? (
           <Button label="Back" variant="ghost" onPress={() => setIndex((i) => i - 1)} />
         ) : null}
@@ -111,6 +174,20 @@ const styles = StyleSheet.create({
   },
   body: { ...typography.serifBody, color: colors.textSecondary, lineHeight: 30 },
   listItem: { ...typography.body, color: colors.textPrimary, lineHeight: 28 },
+  genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  genderChip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.pill,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  genderChipSelected: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accentMuted,
+  },
+  genderChipLabel: { ...typography.body, color: colors.textSecondary },
+  genderChipLabelSelected: { color: colors.accent },
   footer: { gap: Spacing.two, paddingTop: Spacing.five },
   dots: {
     flexDirection: 'row',

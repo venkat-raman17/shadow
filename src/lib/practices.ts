@@ -32,6 +32,8 @@ export interface Practice {
   depth: Depth;
   estimatedMinutes: number;
   icon: IconName;
+  /** If set, only surface this practice for users whose gender matches. Non-binary users see all. */
+  requiresGender?: 'man' | 'woman';
 }
 
 // Curated catalogue. Titles stay evocative; the blurb says plainly what you'll

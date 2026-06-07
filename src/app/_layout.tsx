@@ -49,8 +49,12 @@ function RootNavigator() {
   });
 
   useEffect(() => {
-    getItem('shadow.onboarding_complete').then((val) => {
-      setOnboardingDone(val === 'true');
+    Promise.all([
+      getItem('shadow.onboarding_complete'),
+      getItem('shadow.user_name'),
+      getItem('shadow.user_gender'),
+    ]).then(([complete, name, gender]) => {
+      setOnboardingDone(complete === 'true' && !!name && !!gender);
     });
   }, []);
 

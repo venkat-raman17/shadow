@@ -8,17 +8,19 @@ import { Screen, Card } from '@/components/ui';
 import { getPractice, type Practice } from '@/lib/practices';
 import { useRecentEntries, useResurfacing } from '@/hooks/useEntries';
 import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import type { EntryDetail } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function getGreeting(): string {
+function getGreeting(name: string | null): string {
+  const suffix = name ? `, ${name}` : '';
   const h = new Date().getHours();
-  if (h < 5) return 'Still awake.';
-  if (h < 12) return 'Good morning.';
-  if (h < 17) return 'Good afternoon.';
-  if (h < 21) return 'Good evening.';
-  return 'Late night.';
+  if (h < 5) return `Still awake${suffix}.`;
+  if (h < 12) return `Good morning${suffix}.`;
+  if (h < 17) return `Good afternoon${suffix}.`;
+  if (h < 21) return `Good evening${suffix}.`;
+  return `Late night${suffix}.`;
 }
 
 interface Suggestion {
@@ -129,6 +131,7 @@ function ResurfacingCard({ entry, onDismiss }: { entry: EntryDetail; onDismiss: 
 }
 
 export default function HomeScreen() {
+  const profile = useUserProfile();
   const entries = useRecentEntries(1);
   const parts = useParts();
   const { experiments } = useExperiments();
@@ -141,7 +144,7 @@ export default function HomeScreen() {
   return (
     <Screen withTabBar>
       <View style={styles.topRow}>
-        <Text style={styles.greeting}>{getGreeting()}</Text>
+        <Text style={styles.greeting}>{getGreeting(profile?.name ?? null)}</Text>
         <Pressable
           onPress={() => router.push('/settings')}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
