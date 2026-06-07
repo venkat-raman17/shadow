@@ -87,7 +87,7 @@ npm run build:preview:ios
 ### Add Testers to TestFlight
 
 1. Visit [appstoreconnect.apple.com](https://appstoreconnect.apple.com)
-2. Select your app (shadow)
+2. Select your app (Partwise)
 3. Go to **TestFlight** → **iOS**
 4. Add test users via email
 5. Users will receive TestFlight invite
@@ -96,7 +96,7 @@ npm run build:preview:ios
 
 - Testers will receive email invitation
 - Install TestFlight app from App Store
-- Accept invite and install shadow app
+- Accept invite and install Partwise app
 - Updates automatically notify testers
 
 ## Automated CI/CD Builds

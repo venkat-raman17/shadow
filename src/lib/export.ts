@@ -233,6 +233,6 @@ export async function exportData(
   await FileSystem.writeAsStringAsync(uri, envelope);
   await Sharing.shareAsync(uri, {
     mimeType: 'application/octet-stream',
-    dialogTitle: 'Save your Shadow backup',
+    dialogTitle: 'Save your Partwise backup',
   });
 }

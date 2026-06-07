@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { Button, FadeSlide, Screen } from '@/components/ui';
+import { colors, Spacing, typography } from '@/constants/theme';
 import { setItem } from '@/lib/kv';
-import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, Button, FadeSlide } from '@/components/ui';
 
 // Paced one-thing-per-screen panels — the same contemplative rhythm as the
 // practices, from the very first moment. The safety panel is unskippable: you

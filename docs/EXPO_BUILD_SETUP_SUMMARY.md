@@ -327,7 +327,7 @@ npm run build:preview:android
 **Add Testers**:
 
 1. Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com)
-2. Select "shadow" app
+2. Select "Partwise" app
 3. Go to "TestFlight" → "iOS"
 4. Invite test users by email
 5. Users receive invitation email

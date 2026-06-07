@@ -1,8 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, Linking } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
-import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, Card, SectionHeader } from '@/components/ui';
+import { Card, Screen, SectionHeader } from '@/components/ui';
+import { colors, Spacing, typography } from '@/constants/theme';
 import type { CrisisResources } from '@/types/flow';
 
 // Bundled at build time — never fetched from network

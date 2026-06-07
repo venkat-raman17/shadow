@@ -111,7 +111,7 @@ export default function SettingsScreen() {
       return;
     }
     if (outcome === 'invalid_file') {
-      setRestoreError("File doesn't look like a Shadow backup.");
+      setRestoreError("File doesn't look like a Partwise backup.");
       return;
     }
 
