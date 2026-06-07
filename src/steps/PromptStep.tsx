@@ -2,30 +2,29 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, TextField, Chip, Button } from '@/components/ui';
+import { TextField, Chip, Button } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { PromptStep as PromptStepType } from '@/types/flow';
+import type { StepProps } from './types';
 
-interface Props {
-  step: PromptStepType;
-  onNext: (value?: string) => void;
-  onExit: () => void;
-}
-
-export default function PromptStep({ step, onNext, onExit }: Props) {
+export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<PromptStepType>) {
   const [value, setValue] = useState('');
 
   const canAdvance = step.optional || value.trim().length > 0;
+  const title = resolveTokens(step.title, inputs);
+  const body = resolveTokens(step.body, inputs);
+  const placeholder = resolveTokens(step.placeholder, inputs) || 'Write freely…';
 
   return (
-    <Screen>
-      <Text style={styles.title}>{step.title}</Text>
-      {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
+    <View style={styles.block}>
+      <Text style={styles.title}>{title}</Text>
+      {body ? <Text style={styles.body}>{body}</Text> : null}
 
       <TextField
         multiline={step.multiline}
         value={value}
         onChangeText={setValue}
-        placeholder={step.placeholder ?? 'Write freely…'}
+        placeholder={placeholder}
         autoFocus
       />
 
@@ -35,24 +34,27 @@ export default function PromptStep({ step, onNext, onExit }: Props) {
             <Chip
               key={chip}
               label={chip}
-              onPress={() =>
-                setValue((prev) => (prev.trim() ? `${prev.trim()}, ${chip}` : chip))
-              }
+              onPress={() => setValue((prev) => (prev.trim() ? `${prev.trim()}, ${chip}` : chip))}
             />
           ))}
         </View>
       ) : null}
 
-      <Button label="Continue" onPress={() => onNext(value.trim() || undefined)} disabled={!canAdvance} />
+      <Button
+        label="Continue"
+        onPress={() => onNext(value.trim() || undefined)}
+        disabled={!canAdvance}
+      />
 
       {step.exitOffer ? (
         <Button label="You can stop here. That’s enough." variant="ghost" onPress={onExit} />
       ) : null}
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: { gap: Spacing.three },
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

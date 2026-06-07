@@ -60,7 +60,14 @@ export default function EntryScreen() {
     echo: entry.echo,
     reclaim: entry.reclaim,
   };
-  const written = readbackFields(entry.flow_id)
+  // Pass the captured values so any echo tokens in the questions resolve to the
+  // words the user actually saw.
+  const written = readbackFields(entry.flow_id, {
+    subject: entry.subject ?? undefined,
+    quality: entry.quality ?? undefined,
+    echo: entry.echo ?? undefined,
+    reclaim: entry.reclaim ?? undefined,
+  })
     .map((f) => ({ ...f, value: valueFor[f.key] ?? null }))
     .filter((f) => f.value && f.value.trim());
 

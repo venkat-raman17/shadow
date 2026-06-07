@@ -25,7 +25,21 @@
     {
       "id": "entry_consent",
       "type": "exitOffer",
-      "body": "Ready to begin? You can also stop here — this will be waiting when you are."
+      "body": "Ready to begin? You can also stop here — this will be waiting when you are.",
+      "branch": [
+        { "when": { "inputKey": "remeeting", "eq": "true" }, "goTo": "remeet_reflect" },
+        { "when": { "inputKey": "remeeting", "eq": "false" }, "goTo": "path_choice" }
+      ]
+    },
+    {
+      "id": "remeet_reflect",
+      "type": "prompt",
+      "title": "You're sitting with {partName|this part} again.",
+      "body": "Last time, this felt like {priorFelt|something}. Before anything else — as you return to it, what's here now? (It's okay if it feels stronger; contact can deepen before it eases.)",
+      "inputKey": "returnNote",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "However it meets you now…"
     },
     {
       "id": "path_choice",
@@ -60,7 +74,7 @@
       "id": "d_name",
       "type": "prompt",
       "title": "What would you call this part?",
-      "body": "Not a clinical name — just the one that fits. The Critic. The one who shuts down. Whatever comes.",
+      "body": "Not a clinical name — just the one that fits. The Critic. The one who shuts down. Whatever comes.[[ Maybe the part that carries {seedQuality}.]]",
       "inputKey": "partName",
       "multiline": false,
       "optional": true,
@@ -69,7 +83,7 @@
     {
       "id": "d_image",
       "type": "prompt",
-      "title": "If this part had a face, a body, a shape — what do you see?",
+      "title": "If {partName|this part} had a face, a body, a shape — what do you see?",
       "body": "Let an image arrive. You don't have to analyze it — just describe what appears.",
       "inputKey": "partImage",
       "multiline": true,
@@ -99,7 +113,7 @@
     {
       "id": "d_first_appeared",
       "type": "prompt",
-      "title": "When do you first remember this part showing up?",
+      "title": "When do you first remember {partName|this part} showing up?",
       "body": "It might be an age, a situation, a person who was there. Or just a feeling — early, recent, always.",
       "inputKey": "firstAppeared",
       "multiline": true,
@@ -125,8 +139,14 @@
       "id": "d_dialogue_3",
       "type": "dialogue",
       "speaker": "part",
-      "prompt": "Ask it: what are you protecting? Write its answer in its own words.",
+      "prompt": "Ask {partName|it}: what are you protecting? Write its answer in its own words.",
       "inputKey": "dialogue_3"
+    },
+    {
+      "id": "breathe_dialogue",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Stay with what it told you for a moment. Breathe. There's no rush to respond."
     },
     {
       "id": "d_dialogue_4",
@@ -145,7 +165,7 @@
     {
       "id": "d_need",
       "type": "prompt",
-      "title": "What does this part need from you?",
+      "title": "What does {partName|this part} need from you?",
       "body": "Not a resolution — just one honest thing. It might be small. It might be something you've never offered it before.",
       "inputKey": "need",
       "multiline": true,
@@ -193,7 +213,7 @@
     {
       "id": "g_origin",
       "type": "prompt",
-      "title": "When did you decide that quality wasn't allowed to be yours?",
+      "title": "When did you decide {goldenQuality|that quality} wasn't allowed to be yours?",
       "body": "You don't have to find a specific moment. Sometimes it's a feeling — that it would be too much, or not enough, or that it wasn't safe.",
       "inputKey": "goldenOrigin",
       "multiline": true,
@@ -204,7 +224,7 @@
     {
       "id": "g_experiment",
       "type": "prompt",
-      "title": "Where could a little of it live this week?",
+      "title": "Where could a little of {goldenQuality|it} live this week?",
       "body": "Something small, something real. Not a transformation — just one place where this quality gets to exist.",
       "inputKey": "goldenExperiment",
       "multiline": true,

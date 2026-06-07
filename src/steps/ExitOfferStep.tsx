@@ -2,33 +2,30 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, Card, Button } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { ExitOfferStep as ExitOfferStepType } from '@/types/flow';
+import type { StepProps } from './types';
 
-interface Props {
-  step: ExitOfferStepType;
-  onNext: () => void;
-  onExit: () => void;
-}
+export default function ExitOfferStep({ step, inputs, onNext, onExit }: StepProps<ExitOfferStepType>) {
+  const body = resolveTokens(step.body, inputs) || 'You can stop here. That’s enough.';
 
-export default function ExitOfferStep({ step, onNext, onExit }: Props) {
   return (
-    <Screen center>
+    <View style={styles.block}>
       <Card>
-        <Text style={styles.body}>
-          {step.body ?? 'You can stop here. That’s enough.'}
-        </Text>
+        <Text style={styles.body}>{body}</Text>
       </Card>
 
       <View style={styles.actions}>
         <Button label="Stop here" variant="secondary" onPress={onExit} />
         <Button label="Keep going" onPress={() => onNext()} />
       </View>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: { gap: Spacing.three },
   body: { ...typography.serifBody, color: colors.textPrimary },
   actions: { gap: Spacing.two },
 });

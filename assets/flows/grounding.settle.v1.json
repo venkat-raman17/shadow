@@ -35,7 +35,7 @@
   ],
   "exit": {
     "type": "close",
-    "body": "Good. You can stay here as long as you need.",
+    "body": "Good. You can stay here as long as you need.\n\nWhen you're ready, you can head back to what you were doing — it's still there, at your pace — or stop for now. There's no rush.",
     "celebrate": false
   }
 }

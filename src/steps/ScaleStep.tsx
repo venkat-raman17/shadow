@@ -3,23 +3,22 @@ import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 
 import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, Button } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { ScaleStep as ScaleStepType } from '@/types/flow';
+import type { StepProps } from './types';
 
-interface Props {
-  step: ScaleStepType;
-  onNext: (value: number) => void;
-  onExit: () => void;
-}
-
-export default function ScaleStep({ step, onNext }: Props) {
+export default function ScaleStep({ step, inputs, onNext }: StepProps<ScaleStepType>) {
   const mid = Math.round((step.min + step.max) / 2);
   const [value, setValue] = useState(mid);
 
+  const title = resolveTokens(step.title, inputs);
+  const body = resolveTokens(step.body, inputs);
+
   return (
-    <Screen scroll={false}>
-      <Text style={styles.title}>{step.title}</Text>
-      {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
+    <View style={styles.block}>
+      <Text style={styles.title}>{title}</Text>
+      {body ? <Text style={styles.body}>{body}</Text> : null}
 
       <View style={styles.sliderWrapper}>
         <Text style={styles.valueLabel}>{value}</Text>
@@ -40,16 +39,16 @@ export default function ScaleStep({ step, onNext }: Props) {
         </View>
       </View>
 
-      <View style={styles.spacer} />
       <Button label="Continue" onPress={() => onNext(value)} />
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: { gap: Spacing.three },
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
-  sliderWrapper: { gap: Spacing.two, marginTop: Spacing.three },
+  sliderWrapper: { gap: Spacing.two, marginTop: Spacing.one },
   valueLabel: {
     ...typography.displaySmall,
     fontSize: 36,
@@ -60,5 +59,4 @@ const styles = StyleSheet.create({
   slider: { width: '100%', height: 40 },
   rangeLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   rangeLabel: { ...typography.caption },
-  spacer: { flex: 1 },
 });

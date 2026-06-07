@@ -1,7 +1,7 @@
 {
   "id": "noticing.321.v1",
   "kind": "noticing",
-  "title": "What's pulling your attention?",
+  "title": "Turn a reaction around",
   "subtitle": "Three moves. About eight minutes.",
   "estimatedMinutes": 8,
   "entryGate": null,
@@ -15,6 +15,12 @@
       "id": "orient",
       "type": "passage",
       "body": "This practice has three moves.\n\nFirst, you describe someone through a strong reaction — 'he is,' 'she does.' Then you speak directly to them. Then you write as them.\n\nThe quality that charges you most in others often lives in you — in a different form, unexpressed, unrecognized."
+    },
+    {
+      "id": "arrive",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Before we begin — take a breath. Let yourself arrive."
     },
     {
       "id": "face_it",
@@ -35,7 +41,17 @@
       "min": 0,
       "max": 10,
       "minLabel": "a mild interest",
-      "maxLabel": "can't let it go"
+      "maxLabel": "can't let it go",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "breathe_mid" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "talk_to_it" }
+      ]
+    },
+    {
+      "id": "breathe_mid",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That landed with some weight. Take one breath here before going on — there's no rush."
     },
     {
       "id": "talk_to_it",

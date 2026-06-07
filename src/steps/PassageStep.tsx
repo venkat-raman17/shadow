@@ -1,26 +1,23 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
-import { typography } from '@/constants/theme';
-import { Screen, Button } from '@/components/ui';
+import { typography, Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { PassageStep as PassageStepType } from '@/types/flow';
+import type { StepProps } from './types';
 
-interface Props {
-  step: PassageStepType;
-  onNext: () => void;
-  onExit: () => void;
-}
-
-export default function PassageStep({ step, onNext }: Props) {
+export default function PassageStep({ step, inputs, onNext }: StepProps<PassageStepType>) {
   return (
-    <Screen center>
-      <Text style={styles.body}>{step.body}</Text>
+    <View style={styles.block}>
+      <Text style={styles.body}>{resolveTokens(step.body, inputs)}</Text>
       <Button label="Continue" variant="secondary" onPress={() => onNext()} />
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Serif running text, read slowly.
-  body: { ...typography.serifBody, textAlign: 'center' },
+  block: { gap: Spacing.four },
+  // Serif running text, read slowly — the guide's voice.
+  body: { ...typography.serifBody },
 });

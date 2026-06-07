@@ -1,0 +1,105 @@
+{
+  "id": "noticing.animus_projection.v1",
+  "kind": "noticing",
+  "title": "Whose voice is in your head?",
+  "subtitle": "A few minutes. No right answers.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "The animus — the inner masculine in women — often appears as an inner critic: a voice that sounds like authority, judgment, or certainty. It can also project outward onto men who seem to carry power, clarity, or conviction.\n\nThe voice or figure you notice isn't only about him. It's partly about you."
+    },
+    {
+      "id": "arrive",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Before we begin — take a breath. Let yourself arrive."
+    },
+    {
+      "id": "who",
+      "type": "prompt",
+      "title": "Who or what comes to mind?",
+      "body": "A man whose opinion has power over you, or a critical voice in your head that sounds like certainty. It could be someone real, a recurring judgment, or someone you've been circling around.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "A name, or describe the voice…"
+    },
+    {
+      "id": "quality",
+      "type": "prompt",
+      "title": "What quality does he carry — or what does the voice say?",
+      "body": "Not appearance. The trait underneath — his certainty, his power, his way of cutting through, his authority. Or: what the critical voice keeps repeating about you.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "Name the quality or the judgment…",
+      "assistChips": [
+        "certainty",
+        "authority",
+        "strength",
+        "independence",
+        "clarity",
+        "directness",
+        "conviction",
+        "boldness",
+        "not enough",
+        "too much"
+      ]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How strong is the pull — or how loud is the voice?",
+      "body": "The strength is information. A loud animus voice or an intense pull usually means something wants to be integrated.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a background hum",
+      "maxLabel": "it takes over",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "breathe_mid" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "possession" }
+      ]
+    },
+    {
+      "id": "breathe_mid",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That landed with some weight. Take one breath here before going on — there's no rush."
+    },
+    {
+      "id": "possession",
+      "type": "prompt",
+      "title": "When this pull or voice takes hold, what does it make you think, say, or do?",
+      "body": "Notice without judgment. Does it make you doubt yourself, defer to him, go harsh on yourself, or argue in your head?",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "reclaim",
+      "type": "prompt",
+      "title": "What would it mean to carry {quality|this quality} yourself?",
+      "body": "Not to push the voice away. But what if you stopped outsourcing {quality|this capacity} — to him, or to the inner critic — and let it belong to you instead?",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "The voice or figure you noticed is real. So is what it's asking for — something in you that wants its own authority.\n\nThe work isn't to silence it. It's to meet it, and gradually make it yours.",
+    "celebrate": false
+  }
+}

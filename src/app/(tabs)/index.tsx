@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { colors, typography, Spacing, radii } from '@/constants/theme';
-import { Screen, Card } from '@/components/ui';
-import { getPractice, type Practice } from '@/lib/practices';
+import { Screen, TextField, Chip, Button } from '@/components/ui';
+import { getPractice } from '@/lib/practices';
+import { doorwaysFor, routeFromText } from '@/lib/threshold';
 import { useRecentEntries, useResurfacing } from '@/hooks/useEntries';
 import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -23,79 +24,31 @@ function getGreeting(name: string | null): string {
   return `Late night${suffix}.`;
 }
 
-interface Suggestion {
-  practice: Practice;
-  label: string; // small uppercase eyebrow
-  line: string; // the contextual "why now"
-}
-
-// The adaptive "start here". Derived entirely from existing data — no tracking,
-// no new persisted state. Mirrors the three-depths progression.
-function useSuggestion(firstRun: boolean): Suggestion | null {
+// The flow to open when the user says "I'm not sure" — derived entirely from
+// existing data (no tracking, no new state). Mirrors the three-depths
+// progression that the old "Start here" card used.
+function useFallbackFlowId(firstRun: boolean): string {
   const patterns = useSurfacingPatterns(1);
   const parts = useParts();
   const { experiments } = useExperiments();
+  const profile = useUserProfile();
 
-  if (firstRun) {
-    const p = getPractice('noticing.somatic.v1');
-    return p
-      ? { practice: p, label: 'Start here', line: 'A gentle first noticing — just you and a sensation.' }
-      : null;
-  }
+  if (firstRun) return 'noticing.somatic.v1';
 
-  // Something keeps surfacing → invite the deeper "sit with" practice.
   const strong = patterns.find((pt) => pt.count >= 2);
-  if (strong) {
-    const p = getPractice('meeting.active_imagination.v1');
-    if (p) {
-      return {
-        practice: p,
-        label: 'When you’re ready',
-        line: `“${strong.quality}” keeps coming up. Want to sit with it?`,
-      };
-    }
+  if (strong && getPractice('meeting.active_imagination.v1')) {
+    return 'meeting.active_imagination.v1';
   }
 
-  // You've met a part → carry it into the week.
   const hasOpenExperiment = experiments.some((e) => e.status === 'open');
-  if (parts.length > 0 && !hasOpenExperiment) {
-    const p = getPractice('integration.after_meeting.v1');
-    if (p) {
-      return { practice: p, label: 'Next', line: 'Turn what you found into one small thing to try.' };
-    }
-  }
+  if (parts.length > 0 && !hasOpenExperiment) return 'integration.after_meeting.v1';
 
-  // Otherwise, a gentle next noticing — shaped by the time of day so mornings
-  // lean toward the body and evenings toward quieter reflection.
   const hour = new Date().getHours();
-  let id: string;
-  let line: string;
-  if (hour < 12) {
-    id = 'noticing.somatic.v1';
-    line = 'Start with the body — what is it holding this morning?';
-  } else if (hour < 18) {
-    id = 'noticing.projection_recall.v1';
-    line = 'Notice what got under your skin today.';
-  } else {
-    id = 'noticing.golden_shadow.v1';
-    line = 'Notice what you admire — it often points back to you.';
-  }
-  const p = getPractice(id);
-  return p ? { practice: p, label: 'A quiet invitation', line } : null;
-}
-
-function StartHereCard({ suggestion }: { suggestion: Suggestion }) {
-  const { practice, label, line } = suggestion;
-  return (
-    <Pressable
-      onPress={() => router.push(`/flow/${practice.id}`)}
-      style={({ pressed }) => [styles.startCard, pressed && styles.startCardPressed]}>
-      <Text style={styles.startLabel}>{label}</Text>
-      <Text style={styles.startTitle}>{practice.title}</Text>
-      <Text style={styles.startLine}>{line}</Text>
-      <Text style={styles.startCta}>Begin · ~{practice.estimatedMinutes} min →</Text>
-    </Pressable>
-  );
+  if (hour < 12) return 'noticing.somatic.v1';
+  if (hour < 18) return 'noticing.projection_recall.v1';
+  if (profile?.gender === 'man') return 'noticing.anima_projection.v1';
+  if (profile?.gender === 'woman') return 'noticing.animus_projection.v1';
+  return 'noticing.golden_shadow.v1';
 }
 
 function relativeWhen(ms: number): string {
@@ -138,8 +91,20 @@ export default function HomeScreen() {
 
   const firstRun = entries.length === 0 && parts.length === 0 && experiments.length === 0;
 
-  const suggestion = useSuggestion(firstRun);
+  const fallbackFlowId = useFallbackFlowId(firstRun);
   const { entry: resurfaced, dismiss: dismissResurfaced } = useResurfacing();
+
+  const [text, setText] = useState('');
+  const doorways = doorwaysFor(profile?.gender);
+
+  function enter(flowId: string) {
+    router.push(`/flow/${flowId}`);
+  }
+
+  function beginFromText() {
+    const id = routeFromText(text, profile?.gender) ?? fallbackFlowId;
+    enter(id);
+  }
 
   return (
     <Screen withTabBar>
@@ -156,29 +121,46 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.tagline}>
-        A quiet space to notice what you&apos;re feeling — and what it&apos;s pointing at.
-      </Text>
+      {/* The threshold: speak into it, or step through a doorway below. */}
+      <View style={styles.threshold}>
+        <Text style={styles.prompt}>What&apos;s here right now?</Text>
+        <Text style={styles.promptSub}>
+          A word or a sentence — whatever&apos;s present. Or choose a way in below.
+        </Text>
 
-      {suggestion && <StartHereCard suggestion={suggestion} />}
+        <TextField
+          value={text}
+          onChangeText={setText}
+          placeholder="Name it, however roughly…"
+          multiline
+          returnKeyType="go"
+          onSubmitEditing={beginFromText}
+        />
+
+        <Button
+          label={text.trim() ? 'Sit with this →' : 'Begin where I am →'}
+          onPress={beginFromText}
+        />
+      </View>
+
+      <View style={styles.doorways}>
+        {doorways.map((d) => (
+          <Chip key={d.key} label={d.label} onPress={() => enter(d.resolve(profile?.gender))} />
+        ))}
+      </View>
 
       {resurfaced && <ResurfacingCard entry={resurfaced} onDismiss={dismissResurfaced} />}
 
-      <Card onPress={() => router.push('/practices')} style={styles.moreCard}>
-        <View style={styles.moreBody}>
-          <Text style={styles.moreTitle}>More ways to notice</Text>
-          <Text style={styles.moreSubtitle}>
-            {firstRun
-              ? 'Browse the gentle starting practices.'
-              : 'Browse the full set of practices.'}
-          </Text>
-        </View>
+      <Pressable style={styles.moreLink} onPress={() => router.push('/practices')}>
+        <Text style={styles.moreLinkText}>
+          {firstRun ? 'See the gentle starting practices' : 'Other ways to notice'}
+        </Text>
         <SymbolView
           name={{ ios: 'chevron.right', web: 'chevron_right' }}
-          size={18}
+          size={15}
           tintColor={colors.textSecondary}
         />
-      </Card>
+      </Pressable>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
@@ -192,27 +174,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greeting: { ...typography.display },
-  tagline: { ...typography.body, color: colors.textSecondary },
 
-  // Start here
-  startCard: {
-    backgroundColor: colors.accentSoft,
-    borderRadius: radii.lg,
-    padding: Spacing.four,
-    gap: Spacing.one,
-    borderWidth: 1,
-    borderColor: colors.accentMuted,
-  },
-  startCardPressed: { opacity: 0.8 },
-  startLabel: {
-    ...typography.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.accent,
-  },
-  startTitle: { ...typography.displaySmall, marginTop: Spacing.one },
-  startLine: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
-  startCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.two },
+  // Threshold
+  threshold: { gap: Spacing.three },
+  prompt: { ...typography.serifPrompt, fontSize: 28, lineHeight: 38 },
+  promptSub: { ...typography.body, color: colors.textSecondary, marginTop: -Spacing.one },
+
+  // Doorways
+  doorways: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 
   // Resurfacing
   resurfaceCard: {
@@ -237,16 +206,13 @@ const styles = StyleSheet.create({
   resurfaceText: { ...typography.serifBody, color: colors.textPrimary },
   resurfaceCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // More ways to notice
-  moreCard: {
+  // More ways
+  moreLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
+    gap: Spacing.one,
   },
-  moreBody: { flex: 1, gap: Spacing.half },
-  moreTitle: { ...typography.body, fontWeight: '500' },
-  moreSubtitle: { ...typography.bodySmall, color: colors.textSecondary },
+  moreLinkText: { ...typography.body, color: colors.textSecondary },
 
   footer: { marginTop: Spacing.two, paddingTop: Spacing.three },
   footerText: { ...typography.caption, textAlign: 'center', lineHeight: 20 },

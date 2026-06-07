@@ -6,6 +6,7 @@ import { colors, typography, Spacing } from '@/constants/theme';
 import { Screen, SectionHeader, Button } from '@/components/ui';
 import { ChargeDots } from '@/components/ChargeDots';
 import { usePart } from '@/hooks/useIntegration';
+import { feltSenseBand } from '@/lib/feltSense';
 import type { PartSessionItem } from '@/lib/db';
 
 const MEETING_FLOW_ID = 'meeting.active_imagination.v1';
@@ -139,6 +140,16 @@ export default function PartScreen() {
   const metAgain =
     part.last_met_at !== null && part.last_met_at - part.created_at > 60 * 1000;
 
+  // The last thing it said, to pick the conversation back up where it ended.
+  const recent = part.sessions[0];
+  const recentDialogue = safeParse(recent?.dialogue ?? null);
+  const lastSaid = recentDialogue
+    ? asText(recentDialogue.d5) ??
+      asText(recentDialogue.d3) ??
+      asText(recentDialogue.d1) ??
+      asText(recentDialogue.origin)
+    : null;
+
   return (
     <>
       <Stack.Screen options={{ title: '' }} />
@@ -173,11 +184,33 @@ export default function PartScreen() {
           </View>
         ) : null}
 
+        {lastSaid ? (
+          <View style={styles.lastSaid}>
+            <Text style={styles.fieldLabel}>Last time, it said</Text>
+            <View style={styles.lastSaidRow}>
+              <View style={styles.lastSaidAccent} />
+              <Text style={styles.lastSaidText} numberOfLines={4}>
+                {lastSaid}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         <Button
-          label="Sit with this part again"
+          label={lastSaid ? 'Pick up where you left off' : 'Sit with this part again'}
           variant="secondary"
           onPress={() =>
-            router.push({ pathname: '/flow/[id]', params: { id: MEETING_FLOW_ID, partId: part.id } })
+            router.push({
+              pathname: '/flow/[id]',
+              params: {
+                id: MEETING_FLOW_ID,
+                partId: part.id,
+                partName: part.name ?? '',
+                // A word for how it last felt — so the return can ask, in words,
+                // what's shifted. Never a number.
+                priorFelt: feltSenseBand(recent?.charge_after ?? recent?.charge_before),
+              },
+            })
           }
         />
 
@@ -206,6 +239,11 @@ const styles = StyleSheet.create({
   field: { gap: Spacing.one },
   fieldLabel: { ...typography.bodySmall, color: colors.textSecondary },
   fieldValue: { ...typography.serifBody, color: colors.textPrimary },
+
+  lastSaid: { gap: Spacing.one },
+  lastSaidRow: { flexDirection: 'row', gap: Spacing.three },
+  lastSaidAccent: { width: 3, borderRadius: 2, backgroundColor: colors.accent },
+  lastSaidText: { ...typography.serifBody, flex: 1, color: colors.textPrimary, fontStyle: 'italic' },
 
   sessionsSection: { gap: Spacing.three },
   session: {

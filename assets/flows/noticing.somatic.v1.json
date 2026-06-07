@@ -49,18 +49,28 @@
     {
       "id": "charge",
       "type": "scale",
-      "title": "How present is it?",
+      "title": "How present is {quality|it}?",
       "body": "Not good or bad — just the intensity right now.",
       "inputKey": "charge",
       "min": 0,
       "max": 10,
       "minLabel": "barely there",
-      "maxLabel": "right at the surface"
+      "maxLabel": "right at the surface",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "breathe_mid" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "echo" }
+      ]
+    },
+    {
+      "id": "breathe_mid",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That landed with some weight. Take one breath here before going on — there's no rush."
     },
     {
       "id": "echo",
       "type": "prompt",
-      "title": "What might it be pointing at?",
+      "title": "What might the {quality|sensation} in your {subject|body} be pointing at?",
       "body": "You don't have to know. This is just a question to sit with.",
       "inputKey": "echo",
       "optional": true,

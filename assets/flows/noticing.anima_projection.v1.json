@@ -1,0 +1,105 @@
+{
+  "id": "noticing.anima_projection.v1",
+  "kind": "noticing",
+  "title": "Who captivates you?",
+  "subtitle": "A few minutes. No right answers.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "The anima — the inner feminine in men — tends to project outward onto women who seem to carry what we're missing. The captivation isn't only about her.\n\nIt's partly about you."
+    },
+    {
+      "id": "arrive",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Before we begin — take a breath. Let yourself arrive."
+    },
+    {
+      "id": "who",
+      "type": "prompt",
+      "title": "Who comes to mind?",
+      "body": "Someone whose presence pulls at you in a way that's hard to explain — a woman you're drawn to, fascinated by, or can't stop thinking about. Even someone from the past.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "A name or description…"
+    },
+    {
+      "id": "quality",
+      "type": "prompt",
+      "title": "What specifically draws you to her?",
+      "body": "Not looks alone. What quality — how she moves through the world, what she seems to embody, what becomes possible in you when you're near her.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "Name the quality…",
+      "assistChips": [
+        "presence",
+        "freedom",
+        "warmth",
+        "depth",
+        "wildness",
+        "stillness",
+        "softness",
+        "creative force",
+        "groundedness",
+        "full feeling"
+      ]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How strong is the pull?",
+      "body": "The strength of the pull is information — it points at how much you want what she seems to carry.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a gentle draw",
+      "maxLabel": "almost unbearable",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "breathe_mid" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "completion" }
+      ]
+    },
+    {
+      "id": "breathe_mid",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That landed with some weight. Take one breath here before going on — there's no rush."
+    },
+    {
+      "id": "completion",
+      "type": "prompt",
+      "title": "Is there a sense that {subject|she} could complete something in you?",
+      "body": "What would you have — or become — if {subject|she} were in your life? Say it plainly, even if it sounds like too much.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "reclaim",
+      "type": "prompt",
+      "title": "What would it mean to find {quality|that quality} in yourself?",
+      "body": "Not to stop wanting connection. But what if you stopped needing {subject|her} to carry {quality|it} for you — and let yourself carry it instead?",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "The pull you feel toward {subject|her} is real. So is what it's pointing at — something in you that wants to come alive.\n\nThe work isn't to stop the longing. It's to let it lead somewhere inside.",
+    "celebrate": false
+  }
+}

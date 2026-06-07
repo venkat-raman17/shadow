@@ -5,6 +5,11 @@
   "subtitle": "A few minutes. No right answers.",
   "estimatedMinutes": 5,
   "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
   "steps": [
     {
       "id": "orient",
@@ -44,18 +49,28 @@
     {
       "id": "charge",
       "type": "scale",
-      "title": "How much does this quality move you?",
+      "title": "How much does {quality|this quality} move you?",
       "body": "The strength of the pull is the signal.",
       "inputKey": "charge",
       "min": 0,
       "max": 10,
       "minLabel": "a quiet pull",
-      "maxLabel": "an ache"
+      "maxLabel": "an ache",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "breathe_mid" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "recognition" }
+      ]
+    },
+    {
+      "id": "breathe_mid",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That landed with some weight. Take one breath here before going on — there's no rush."
     },
     {
       "id": "recognition",
       "type": "prompt",
-      "title": "If that quality already existed in you — even as a seed — where would you see it?",
+      "title": "If {quality|that quality} already existed in you — even as a seed — where would you see it?",
       "body": "Even if it's tiny, inconsistent, or only in private.",
       "inputKey": "echo",
       "multiline": true,
@@ -65,7 +80,7 @@
     {
       "id": "reclaim",
       "type": "prompt",
-      "title": "What's kept this quality from growing in you?",
+      "title": "What's kept {quality|this quality} from growing in you?",
       "body": "What was the early message about it?",
       "inputKey": "reclaim",
       "multiline": true,

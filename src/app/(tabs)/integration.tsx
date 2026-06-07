@@ -1,30 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 
 import { colors, typography, Spacing, radii } from '@/constants/theme';
 import { Screen, Card, SectionHeader, Button } from '@/components/ui';
 import { ChargeDots } from '@/components/ChargeDots';
-import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
-import { useRecentEntries } from '@/hooks/useEntries';
+import { PresenceField } from '@/components/PresenceField';
+import { SurfacingField } from '@/components/SurfacingField';
 import {
-  updateExperimentStatus,
-  ExperimentItem,
-  PartListItem,
-  SurfacingPattern,
-  EntryListItem,
-} from '@/lib/db';
+  useParts,
+  useSurfacingPatterns,
+  useExperiments,
+  useReturnInvitation,
+} from '@/hooks/useIntegration';
 
+import { useRecentEntries } from '@/hooks/useEntries';
+import { updateExperimentStatus, ExperimentItem, EntryListItem } from '@/lib/db';
+
+const MEETING_FLOW_ID = 'meeting.active_imagination.v1';
 const HISTORY_LIMIT = 5;
-
-function formatDate(ms: number): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(ms));
-}
 
 function formatDateTime(ms: number): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -56,64 +51,12 @@ function EntryRow({ entry }: { entry: EntryListItem }) {
   );
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function relativeRecency(ms: number): string {
-  const days = Math.floor((Date.now() - ms) / DAY_MS);
-  if (days <= 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 7) return 'this week';
-  if (days < 14) return 'last week';
-  if (days < 35) return 'this month';
-  if (days < 75) return 'last month';
-  return 'a while ago';
-}
-
-function cap(s: string): string {
-  return s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
-
-// Honest, tentative phrasing: a one-off never claims to be a pattern, and a
-// stale quality isn't said to "keep coming up". Recency is spoken, never scored.
-function patternSentence(quality: string, count: number, lastAt: number): string {
-  const q = cap(quality);
-  const stale = Date.now() - lastAt > 60 * DAY_MS;
-  if (stale) {
-    return count <= 1
-      ? `${q} came up once, a while back.`
-      : `${q} surfaced a few times, though not recently.`;
-  }
-  const when = relativeRecency(lastAt);
-  if (count <= 1) return `${q} surfaced ${when}.`;
-  if (count <= 3) return `${q} seems to keep surfacing — most recently ${when}.`;
-  return `${q} keeps coming up — most recently ${when}.`;
-}
-
-function PatternCard({ pattern }: { pattern: SurfacingPattern }) {
-  return (
-    <Card onPress={() => router.push({ pathname: '/history', params: { quality: pattern.quality } })}>
-      <Text style={styles.patternText}>
-        {patternSentence(pattern.quality, pattern.count, pattern.lastAt)}
-      </Text>
-      <Text style={styles.patternCta}>See when →</Text>
-    </Card>
-  );
-}
-
-function PartCard({ part }: { part: PartListItem }) {
-  return (
-    <Card onPress={() => router.push({ pathname: '/part/[id]', params: { id: part.id } })}>
-      <View style={styles.partHeader}>
-        <Text style={styles.partName}>{part.name ?? 'Unnamed part'}</Text>
-        {part.golden === 1 ? <View style={styles.goldenDot} /> : null}
-      </View>
-      {part.body_location ? <Text style={styles.partMeta}>{part.body_location}</Text> : null}
-      <Text style={styles.partMeta}>First met {formatDate(part.created_at)}</Text>
-    </Card>
-  );
-}
-
 const REFLECT_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+// At module scope so the time read stays out of render.
+function isOlderThanReflectAge(createdAt: number): boolean {
+  return Date.now() - createdAt > REFLECT_AGE_MS;
+}
 
 function ExperimentCard({
   experiment,
@@ -123,7 +66,7 @@ function ExperimentCard({
   onStatusChange: (id: string, status: 'done' | 'let-go') => void;
 }) {
   const isOpen = experiment.status === 'open';
-  const needsReflection = isOpen && Date.now() - experiment.created_at > REFLECT_AGE_MS;
+  const needsReflection = isOpen && isOlderThanReflectAge(experiment.created_at);
 
   return (
     <Card muted={!isOpen}>
@@ -168,16 +111,18 @@ export default function ReflectionsScreen() {
   const patterns = useSurfacingPatterns();
   const { experiments, setExperiments } = useExperiments();
   const entries = useRecentEntries(HISTORY_LIMIT + 1);
+  const returnPart = useReturnInvitation();
+
+  // A recurring quality the user could personify and sit with (Zweig's move:
+  // from an abstract tag to a part with a face). Patterns are count-sorted.
+  const topPattern = patterns.find((p) => p.count >= 2);
 
   const openExperiments = experiments.filter((e) => e.status === 'open');
   const closedExperiments = experiments.filter((e) => e.status !== 'open');
 
   const hasPriorWork = parts.length > 0 || experiments.length > 0;
   const isEmpty =
-    parts.length === 0 &&
-    patterns.length === 0 &&
-    experiments.length === 0 &&
-    entries.length === 0;
+    parts.length === 0 && patterns.length === 0 && experiments.length === 0 && entries.length === 0;
 
   const shownEntries = entries.slice(0, HISTORY_LIMIT);
   const hasMoreEntries = entries.length > HISTORY_LIMIT;
@@ -189,16 +134,57 @@ export default function ReflectionsScreen() {
 
   return (
     <Screen withTabBar>
-      <Text style={styles.heading}>Reflections</Text>
-      <Text style={styles.tagline}>What you&apos;ve been sitting with.</Text>
+      <Text style={styles.heading}>Your inner world</Text>
+      <Text style={styles.tagline}>A mirror of what you&apos;ve been sitting with.</Text>
 
       {isEmpty ? (
         <Text style={styles.empty}>
-          Nothing here yet. Come back after noticing a few reactions or sitting with a part — this
-          is where it gathers.
+          Nothing here yet. Come back after noticing a few reactions or sitting with a part — this is
+          where it gathers.
         </Text>
       ) : (
         <>
+          {returnPart && (
+            <Card
+              onPress={() => router.push({ pathname: '/part/[id]', params: { id: returnPart.id } })}
+              style={styles.returnCard}>
+              <Text style={styles.returnLabel}>A thread to pick back up</Text>
+              <Text style={styles.returnBody}>
+                It&apos;s been a while since you sat with {returnPart.name ?? 'this part'}. Return —
+                what&apos;s here now?
+              </Text>
+              <Text style={styles.returnCta}>Return →</Text>
+            </Card>
+          )}
+
+          {parts.length > 0 && (
+            <View style={styles.section}>
+              <SectionHeader>Who you&apos;ve sat with</SectionHeader>
+              <Text style={styles.sectionNote}>Tap a presence to pick up where you left off.</Text>
+              <PresenceField parts={parts} />
+            </View>
+          )}
+
+          {patterns.length > 0 && (
+            <View style={styles.section}>
+              <SectionHeader>What keeps surfacing</SectionHeader>
+              <SurfacingField patterns={patterns} />
+              {topPattern && (
+                <Pressable
+                  onPress={() =>
+                    router.push({
+                      pathname: '/flow/[id]',
+                      params: { id: MEETING_FLOW_ID, seedQuality: topPattern.quality },
+                    })
+                  }>
+                  <Text style={styles.personifyLink}>
+                    Sit with the part that carries “{topPattern.quality}” →
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
           {hasPriorWork && (
             <Card
               onPress={() => router.push('/flow/integration.after_meeting.v1')}
@@ -211,52 +197,24 @@ export default function ReflectionsScreen() {
             </Card>
           )}
 
-          <View style={styles.section}>
-            <SectionHeader>Parts you&apos;ve sat with</SectionHeader>
-            {parts.length > 0 ? (
-              parts.map((part) => <PartCard key={part.id} part={part} />)
-            ) : (
-              <Text style={styles.sectionEmpty}>
-                When you sit with a part, it&apos;ll wait for you here.
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <SectionHeader>What keeps surfacing</SectionHeader>
-            {patterns.length > 0 ? (
-              patterns.map((p) => <PatternCard key={p.quality} pattern={p} />)
-            ) : (
-              <Text style={styles.sectionEmpty}>
-                Patterns take a few reflections to appear. There&apos;s no rush.
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.section}>
-            <SectionHeader>Experiments</SectionHeader>
-            {experiments.length > 0 ? (
-              <>
-                {openExperiments.map((e) => (
-                  <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
-                ))}
-                {closedExperiments.length > 0 && openExperiments.length > 0 && (
-                  <View style={styles.closedDivider} />
-                )}
-                {closedExperiments.map((e) => (
-                  <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
-                ))}
-              </>
-            ) : (
-              <Text style={styles.sectionEmpty}>
-                Small things you decide to carry into a week show up here.
-              </Text>
-            )}
-          </View>
+          {experiments.length > 0 && (
+            <View style={styles.section}>
+              <SectionHeader>What you&apos;re carrying</SectionHeader>
+              {openExperiments.map((e) => (
+                <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
+              ))}
+              {closedExperiments.length > 0 && openExperiments.length > 0 && (
+                <View style={styles.closedDivider} />
+              )}
+              {closedExperiments.map((e) => (
+                <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
+              ))}
+            </View>
+          )}
 
           {entries.length > 0 && (
             <View style={styles.section}>
-              <SectionHeader>Recently noticed</SectionHeader>
+              <SectionHeader>Lately</SectionHeader>
               {shownEntries.map((entry) => (
                 <EntryRow key={entry.id} entry={entry} />
               ))}
@@ -281,12 +239,26 @@ const styles = StyleSheet.create({
     marginTop: Spacing.four,
   },
   section: { gap: Spacing.two },
-  sectionEmpty: {
-    ...typography.bodySmall,
-    color: colors.textFaint,
-    fontStyle: 'italic',
-    lineHeight: 22,
+  sectionNote: { ...typography.bodySmall, color: colors.textSecondary, marginTop: -Spacing.one },
+
+  // Return invitation (the integration loop closing)
+  returnCard: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accentMuted,
+    padding: Spacing.four,
+    gap: Spacing.two,
   },
+  returnLabel: {
+    ...typography.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: colors.accent,
+  },
+  returnBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
+  returnCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
+
+  // Personification bridge
+  personifyLink: { ...typography.bodySmall, color: colors.accentWarm, marginTop: Spacing.one },
 
   // Carry forward
   carryCard: {
@@ -304,22 +276,12 @@ const styles = StyleSheet.create({
   carryBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
   carryCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // Recently noticed
+  // Lately
   entryTitle: { ...typography.body, fontWeight: '500', lineHeight: 24 },
   entryTitleEmpty: { fontWeight: '400', fontStyle: 'italic', color: colors.textSecondary },
   entryMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   entryDate: { ...typography.caption, color: colors.textSecondary },
   entryQuality: { ...typography.bodySmall, fontStyle: 'italic' },
-
-  // Parts
-  partHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  partName: { ...typography.body, fontWeight: '500', flex: 1 },
-  goldenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accentWarm },
-  partMeta: { ...typography.caption, color: colors.textSecondary },
-
-  // Patterns
-  patternText: { ...typography.serifBody, color: colors.textSecondary },
-  patternCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
 
   // Experiments
   experimentDescription: { ...typography.body, lineHeight: 24 },

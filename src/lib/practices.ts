@@ -1,5 +1,6 @@
 import type { SymbolViewProps } from 'expo-symbols';
-import type { Flow } from '@/types/flow';
+import type { Flow, FlowInputs } from '@/types/flow';
+import { resolveTokens } from '@/engine/tokens';
 
 /** The platform-aware symbol name object accepted by expo-symbols' SymbolView. */
 type IconName = SymbolViewProps['name'];
@@ -12,6 +13,8 @@ export const FLOWS: Record<string, Flow> = {
   'noticing.somatic.v1': require('@/assets/flows/noticing.somatic.v1.json'),
   'noticing.facing_shame.v1': require('@/assets/flows/noticing.facing_shame.v1.json'),
   'noticing.golden_shadow.v1': require('@/assets/flows/noticing.golden_shadow.v1.json'),
+  'noticing.anima_projection.v1': require('@/assets/flows/noticing.anima_projection.v1.json'),
+  'noticing.animus_projection.v1': require('@/assets/flows/noticing.animus_projection.v1.json'),
   'noticing.persona.v1': require('@/assets/flows/noticing.persona.v1.json'),
   'noticing.321.v1': require('@/assets/flows/noticing.321.v1.json'),
   'grounding.settle.v1': require('@/assets/flows/grounding.settle.v1.json'),
@@ -61,6 +64,22 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     icon: { ios: 'sparkles', web: 'auto_awesome' },
   },
   {
+    id: 'noticing.anima_projection.v1',
+    title: 'Who captivates you?',
+    blurb: 'Notice when intense attraction is pointing at something unlived in you.',
+    depth: 'notice',
+    icon: { ios: 'figure.2.arms.open', web: 'favorite_border' },
+    requiresGender: 'man',
+  },
+  {
+    id: 'noticing.animus_projection.v1',
+    title: 'Whose voice is in your head?',
+    blurb: 'Notice the inner critic or the pull toward someone who carries your unlived strength.',
+    depth: 'notice',
+    icon: { ios: 'quote.bubble', web: 'record_voice_over' },
+    requiresGender: 'woman',
+  },
+  {
     id: 'noticing.persona.v1',
     title: "Who are you when no one's watching?",
     blurb: 'The gap between the self you show and the self you keep.',
@@ -69,10 +88,10 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
   },
   {
     id: 'noticing.321.v1',
-    title: "What's pulling your attention?",
-    blurb: 'Three small moves to settle a busy mind.',
+    title: 'Turn a reaction around',
+    blurb: 'Take a strong reaction through three angles — them, you, and I — and find what’s yours.',
     depth: 'notice',
-    icon: { ios: 'scope', web: 'center_focus_weak' },
+    icon: { ios: 'arrow.2.squarepath', web: 'swap_horiz' },
   },
   {
     id: 'noticing.facing_shame.v1',
@@ -151,13 +170,18 @@ const READBACK_KEYS: ReadbackField['key'][] = ['subject', 'quality', 'echo', 're
  * e.g. in the 3·2·1 and persona flows the `quality` step is a substantive
  * written answer, not just a one-word tag, and it lands in its true position.
  */
-export function readbackFields(flowId: string | null): ReadbackField[] {
+export function readbackFields(
+  flowId: string | null,
+  inputs: FlowInputs = {},
+): ReadbackField[] {
   const flow = flowId ? FLOWS[flowId] : undefined;
   if (flow) {
     const fields: ReadbackField[] = [];
     for (const s of flow.steps) {
       if (s.type === 'prompt' && (READBACK_KEYS as string[]).includes(s.inputKey)) {
-        fields.push({ key: s.inputKey as ReadbackField['key'], question: s.title });
+        // Resolve echo tokens so the read-back shows the question exactly as the
+        // user saw it (e.g. "How present is tightness?", not "{quality|it}").
+        fields.push({ key: s.inputKey as ReadbackField['key'], question: resolveTokens(s.title, inputs) });
       }
     }
     if (fields.length) return fields;

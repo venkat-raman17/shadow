@@ -2,33 +2,33 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, Card } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { ChoiceStep as ChoiceStepType } from '@/types/flow';
+import type { StepProps } from './types';
 
-interface Props {
-  step: ChoiceStepType;
-  onNext: (value: string, goTo?: string) => void;
-  onExit: () => void;
-}
+export default function ChoiceStep({ step, inputs, onNext }: StepProps<ChoiceStepType>) {
+  const title = resolveTokens(step.title, inputs);
+  const body = resolveTokens(step.body, inputs);
 
-export default function ChoiceStep({ step, onNext }: Props) {
   return (
-    <Screen>
-      <Text style={styles.title}>{step.title}</Text>
-      {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
+    <View style={styles.block}>
+      <Text style={styles.title}>{title}</Text>
+      {body ? <Text style={styles.body}>{body}</Text> : null}
 
       <View style={styles.options}>
         {step.options.map((opt) => (
           <Card key={opt.value} onPress={() => onNext(opt.value, opt.goTo)} style={styles.option}>
-            <Text style={styles.optionText}>{opt.label}</Text>
+            <Text style={styles.optionText}>{resolveTokens(opt.label, inputs)}</Text>
           </Card>
         ))}
       </View>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: { gap: Spacing.three },
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
   options: { gap: Spacing.two },

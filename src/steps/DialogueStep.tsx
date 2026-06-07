@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
-import { colors, typography } from '@/constants/theme';
-import { Screen, TextField, Button } from '@/components/ui';
+import { colors, typography, Spacing } from '@/constants/theme';
+import { TextField, Button } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { DialogueStep as DialogueStepType } from '@/types/flow';
+import type { StepProps } from './types';
 
-interface Props {
-  step: DialogueStepType;
-  onNext: (value?: string) => void;
-  onExit: () => void;
-}
-
-export default function DialogueStep({ step, onNext, onExit }: Props) {
+export default function DialogueStep({ step, inputs, onNext, onExit }: StepProps<DialogueStepType>) {
   const [value, setValue] = useState('');
 
   const speakerLabel = step.speaker === 'you' ? 'You' : 'The part';
+  const prompt = resolveTokens(step.prompt, inputs);
+  const hint = resolveTokens(step.hint, inputs);
 
   return (
-    <Screen>
+    <View style={styles.block}>
       <Text style={styles.speakerLabel}>{speakerLabel}</Text>
-      <Text style={styles.prompt}>{step.prompt}</Text>
-      {step.hint ? <Text style={styles.hint}>{step.hint}</Text> : null}
+      <Text style={styles.prompt}>{prompt}</Text>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
 
       <TextField
         large
@@ -33,11 +31,12 @@ export default function DialogueStep({ step, onNext, onExit }: Props) {
 
       <Button label="Continue" onPress={() => onNext(value.trim() || undefined)} />
       <Button label="Stop here" variant="ghost" onPress={onExit} />
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: { gap: Spacing.three },
   speakerLabel: {
     ...typography.caption,
     textTransform: 'uppercase',

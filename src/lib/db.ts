@@ -308,7 +308,7 @@ export async function saveSession(
   flowId: string,
   partId: string,
   key: Uint8Array,
-): Promise<void> {
+): Promise<string> {
   const id = generateId();
   const now = Date.now();
   const isGolden = inputs.path === 'golden';
@@ -344,6 +344,7 @@ export async function saveSession(
       needPayload ? encrypt(needPayload, key) : null,
     ],
   );
+  return id;
 }
 
 export async function saveEntry(
@@ -479,6 +480,30 @@ export async function touchPart(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync(`UPDATE parts SET last_met_at = ? WHERE id = ?`, [Date.now(), id]);
 }
 
+export interface ReturnablePart {
+  id: string;
+  name: string | null;
+  last_met_at: number | null;
+}
+
+/**
+ * Parts that have a CLOSED experiment linked to one of their sessions — the
+ * integration loop is open to a return ("sit with this again — what's shifted?").
+ * Provenance comes from experiments.source_session_id (populated when an
+ * experiment is seeded from a meeting). Longest-since-met first.
+ */
+export async function getReturnableParts(db: SQLiteDatabase): Promise<ReturnablePart[]> {
+  return db.getAllAsync<ReturnablePart>(
+    `SELECT p.id as id, p.name as name, p.last_met_at as last_met_at
+     FROM experiments e
+     JOIN sessions s ON e.source_session_id = s.id
+     JOIN parts p ON s.part_id = p.id
+     WHERE e.source_session_id IS NOT NULL AND e.status != 'open'
+     GROUP BY p.id
+     ORDER BY p.last_met_at ASC`,
+  );
+}
+
 export interface SurfacingPattern {
   quality: string;
   count: number;
@@ -557,13 +582,14 @@ export async function addExperiment(
   db: SQLiteDatabase,
   description: string,
   key: Uint8Array,
+  sourceSessionId?: string,
 ): Promise<void> {
   const id = generateId();
   const now = Date.now();
   await db.runAsync(
-    `INSERT INTO experiments (id, description_enc, created_at, status)
-     VALUES (?, ?, ?, 'open')`,
-    [id, encrypt(description, key), now],
+    `INSERT INTO experiments (id, source_session_id, description_enc, created_at, status)
+     VALUES (?, ?, ?, ?, 'open')`,
+    [id, sourceSessionId ?? null, encrypt(description, key), now],
   );
 }
 

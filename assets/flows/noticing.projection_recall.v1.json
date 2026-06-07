@@ -12,6 +12,12 @@
   },
   "steps": [
     {
+      "id": "arrive",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Before we begin — take a breath. Let yourself arrive."
+    },
+    {
       "id": "who",
       "type": "prompt",
       "title": "Who got under your skin today?",
@@ -50,7 +56,17 @@
       "min": 0,
       "max": 10,
       "minLabel": "barely",
-      "maxLabel": "couldn't let it go"
+      "maxLabel": "couldn't let it go",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "breathe_mid" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "echo" }
+      ]
+    },
+    {
+      "id": "breathe_mid",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That landed with some weight. Take one breath here before going on — there's no rush."
     },
     {
       "id": "echo",

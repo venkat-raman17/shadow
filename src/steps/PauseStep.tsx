@@ -10,20 +10,18 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors, typography, Spacing } from '@/constants/theme';
-import { Screen, Button } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { resolveTokens } from '@/engine/tokens';
 import type { PauseStep as PauseStepType } from '@/types/flow';
-
-interface Props {
-  step: PauseStepType;
-  onNext: () => void;
-  onExit: () => void;
-}
+import type { StepProps } from './types';
 
 const BREATH_MS = 4000;
 
-export default function PauseStep({ step, onNext }: Props) {
+export default function PauseStep({ step, inputs, onNext }: StepProps<PauseStepType>) {
   const [remaining, setRemaining] = useState(step.seconds);
   const [done, setDone] = useState(false);
+
+  const body = resolveTokens(step.body, inputs);
 
   // Countdown gates the Skip → Continue transition (no visible number).
   useEffect(() => {
@@ -53,43 +51,42 @@ export default function PauseStep({ step, onNext }: Props) {
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Screen scroll={false} center>
-      <View style={styles.inner}>
-        {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
+    <View style={styles.block}>
+      {body ? <Text style={styles.body}>{body}</Text> : null}
 
-        <View style={styles.circleWrap}>
-          <Animated.View style={[styles.circle, animatedStyle]} />
-        </View>
-
-        <Text style={styles.hint}>{done ? 'Ready when you are.' : 'Breathe…'}</Text>
+      <View style={styles.circleWrap}>
+        <Animated.View style={[styles.circle, animatedStyle]} />
       </View>
+
+      <Text style={styles.hint}>{done ? 'Ready when you are.' : 'Breathe…'}</Text>
 
       <Button
         label={done ? 'Continue' : 'Skip'}
         variant={done ? 'primary' : 'secondary'}
         onPress={() => onNext()}
       />
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  inner: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.five },
+  block: { gap: Spacing.three, alignItems: 'center' },
   body: {
     ...typography.serifBody,
     color: colors.textSecondary,
     textAlign: 'center',
   },
   circleWrap: {
-    width: 180,
-    height: 180,
+    width: 140,
+    height: 140,
     alignItems: 'center',
     justifyContent: 'center',
+    marginVertical: Spacing.two,
   },
   circle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: colors.accentSoft,
     borderWidth: 1,
     borderColor: colors.accentMuted,
