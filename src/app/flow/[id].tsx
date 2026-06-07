@@ -8,7 +8,7 @@ import FlowEngine from '@/engine/FlowEngine';
 import { FLOWS } from '@/lib/practices';
 
 export default function FlowScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, partId } = useLocalSearchParams<{ id: string; partId?: string }>();
 
   const flow = useMemo<Flow | null>(() => {
     if (!id || typeof id !== 'string') return null;
@@ -35,6 +35,7 @@ export default function FlowScreen() {
       />
       <FlowEngine
         flow={flow}
+        existingPartId={partId}
         onComplete={() => router.back()}
       />
     </>

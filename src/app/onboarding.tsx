@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 
 import { Button, FadeSlide, Screen } from '@/components/ui';
 import { colors, Spacing, typography } from '@/constants/theme';
@@ -30,9 +31,14 @@ export default function OnboardingScreen() {
       <FadeSlide key={index} style={styles.panel}>
         {index === 0 && (
           <>
-            <Text style={styles.title}>Welcome to Shadow.</Text>
+            <Image
+              source={require('@/assets/images/logo-mark.png')}
+              style={styles.logo}
+              contentFit="contain"
+            />
+            <Text style={styles.title}>Welcome to Partwise.</Text>
             <Text style={styles.body}>
-              Shadow is a space for slow inner work — noticing your reactions, meeting the parts of
+              Partwise is a space for slow inner work — noticing your reactions, meeting the parts of
               yourself you&apos;ve pushed away, and sitting with what you find.
             </Text>
             <Text style={styles.body}>Take it gently. There&apos;s nothing to finish here.</Text>
@@ -95,6 +101,7 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   panel: { gap: Spacing.three },
+  logo: { width: 96, height: 96, alignSelf: 'center' },
   title: { ...typography.display, marginBottom: Spacing.two },
   label: {
     ...typography.bodySmall,

@@ -87,6 +87,18 @@ function RootNavigator() {
           name="reflect/[id]"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Reflections' }}
         />
+        <Stack.Screen
+          name="entry/[id]"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="part/[id]"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="practices"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Home' }}
+        />
         <Stack.Screen name="history" />
       </Stack.Protected>
       <Stack.Protected guard={!onboardingDone}>

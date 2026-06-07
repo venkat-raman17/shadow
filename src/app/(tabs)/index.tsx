@@ -4,15 +4,13 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { colors, typography, Spacing, radii } from '@/constants/theme';
-import { Screen, Card, SectionHeader } from '@/components/ui';
-import {
-  PRACTICES,
-  practicesByDepth,
-  getPractice,
-  type Practice,
-} from '@/lib/practices';
-import { useRecentEntries } from '@/hooks/useEntries';
+import { Screen, Card } from '@/components/ui';
+import { getPractice, type Practice } from '@/lib/practices';
+import { useRecentEntries, useResurfacing } from '@/hooks/useEntries';
 import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
+import type { EntryDetail } from '@/lib/db';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -65,29 +63,23 @@ function useSuggestion(firstRun: boolean): Suggestion | null {
     }
   }
 
-  // Otherwise, a gentle next noticing.
-  const p = getPractice('noticing.golden_shadow.v1');
-  return p
-    ? { practice: p, label: 'A quiet invitation', line: 'Notice what you admire — it often points back to you.' }
-    : null;
-}
-
-function PracticeCard({ practice }: { practice: Practice }) {
-  return (
-    <Card onPress={() => router.push(`/flow/${practice.id}`)} style={styles.practiceCard}>
-      <SymbolView
-        name={practice.icon}
-        size={22}
-        tintColor={colors.accent}
-        style={styles.practiceIcon}
-      />
-      <View style={styles.practiceBody}>
-        <Text style={styles.practiceTitle}>{practice.title}</Text>
-        <Text style={styles.practiceSubtitle}>{practice.blurb}</Text>
-        <Text style={styles.practiceMeta}>~{practice.estimatedMinutes} min</Text>
-      </View>
-    </Card>
-  );
+  // Otherwise, a gentle next noticing — shaped by the time of day so mornings
+  // lean toward the body and evenings toward quieter reflection.
+  const hour = new Date().getHours();
+  let id: string;
+  let line: string;
+  if (hour < 12) {
+    id = 'noticing.somatic.v1';
+    line = 'Start with the body — what is it holding this morning?';
+  } else if (hour < 18) {
+    id = 'noticing.projection_recall.v1';
+    line = 'Notice what got under your skin today.';
+  } else {
+    id = 'noticing.golden_shadow.v1';
+    line = 'Notice what you admire — it often points back to you.';
+  }
+  const p = getPractice(id);
+  return p ? { practice: p, label: 'A quiet invitation', line } : null;
 }
 
 function StartHereCard({ suggestion }: { suggestion: Suggestion }) {
@@ -104,17 +96,47 @@ function StartHereCard({ suggestion }: { suggestion: Suggestion }) {
   );
 }
 
+function relativeWhen(ms: number): string {
+  const days = Math.floor((Date.now() - ms) / DAY_MS);
+  if (days < 14) return 'last week';
+  if (days < 40) return 'a few weeks ago';
+  if (days < 75) return 'last month';
+  if (days < 200) return 'a few months ago';
+  return 'a while ago';
+}
+
+// A quiet, dismissible nudge to revisit a past reflection — never a notification.
+function ResurfacingCard({ entry, onDismiss }: { entry: EntryDetail; onDismiss: () => void }) {
+  const text =
+    (entry.reclaim && entry.reclaim.trim()) || (entry.subject && entry.subject.trim()) || '';
+  if (!text) return null;
+  return (
+    <View style={styles.resurfaceCard}>
+      <View style={styles.resurfaceHeader}>
+        <Text style={styles.resurfaceLabel}>Something you sat with before</Text>
+        <Pressable onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <SymbolView name={{ ios: 'xmark', web: 'close' }} size={13} tintColor={colors.textFaint} />
+        </Pressable>
+      </View>
+      <Pressable onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}>
+        <Text style={styles.resurfaceText} numberOfLines={3}>
+          {text}
+        </Text>
+        <Text style={styles.resurfaceCta}>From {relativeWhen(entry.created_at)} · revisit →</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const entries = useRecentEntries(1);
   const parts = useParts();
   const { experiments } = useExperiments();
 
   const firstRun = entries.length === 0 && parts.length === 0 && experiments.length === 0;
-  const hasPriorWork = !firstRun;
 
   const suggestion = useSuggestion(firstRun);
-  const noticePractices = practicesByDepth('notice');
-  const deeperPractices = PRACTICES.filter((p) => p.depth !== 'notice');
+  const { entry: resurfaced, dismiss: dismissResurfaced } = useResurfacing();
 
   return (
     <Screen withTabBar>
@@ -137,25 +159,23 @@ export default function HomeScreen() {
 
       {suggestion && <StartHereCard suggestion={suggestion} />}
 
-      <View style={styles.section}>
-        <SectionHeader>Notice</SectionHeader>
-        {noticePractices.map((p) => (
-          <PracticeCard key={p.id} practice={p} />
-        ))}
-      </View>
+      {resurfaced && <ResurfacingCard entry={resurfaced} onDismiss={dismissResurfaced} />}
 
-      {hasPriorWork ? (
-        <View style={styles.section}>
-          <SectionHeader>Go deeper</SectionHeader>
-          {deeperPractices.map((p) => (
-            <PracticeCard key={p.id} practice={p} />
-          ))}
+      <Card onPress={() => router.push('/practices')} style={styles.moreCard}>
+        <View style={styles.moreBody}>
+          <Text style={styles.moreTitle}>More ways to notice</Text>
+          <Text style={styles.moreSubtitle}>
+            {firstRun
+              ? 'Browse the gentle starting practices.'
+              : 'Browse the full set of practices.'}
+          </Text>
         </View>
-      ) : (
-        <Text style={styles.lockedHint}>
-          Deeper practices open here once you&apos;ve noticed a few things.
-        </Text>
-      )}
+        <SymbolView
+          name={{ ios: 'chevron.right', web: 'chevron_right' }}
+          size={18}
+          tintColor={colors.textSecondary}
+        />
+      </Card>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
@@ -191,21 +211,39 @@ const styles = StyleSheet.create({
   startLine: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
   startCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.two },
 
-  // Sections
-  section: { gap: Spacing.two },
-  practiceCard: { flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start' },
-  practiceIcon: { marginTop: Spacing.half, width: 22, height: 22 },
-  practiceBody: { flex: 1, gap: Spacing.half },
-  practiceTitle: { ...typography.body, fontWeight: '500' },
-  practiceSubtitle: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 20 },
-  practiceMeta: { ...typography.caption, color: colors.textFaint, marginTop: Spacing.half },
-
-  lockedHint: {
-    ...typography.bodySmall,
-    color: colors.textFaint,
-    fontStyle: 'italic',
-    lineHeight: 22,
+  // Resurfacing
+  resurfaceCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: Spacing.three,
+    gap: Spacing.two,
   },
+  resurfaceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  resurfaceLabel: {
+    ...typography.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: colors.textSecondary,
+  },
+  resurfaceText: { ...typography.serifBody, color: colors.textPrimary },
+  resurfaceCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
+
+  // More ways to notice
+  moreCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  moreBody: { flex: 1, gap: Spacing.half },
+  moreTitle: { ...typography.body, fontWeight: '500' },
+  moreSubtitle: { ...typography.bodySmall, color: colors.textSecondary },
 
   footer: { marginTop: Spacing.two, paddingTop: Spacing.three },
   footerText: { ...typography.caption, textAlign: 'center', lineHeight: 20 },

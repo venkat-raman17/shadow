@@ -39,13 +39,13 @@ export default function ResourcesScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionHeader>About Shadow</SectionHeader>
+        <SectionHeader>About Partwise</SectionHeader>
         <Text style={styles.body}>
           This app is a private space for reflection. It is not therapy and cannot provide crisis
           support. For acute distress, please contact a crisis line or a mental health professional.
         </Text>
         <Text style={styles.body}>
-          Nothing you write in Shadow leaves your device. There are no accounts, no servers, and no
+          Nothing you write in Partwise leaves your device. There are no accounts, no servers, and no
           AI involved.
         </Text>
       </View>

@@ -5,9 +5,11 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useCrypto } from '@/context/CryptoContext';
 import {
   getParts,
+  getPartById,
   getSurfacingPatterns,
   getExperiments,
   PartListItem,
+  PartDetail,
   SurfacingPattern,
   ExperimentItem,
 } from '@/lib/db';
@@ -18,11 +20,42 @@ export function useParts(): PartListItem[] {
 
   useFocusEffect(
     useCallback(() => {
-      getParts(db).then(setParts);
+      let active = true;
+      getParts(db).then((rows) => {
+        if (active) setParts(rows);
+      });
+      return () => {
+        active = false;
+      };
     }, [db]),
   );
 
   return parts;
+}
+
+export function usePart(id: string | undefined): { part: PartDetail | null; loading: boolean } {
+  const db = useSQLiteContext();
+  const { key } = useCrypto();
+  const [part, setPart] = useState<PartDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!id || !key) return;
+      let active = true;
+      setLoading(true);
+      getPartById(db, id, key).then((p) => {
+        if (!active) return;
+        setPart(p);
+        setLoading(false);
+      });
+      return () => {
+        active = false;
+      };
+    }, [db, id, key]),
+  );
+
+  return { part, loading };
 }
 
 export function useSurfacingPatterns(limit = 5): SurfacingPattern[] {
@@ -31,7 +64,13 @@ export function useSurfacingPatterns(limit = 5): SurfacingPattern[] {
 
   useFocusEffect(
     useCallback(() => {
-      getSurfacingPatterns(db, limit).then(setPatterns);
+      let active = true;
+      getSurfacingPatterns(db, limit).then((rows) => {
+        if (active) setPatterns(rows);
+      });
+      return () => {
+        active = false;
+      };
     }, [db, limit]),
   );
 
@@ -49,7 +88,13 @@ export function useExperiments(): {
   useFocusEffect(
     useCallback(() => {
       if (!key) return;
-      getExperiments(db, key).then(setExperiments);
+      let active = true;
+      getExperiments(db, key).then((rows) => {
+        if (active) setExperiments(rows);
+      });
+      return () => {
+        active = false;
+      };
     }, [db, key]),
   );
 

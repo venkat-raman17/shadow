@@ -107,3 +107,58 @@ export function practicesByDepth(depth: Depth): Practice[] {
 export function getPractice(id: string): Practice | undefined {
   return PRACTICES.find((p) => p.id === id);
 }
+
+// Fallbacks when a flow can't be resolved (e.g. a flow was removed after an
+// entry was saved). Kept generic and gentle, never clinical.
+const INPUT_KEY_FALLBACK: Record<string, string> = {
+  subject: 'What you noticed',
+  quality: 'The quality underneath',
+  echo: 'Where it echoes',
+  reclaim: 'How it lives in you',
+};
+
+/**
+ * Resolve the ORIGINAL question text a noticing entry's field was captured
+ * under, so the read-back screen can show each answer beneath the exact prompt
+ * the user saw. The label is flow-specific: inputKey 'echo' is "Where have you
+ * felt this before?" in projection_recall but "What might it be pointing at?"
+ * in somatic. Falls back to a generic label only if the flow/step is missing.
+ */
+export function questionForInputKey(
+  flowId: string | null,
+  inputKey: string,
+): string {
+  const flow = flowId ? FLOWS[flowId] : undefined;
+  const step = flow?.steps.find((s) => 'inputKey' in s && s.inputKey === inputKey);
+  if (step && 'title' in step && step.title) return step.title;
+  return INPUT_KEY_FALLBACK[inputKey] ?? '';
+}
+
+export interface ReadbackField {
+  key: 'subject' | 'quality' | 'echo' | 'reclaim';
+  question: string;
+}
+
+// The persisted, written entry fields, in a sensible default order.
+const READBACK_KEYS: ReadbackField['key'][] = ['subject', 'quality', 'echo', 'reclaim'];
+
+/**
+ * The reflective fields a noticing entry captured, IN THE ORDER the user
+ * actually answered them, each paired with its original question. Walking the
+ * flow's prompt steps (rather than a fixed list) keeps the read-back faithful —
+ * e.g. in the 3·2·1 and persona flows the `quality` step is a substantive
+ * written answer, not just a one-word tag, and it lands in its true position.
+ */
+export function readbackFields(flowId: string | null): ReadbackField[] {
+  const flow = flowId ? FLOWS[flowId] : undefined;
+  if (flow) {
+    const fields: ReadbackField[] = [];
+    for (const s of flow.steps) {
+      if (s.type === 'prompt' && (READBACK_KEYS as string[]).includes(s.inputKey)) {
+        fields.push({ key: s.inputKey as ReadbackField['key'], question: s.title });
+      }
+    }
+    if (fields.length) return fields;
+  }
+  return READBACK_KEYS.map((key) => ({ key, question: questionForInputKey(null, key) }));
+}

@@ -6,7 +6,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { colors, typography, Spacing, radii } from '@/constants/theme';
 import { Screen, Button, TextField, FadeSlide } from '@/components/ui';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
-import { saveEntry, savePart, saveSession, addExperiment } from '@/lib/db';
+import { saveEntry, savePart, saveSession, addExperiment, touchPart } from '@/lib/db';
 import { useCrypto } from '@/context/CryptoContext';
 
 import PromptStep from '@/steps/PromptStep';
@@ -70,9 +70,12 @@ function evaluateBranch(
 interface Props {
   flow: Flow;
   onComplete: () => void;
+  /** When set, a 'meeting' flow attaches to this existing part instead of
+   *  creating a new one — so re-meeting a part doesn't duplicate it. */
+  existingPartId?: string;
 }
 
-export default function FlowEngine({ flow, onComplete }: Props) {
+export default function FlowEngine({ flow, onComplete, existingPartId }: Props) {
   const router = useRouter();
   const db = useSQLiteContext();
   const { key } = useCrypto();
@@ -95,8 +98,9 @@ export default function FlowEngine({ flow, onComplete }: Props) {
         if (flow.kind === 'noticing') {
           await saveEntry(db, inputs, flow.id, key);
         } else if (flow.kind === 'meeting') {
-          const partId = await savePart(db, inputs, key);
-          await saveSession(db, inputs, flow.id, partId, key);
+          const targetPartId = existingPartId ?? (await savePart(db, inputs, key));
+          await saveSession(db, inputs, flow.id, targetPartId, key);
+          if (existingPartId) await touchPart(db, existingPartId);
         } else if (flow.kind === 'integration') {
           const intention = inputs.intention;
           if (typeof intention === 'string' && intention.trim()) {
@@ -108,7 +112,7 @@ export default function FlowEngine({ flow, onComplete }: Props) {
         console.warn('persist failed', e);
       }
     },
-    [db, flow.id, flow.kind, key],
+    [db, flow.id, flow.kind, key, existingPartId],
   );
 
   const handleExit = useCallback(async () => {
@@ -164,6 +168,18 @@ export default function FlowEngine({ flow, onComplete }: Props) {
         <FadeSlide duration={420}>
           <Text style={styles.closeBody}>{flow.exit.body}</Text>
         </FadeSlide>
+
+        {/* If the charge gate tripped on the final step, the offer would otherwise
+            never appear — surface it here on the close screen too. */}
+        {state.groundingOffered && flow.safety && (
+          <Pressable
+            style={styles.groundingBanner}
+            onPress={() => router.push(`/flow/${flow.safety!.onHighCharge}`)}>
+            <Text style={styles.groundingBannerText}>
+              That was intense. Would you like a moment to settle? →
+            </Text>
+          </Pressable>
+        )}
 
         {flow.kind === 'meeting' && !experimentSaved && (
           <View style={styles.experimentSeed}>

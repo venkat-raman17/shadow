@@ -2,6 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { encrypt, decrypt } from './crypto';
 import type { ExportEntry, ExportPart, ExportSession, ExportExperiment } from './export';
+import type { FlowInputs } from '@/types/flow';
 
 function generateId(): string {
   const bytes = new Uint8Array(16);
@@ -13,26 +14,204 @@ function generateId(): string {
     .join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
-import type { FlowInputs } from '@/types/flow';
 
 export interface EntryListItem {
   id: string;
   created_at: number;
   quality: string | null;
   charge: number | null;
+  /** Decrypted first line of the entry's subject — used as a readable teaser. */
+  subject: string | null;
+}
+
+interface EntryListRow {
+  id: string;
+  created_at: number;
+  quality: string | null;
+  charge: number | null;
+  subject_enc: string | null;
+}
+
+/** First non-empty line of a block of text, for use as a one-line teaser. */
+function firstLine(text: string | null): string | null {
+  if (!text) return null;
+  const line = text.split('\n').map((l) => l.trim()).find(Boolean);
+  return line ?? null;
+}
+
+function toListItem(row: EntryListRow, key: Uint8Array): EntryListItem {
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    quality: row.quality,
+    charge: row.charge,
+    subject: row.subject_enc ? firstLine(decrypt(row.subject_enc, key)) : null,
+  };
+}
+
+// A small, conservative table that folds clear morphological variants of the
+// same felt quality together (angry/anger, ashamed/shame). Deliberately NOT a
+// semantic thesaurus — we never lump distinct nuances the user chose on purpose
+// (e.g. "irritated" stays itself, not "anger"). Shipped in code: no AI, no network.
+const QUALITY_SYNONYMS: Record<string, string> = {
+  angry: 'anger',
+  anxious: 'anxiety',
+  worried: 'anxiety',
+  afraid: 'fear',
+  scared: 'fear',
+  fearful: 'fear',
+  sad: 'sadness',
+  grieving: 'grief',
+  ashamed: 'shame',
+  shameful: 'shame',
+  guilty: 'guilt',
+  lonely: 'loneliness',
+  jealous: 'jealousy',
+  envious: 'envy',
+  resentful: 'resentment',
+  numb: 'numbness',
+  tight: 'tightness',
+  heavy: 'heaviness',
+  restless: 'restlessness',
+  longing: 'longing',
+};
+
+/** Normalize a quality word to its family so casing/word-form variants group. */
+export function qualityFamily(quality: string): string {
+  const k = quality.trim().toLowerCase();
+  return QUALITY_SYNONYMS[k] ?? k;
 }
 
 export async function getRecentEntries(
   db: SQLiteDatabase,
+  key: Uint8Array,
   limit = 20,
 ): Promise<EntryListItem[]> {
-  return db.getAllAsync<EntryListItem>(
-    `SELECT id, created_at, quality, charge
+  const rows = await db.getAllAsync<EntryListRow>(
+    `SELECT id, created_at, quality, charge, subject_enc
      FROM entries
      ORDER BY created_at DESC
      LIMIT ?`,
     [limit],
   );
+  return rows.map((row) => toListItem(row, key));
+}
+
+export async function getEntriesByQuality(
+  db: SQLiteDatabase,
+  quality: string,
+  key: Uint8Array,
+  limit = 200,
+): Promise<EntryListItem[]> {
+  // Match by quality FAMILY so tapping a merged pattern (e.g. "anger") also
+  // surfaces its variants ("angry"). Filter before decrypting so we only ever
+  // decrypt the rows we actually return.
+  const target = qualityFamily(quality);
+  const rows = await db.getAllAsync<EntryListRow>(
+    `SELECT id, created_at, quality, charge, subject_enc
+     FROM entries
+     WHERE quality IS NOT NULL AND TRIM(quality) != ''
+     ORDER BY created_at DESC`,
+  );
+  return rows
+    .filter((row) => row.quality && qualityFamily(row.quality) === target)
+    .slice(0, limit)
+    .map((row) => toListItem(row, key));
+}
+
+export interface EntryDetail {
+  id: string;
+  created_at: number;
+  flow_id: string | null;
+  quality: string | null;
+  charge: number | null;
+  subject: string | null;
+  echo: string | null;
+  reclaim: string | null;
+}
+
+/**
+ * Load a single entry by primary key, decrypting the rich reflective fields
+ * (subject / echo / reclaim) that the list views never show. Returns null if
+ * no entry with that id exists.
+ */
+export async function getEntryById(
+  db: SQLiteDatabase,
+  id: string,
+  key: Uint8Array,
+): Promise<EntryDetail | null> {
+  const row = await db.getFirstAsync<{
+    id: string;
+    created_at: number;
+    flow_id: string | null;
+    quality: string | null;
+    charge: number | null;
+    subject_enc: string | null;
+    echo_enc: string | null;
+    reclaim_enc: string | null;
+  }>(
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc
+     FROM entries WHERE id = ?`,
+    [id],
+  );
+  if (!row) return null;
+  const dec = (val: string | null) => (val ? decrypt(val, key) : null);
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    flow_id: row.flow_id,
+    quality: row.quality,
+    charge: row.charge,
+    subject: dec(row.subject_enc),
+    echo: dec(row.echo_enc),
+    reclaim: dec(row.reclaim_enc),
+  };
+}
+
+export async function getEntryCount(db: SQLiteDatabase): Promise<number> {
+  const row = await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) as n FROM entries`);
+  return row?.n ?? 0;
+}
+
+/**
+ * Candidate older entries for the gentle "something you sat with before" card —
+ * only those with reflective content, older than the cutoff, newest first.
+ * Selection (and dismissal) happens in the hook; this just supplies the pool.
+ */
+export async function getResurfacingPool(
+  db: SQLiteDatabase,
+  key: Uint8Array,
+  cutoffMs: number,
+  limit = 12,
+): Promise<EntryDetail[]> {
+  const rows = await db.getAllAsync<{
+    id: string;
+    created_at: number;
+    flow_id: string | null;
+    quality: string | null;
+    charge: number | null;
+    subject_enc: string | null;
+    echo_enc: string | null;
+    reclaim_enc: string | null;
+  }>(
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc
+     FROM entries
+     WHERE created_at < ? AND (reclaim_enc IS NOT NULL OR subject_enc IS NOT NULL)
+     ORDER BY created_at DESC
+     LIMIT ?`,
+    [cutoffMs, limit],
+  );
+  const dec = (val: string | null) => (val ? decrypt(val, key) : null);
+  return rows.map((row) => ({
+    id: row.id,
+    created_at: row.created_at,
+    flow_id: row.flow_id,
+    quality: row.quality,
+    charge: row.charge,
+    subject: dec(row.subject_enc),
+    echo: dec(row.echo_enc),
+    reclaim: dec(row.reclaim_enc),
+  }));
 }
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase): Promise<void> {
@@ -215,24 +394,126 @@ export async function getParts(db: SQLiteDatabase): Promise<PartListItem[]> {
   );
 }
 
+export interface PartSessionItem {
+  id: string;
+  created_at: number;
+  charge_before: number | null;
+  charge_after: number | null;
+  /** Decrypted dialogue JSON ({d1..d5} for difficult, {origin} for golden). */
+  dialogue: string | null;
+  /** Decrypted need / golden-experiment text. */
+  need: string | null;
+}
+
+export interface PartDetail {
+  id: string;
+  name: string | null;
+  golden: number;
+  body_location: string | null;
+  created_at: number;
+  last_met_at: number | null;
+  /** Decrypted form JSON ({image, age} for difficult, {subject} for golden). */
+  form: string | null;
+  first_appeared: string | null;
+  sessions: PartSessionItem[];
+}
+
+/** Load a part with its full (decrypted) meeting history, newest first. */
+export async function getPartById(
+  db: SQLiteDatabase,
+  id: string,
+  key: Uint8Array,
+): Promise<PartDetail | null> {
+  const row = await db.getFirstAsync<{
+    id: string;
+    name: string | null;
+    form_enc: string | null;
+    body_location: string | null;
+    first_appeared_enc: string | null;
+    golden: number;
+    created_at: number;
+    last_met_at: number | null;
+  }>(
+    `SELECT id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at
+     FROM parts WHERE id = ?`,
+    [id],
+  );
+  if (!row) return null;
+
+  const sessionRows = await db.getAllAsync<{
+    id: string;
+    created_at: number;
+    charge_before: number | null;
+    charge_after: number | null;
+    dialogue_enc: string | null;
+    need_enc: string | null;
+  }>(
+    `SELECT id, created_at, charge_before, charge_after, dialogue_enc, need_enc
+     FROM sessions WHERE part_id = ? ORDER BY created_at DESC`,
+    [id],
+  );
+
+  const dec = (val: string | null) => (val ? decrypt(val, key) : null);
+  return {
+    id: row.id,
+    name: row.name,
+    golden: row.golden,
+    body_location: row.body_location,
+    created_at: row.created_at,
+    last_met_at: row.last_met_at,
+    form: dec(row.form_enc),
+    first_appeared: dec(row.first_appeared_enc),
+    sessions: sessionRows.map((s) => ({
+      id: s.id,
+      created_at: s.created_at,
+      charge_before: s.charge_before,
+      charge_after: s.charge_after,
+      dialogue: dec(s.dialogue_enc),
+      need: dec(s.need_enc),
+    })),
+  };
+}
+
+/** Bump a part's last-met timestamp (used when re-meeting an existing part). */
+export async function touchPart(db: SQLiteDatabase, id: string): Promise<void> {
+  await db.runAsync(`UPDATE parts SET last_met_at = ? WHERE id = ?`, [Date.now(), id]);
+}
+
 export interface SurfacingPattern {
   quality: string;
   count: number;
+  /** Most recent time this quality (family) surfaced, ms since epoch. */
+  lastAt: number;
 }
 
 export async function getSurfacingPatterns(
   db: SQLiteDatabase,
   limit = 5,
 ): Promise<SurfacingPattern[]> {
-  return db.getAllAsync<SurfacingPattern>(
-    `SELECT quality, COUNT(*) as count
+  // Group by normalized quality in SQL, then merge synonym families in JS,
+  // carrying the most-recent occurrence so the UI can speak to recency.
+  const rows = await db.getAllAsync<{ quality: string; count: number; last_at: number }>(
+    `SELECT LOWER(TRIM(quality)) as quality, COUNT(*) as count, MAX(created_at) as last_at
      FROM entries
-     WHERE quality IS NOT NULL AND quality != ''
-     GROUP BY quality
-     ORDER BY count DESC
-     LIMIT ?`,
-    [limit],
+     WHERE quality IS NOT NULL AND TRIM(quality) != ''
+     GROUP BY LOWER(TRIM(quality))`,
   );
+
+  const merged = new Map<string, SurfacingPattern>();
+  for (const row of rows) {
+    const fam = qualityFamily(row.quality);
+    const existing = merged.get(fam);
+    if (existing) {
+      existing.count += row.count;
+      existing.lastAt = Math.max(existing.lastAt, row.last_at);
+    } else {
+      merged.set(fam, { quality: fam, count: row.count, lastAt: row.last_at });
+    }
+  }
+
+  return Array.from(merged.values())
+    .sort((a, b) => b.count - a.count || b.lastAt - a.lastAt)
+    .slice(0, limit);
 }
 
 export interface ExperimentItem {
