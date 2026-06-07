@@ -1,9 +1,10 @@
 import React, { useCallback, useReducer, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Screen, Button, TextField, FadeSlide } from '@/components/ui';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
 import { saveEntry, savePart, saveSession, addExperiment } from '@/lib/db';
 import { useCrypto } from '@/context/CryptoContext';
@@ -157,42 +158,32 @@ export default function FlowEngine({ flow, onComplete }: Props) {
     [flow, state, persist],
   );
 
-  // Grounding offer banner
-  if (state.groundingOffered && !state.done && !state.exiting) {
-    const step = flow.steps[state.stepIndex];
-    // Only show the offer once and only if not already on the last step
-    if (state.stepIndex < flow.steps.length) {
-      // rendered below as a non-blocking banner — handled inline in step render
-    }
-  }
-
   if (state.done) {
     return (
-      <View style={styles.closeScreen}>
-        <Text style={styles.closeBody}>{flow.exit.body}</Text>
+      <Screen center>
+        <FadeSlide duration={420}>
+          <Text style={styles.closeBody}>{flow.exit.body}</Text>
+        </FadeSlide>
 
         {flow.kind === 'meeting' && !experimentSaved && (
           <View style={styles.experimentSeed}>
             <Text style={styles.experimentLabel}>Want to carry something into the week?</Text>
-            <TextInput
-              style={styles.experimentInput}
+            <TextField
               value={experimentText}
               onChangeText={setExperimentText}
               placeholder="Something small and real… (optional)"
-              placeholderTextColor={colors.textSecondary}
               multiline
-              textAlignVertical="top"
             />
             {experimentText.trim().length > 0 && (
-              <TouchableOpacity
-                style={styles.experimentBtn}
+              <Button
+                label="Save for the week"
+                variant="secondary"
                 onPress={async () => {
                   if (!key) return;
                   await addExperiment(db, experimentText.trim(), key);
                   setExperimentSaved(true);
-                }}>
-                <Text style={styles.experimentBtnText}>Save for the week</Text>
-              </TouchableOpacity>
+                }}
+              />
             )}
           </View>
         )}
@@ -201,10 +192,8 @@ export default function FlowEngine({ flow, onComplete }: Props) {
           <Text style={styles.experimentConfirm}>Saved to your experiments.</Text>
         )}
 
-        <TouchableOpacity style={styles.closeBtn} onPress={onComplete}>
-          <Text style={styles.closeBtnText}>Done</Text>
-        </TouchableOpacity>
-      </View>
+        <Button label="Done" variant="secondary" onPress={onComplete} />
+      </Screen>
     );
   }
 
@@ -215,19 +204,37 @@ export default function FlowEngine({ flow, onComplete }: Props) {
 
   const groundingBanner =
     state.groundingOffered && flow.safety ? (
-      <TouchableOpacity
+      <Pressable
         style={styles.groundingBanner}
         onPress={() => router.push(`/flow/${flow.safety!.onHighCharge}`)}>
         <Text style={styles.groundingBannerText}>
           That was intense. Would you like a moment to settle? →
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     ) : null;
 
   return (
     <View style={styles.root}>
       {groundingBanner}
-      <StepRouter key={currentStep.id} step={currentStep} {...stepProps} />
+      <FlowProgress current={state.stepIndex} total={flow.steps.length} />
+      <FadeSlide key={currentStep.id} style={styles.stepFill}>
+        <StepRouter step={currentStep} {...stepProps} />
+      </FadeSlide>
+    </View>
+  );
+}
+
+// A quiet sense of progress — faint dots that fill as you move through the flow.
+// Deliberately not a precise bar: branching makes exact counts fuzzy, and calm
+// beats precise here. Caps the dot count so long flows never overflow.
+function FlowProgress({ current, total }: { current: number; total: number }) {
+  const count = Math.min(total, 9);
+  const filledThrough = Math.round(((current + 1) / total) * count);
+  return (
+    <View style={styles.progress}>
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={[styles.progressDot, i < filledThrough && styles.progressDotFilled]} />
+      ))}
     </View>
   );
 }
@@ -271,36 +278,35 @@ function StepRouter({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  closeScreen: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: Spacing.four,
-    paddingTop: Spacing.six,
-    gap: Spacing.five,
-    justifyContent: 'center',
-  },
+  stepFill: { flex: 1 },
   closeBody: {
-    ...typography.heading,
-    fontSize: 20,
-    lineHeight: 32,
-    color: colors.textSecondary,
+    ...typography.display,
+    fontSize: 26,
+    lineHeight: 38,
+    color: colors.textPrimary,
     textAlign: 'center',
   },
-  closeBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+  progress: {
+    flexDirection: 'row',
+    gap: Spacing.one + Spacing.half,
+    justifyContent: 'center',
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.one,
   },
-  closeBtnText: { ...typography.body, fontWeight: '500' },
+  progressDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.border,
+  },
+  progressDotFilled: { backgroundColor: colors.accentMuted },
   groundingBanner: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.accentSoft,
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: Spacing.two + Spacing.half,
+    borderRadius: radii.md,
+    marginHorizontal: Spacing.three,
+    marginTop: Spacing.two,
   },
   groundingBannerText: {
     ...typography.bodySmall,
@@ -308,31 +314,11 @@ const styles = StyleSheet.create({
   },
   experimentSeed: {
     gap: Spacing.two,
+    alignSelf: 'stretch',
   },
   experimentLabel: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-  },
-  experimentInput: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    padding: Spacing.three,
-    ...typography.body,
-    minHeight: 80,
-  },
-  experimentBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: Spacing.two + Spacing.half,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  experimentBtnText: {
-    ...typography.bodySmall,
-    color: colors.accent,
   },
   experimentConfirm: {
     ...typography.caption,

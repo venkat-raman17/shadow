@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 
 import { colors, typography, Spacing } from '@/constants/theme';
+import { Screen, Button } from '@/components/ui';
 import type { ScaleStep as ScaleStepType } from '@/types/flow';
 
 interface Props {
@@ -11,12 +12,12 @@ interface Props {
   onExit: () => void;
 }
 
-export default function ScaleStep({ step, onNext, onExit }: Props) {
+export default function ScaleStep({ step, onNext }: Props) {
   const mid = Math.round((step.min + step.max) / 2);
   const [value, setValue] = useState(mid);
 
   return (
-    <View style={styles.container}>
+    <Screen scroll={false}>
       <Text style={styles.title}>{step.title}</Text>
       {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
 
@@ -39,48 +40,25 @@ export default function ScaleStep({ step, onNext, onExit }: Props) {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.nextBtn} onPress={() => onNext(value)}>
-        <Text style={styles.nextBtnText}>Continue</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.spacer} />
+      <Button label="Continue" onPress={() => onNext(value)} />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.four,
-  },
-  title: { ...typography.heading },
+  title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
-  sliderWrapper: {
-    gap: Spacing.two,
-    marginTop: Spacing.three,
-  },
+  sliderWrapper: { gap: Spacing.two, marginTop: Spacing.three },
   valueLabel: {
-    ...typography.heading,
-    fontSize: 40,
+    ...typography.displaySmall,
+    fontSize: 36,
+    lineHeight: 44,
     textAlign: 'center',
     color: colors.accent,
   },
   slider: { width: '100%', height: 40 },
-  rangeLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
+  rangeLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   rangeLabel: { ...typography.caption },
-  nextBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  nextBtnText: {
-    ...typography.body,
-    fontWeight: '500',
-    color: colors.background,
-  },
+  spacer: { flex: 1 },
 });

@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { colors, typography } from '@/constants/theme';
+import { Screen, TextField, Button } from '@/components/ui';
 import type { DialogueStep as DialogueStepType } from '@/types/flow';
 
 interface Props {
@@ -23,82 +17,37 @@ export default function DialogueStep({ step, onNext, onExit }: Props) {
   const speakerLabel = step.speaker === 'you' ? 'You' : 'The part';
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled">
+    <Screen>
       <Text style={styles.speakerLabel}>{speakerLabel}</Text>
       <Text style={styles.prompt}>{step.prompt}</Text>
       {step.hint ? <Text style={styles.hint}>{step.hint}</Text> : null}
 
-      <TextInput
-        style={styles.input}
+      <TextField
+        large
         multiline
         value={value}
         onChangeText={setValue}
         placeholder="Write as this voice…"
-        placeholderTextColor={colors.textSecondary}
-        textAlignVertical="top"
         autoFocus
       />
 
-      <TouchableOpacity style={styles.nextBtn} onPress={() => onNext(value.trim() || undefined)}>
-        <Text style={styles.nextBtnText}>Continue</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.stopLink} onPress={onExit}>
-        <Text style={styles.stopLinkText}>Stop here</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      <Button label="Continue" onPress={() => onNext(value.trim() || undefined)} />
+      <Button label="Stop here" variant="ghost" onPress={onExit} />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: colors.background },
-  container: {
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.three,
-    flexGrow: 1,
-  },
   speakerLabel: {
     ...typography.caption,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     color: colors.accent,
   },
-  prompt: { ...typography.heading },
+  prompt: { ...typography.serifPrompt },
   hint: {
     ...typography.bodySmall,
     color: colors.textSecondary,
     fontStyle: 'italic',
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: Spacing.three,
-    ...typography.body,
-    minHeight: 160,
-  },
-  nextBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  nextBtnText: {
-    ...typography.body,
-    fontWeight: '500',
-    color: colors.background,
-  },
-  stopLink: {
-    alignItems: 'center',
-    paddingVertical: Spacing.two,
-  },
-  stopLinkText: {
-    ...typography.caption,
-    textDecorationLine: 'underline',
   },
 });
