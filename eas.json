@@ -19,7 +19,8 @@
         "buildType": "apk"
       },
       "ios": {
-        "distribution": "store"
+        "distribution": "store",
+        "autoIncrement": true
       }
     },
     "production": {
