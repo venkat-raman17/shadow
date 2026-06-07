@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { colors, typography, Spacing } from '@/constants/theme';
+import { Screen, Card, Button } from '@/components/ui';
 import type { ExitOfferStep as ExitOfferStepType } from '@/types/flow';
 
 interface Props {
@@ -12,60 +13,22 @@ interface Props {
 
 export default function ExitOfferStep({ step, onNext, onExit }: Props) {
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
+    <Screen center>
+      <Card>
         <Text style={styles.body}>
-          {step.body ?? "You can stop here. That’s enough."}
+          {step.body ?? 'You can stop here. That’s enough.'}
         </Text>
-      </View>
+      </Card>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.stopBtn} onPress={onExit}>
-          <Text style={styles.stopBtnText}>Stop here</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.keepGoingBtn} onPress={() => onNext()}>
-          <Text style={styles.keepGoingBtnText}>Keep going</Text>
-        </TouchableOpacity>
+        <Button label="Stop here" variant="secondary" onPress={onExit} />
+        <Button label="Keep going" onPress={() => onNext()} />
       </View>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.four,
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: Spacing.four,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  body: { ...typography.body, color: colors.textSecondary, lineHeight: 28 },
+  body: { ...typography.serifBody, color: colors.textPrimary },
   actions: { gap: Spacing.two },
-  stopBtn: {
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  stopBtnText: { ...typography.body, fontWeight: '500' },
-  keepGoingBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  keepGoingBtnText: {
-    ...typography.body,
-    fontWeight: '500',
-    color: colors.background,
-  },
 });

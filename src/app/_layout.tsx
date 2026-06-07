@@ -3,6 +3,11 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Stack, SplashScreen } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import * as Notifications from 'expo-notifications';
+import {
+  useFonts,
+  Newsreader_400Regular,
+  Newsreader_500Medium,
+} from '@expo-google-fonts/newsreader';
 import { getItem } from '@/lib/kv';
 
 // Show notifications when the app is in the foreground (e.g. user is in the app
@@ -36,13 +41,21 @@ function RootNavigator() {
   const { ready: cryptoReady } = useCrypto();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
+  // Load the serif display font. If it fails, proceed anyway — text falls back
+  // to the platform serif rather than blocking the app behind the splash.
+  const [fontsLoaded, fontError] = useFonts({
+    Newsreader_400Regular,
+    Newsreader_500Medium,
+  });
+
   useEffect(() => {
     getItem('shadow.onboarding_complete').then((val) => {
       setOnboardingDone(val === 'true');
     });
   }, []);
 
-  const appReady = cryptoReady && onboardingDone !== null;
+  const appReady =
+    cryptoReady && onboardingDone !== null && (fontsLoaded || !!fontError);
 
   useEffect(() => {
     if (appReady) {
@@ -72,7 +85,7 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="reflect/[id]"
-          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Integration' }}
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Reflections' }}
         />
         <Stack.Screen name="history" />
       </Stack.Protected>

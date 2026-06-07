@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+  cancelAnimation,
+} from 'react-native-reanimated';
 
 import { colors, typography, Spacing } from '@/constants/theme';
+import { Screen, Button } from '@/components/ui';
 import type { PauseStep as PauseStepType } from '@/types/flow';
 
 interface Props {
@@ -10,10 +19,13 @@ interface Props {
   onExit: () => void;
 }
 
+const BREATH_MS = 4000;
+
 export default function PauseStep({ step, onNext }: Props) {
   const [remaining, setRemaining] = useState(step.seconds);
   const [done, setDone] = useState(false);
 
+  // Countdown gates the Skip → Continue transition (no visible number).
   useEffect(() => {
     if (remaining <= 0) {
       setDone(true);
@@ -23,82 +35,68 @@ export default function PauseStep({ step, onNext }: Props) {
     return () => clearTimeout(t);
   }, [remaining]);
 
-  return (
-    <View style={styles.container}>
-      {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
+  // Breathing animation. reanimated runs on web, but we keep a static circle
+  // there to avoid any worklet edge cases in the static web output.
+  const scale = useSharedValue(1);
+  const isWeb = Platform.OS === 'web';
 
-      <View style={styles.timerWrapper}>
-        {done ? (
-          <Text style={styles.doneText}>Ready when you are.</Text>
-        ) : (
-          <Text style={styles.timer}>{remaining}</Text>
-        )}
+  useEffect(() => {
+    if (isWeb) return;
+    scale.value = withRepeat(
+      withTiming(1.22, { duration: BREATH_MS, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true,
+    );
+    return () => cancelAnimation(scale);
+  }, [isWeb, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <Screen scroll={false} center>
+      <View style={styles.inner}>
+        {step.body ? <Text style={styles.body}>{step.body}</Text> : null}
+
+        <View style={styles.circleWrap}>
+          <Animated.View style={[styles.circle, animatedStyle]} />
+        </View>
+
+        <Text style={styles.hint}>{done ? 'Ready when you are.' : 'Breathe…'}</Text>
       </View>
 
-      <TouchableOpacity
-        style={[styles.nextBtn, !done && styles.nextBtnSkip]}
-        onPress={() => onNext()}>
-        <Text style={[styles.nextBtnText, !done && styles.nextBtnTextSkip]}>
-          {done ? 'Continue' : 'Skip'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+      <Button
+        label={done ? 'Continue' : 'Skip'}
+        variant={done ? 'primary' : 'secondary'}
+        onPress={() => onNext()}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.four,
+  inner: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.five },
+  body: {
+    ...typography.serifBody,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  circleWrap: {
+    width: 180,
+    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  body: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 28,
-  },
-  timerWrapper: {
+  circle: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: Spacing.four,
-  },
-  timer: {
-    ...typography.heading,
-    fontSize: 40,
-    color: colors.accent,
-  },
-  doneText: {
-    ...typography.bodySmall,
-    textAlign: 'center',
-  },
-  nextBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: 12,
-    padding: Spacing.three,
-    alignItems: 'center',
-    alignSelf: 'stretch',
-  },
-  nextBtnSkip: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.accentMuted,
   },
-  nextBtnText: {
-    ...typography.body,
-    fontWeight: '500',
-    color: colors.background,
-  },
-  nextBtnTextSkip: {
+  hint: {
+    ...typography.caption,
     color: colors.textSecondary,
+    textAlign: 'center',
   },
 });
