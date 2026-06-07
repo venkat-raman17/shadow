@@ -32,9 +32,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="integration"
         options={{
-          title: 'Integration',
+          title: 'Reflections',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'square.stack', web: 'layers' }} size={24} tintColor={color} />
+            <SymbolView name={{ ios: 'book.closed', web: 'menu_book' }} size={24} tintColor={color} />
           ),
         }}
       />

@@ -85,7 +85,7 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="reflect/[id]"
-          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Integration' }}
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Reflections' }}
         />
         <Stack.Screen name="history" />
       </Stack.Protected>

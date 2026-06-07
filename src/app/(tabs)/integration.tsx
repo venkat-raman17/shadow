@@ -1,16 +1,11 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 
-import { colors, typography, Spacing, BottomTabInset } from '@/constants/theme';
+import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Screen, Card, SectionHeader, Button } from '@/components/ui';
+import { ChargeDots } from '@/components/ChargeDots';
 import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
 import { useRecentEntries } from '@/hooks/useEntries';
 import {
@@ -40,25 +35,15 @@ function formatDateTime(ms: number): string {
   }).format(new Date(ms));
 }
 
-function ChargeDots({ charge }: { charge: number }) {
-  return (
-    <View style={styles.dots}>
-      {Array.from({ length: 10 }, (_, i) => (
-        <View key={i} style={[styles.dot, i < charge ? styles.dotFilled : styles.dotEmpty]} />
-      ))}
-    </View>
-  );
-}
-
 function EntryRow({ entry }: { entry: EntryListItem }) {
   return (
-    <View style={styles.entryRow}>
+    <Card>
       <View style={styles.entryMeta}>
         <Text style={styles.entryDate}>{formatDateTime(entry.created_at)}</Text>
         {entry.quality ? <Text style={styles.entryQuality}>{entry.quality}</Text> : null}
       </View>
       {entry.charge !== null ? <ChargeDots charge={entry.charge} /> : null}
-    </View>
+    </Card>
   );
 }
 
@@ -70,22 +55,14 @@ function patternSentence(quality: string, count: number): string {
 
 function PartCard({ part }: { part: PartListItem }) {
   return (
-    <View style={styles.card}>
+    <Card>
       <View style={styles.partHeader}>
         <Text style={styles.partName}>{part.name ?? 'Unnamed part'}</Text>
         {part.golden === 1 ? <View style={styles.goldenDot} /> : null}
       </View>
-      {part.body_location ? (
-        <Text style={styles.partMeta}>{part.body_location}</Text>
-      ) : null}
-      <Text style={styles.partDate}>First met {formatDate(part.created_at)}</Text>
-    </View>
-  );
-}
-
-function PatternRow({ pattern }: { pattern: SurfacingPattern }) {
-  return (
-    <Text style={styles.patternText}>{patternSentence(pattern.quality, pattern.count)}</Text>
+      {part.body_location ? <Text style={styles.partMeta}>{part.body_location}</Text> : null}
+      <Text style={styles.partMeta}>First met {formatDate(part.created_at)}</Text>
+    </Card>
   );
 }
 
@@ -102,40 +79,43 @@ function ExperimentCard({
   const needsReflection = isOpen && Date.now() - experiment.created_at > REFLECT_AGE_MS;
 
   return (
-    <View style={[styles.card, !isOpen && styles.cardMuted]}>
+    <Card muted={!isOpen}>
       <Text style={[styles.experimentDescription, !isOpen && styles.textMuted]}>
         {experiment.description}
       </Text>
       {!isOpen && (
-        <Text style={styles.statusLabel}>
-          {experiment.status === 'done' ? 'Done' : 'Let go'}
-        </Text>
+        <Text style={styles.statusLabel}>{experiment.status === 'done' ? 'Done' : 'Let go'}</Text>
       )}
       {isOpen && (
         <View style={styles.statusActions}>
-          <TouchableOpacity
+          <Button
+            label="Done"
+            variant="secondary"
+            fullWidth={false}
+            onPress={() => onStatusChange(experiment.id, 'done')}
             style={styles.statusBtn}
-            onPress={() => onStatusChange(experiment.id, 'done')}>
-            <Text style={styles.statusBtnText}>Done</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          />
+          <Button
+            label="Let it go"
+            variant="secondary"
+            fullWidth={false}
+            onPress={() => onStatusChange(experiment.id, 'let-go')}
             style={styles.statusBtn}
-            onPress={() => onStatusChange(experiment.id, 'let-go')}>
-            <Text style={styles.statusBtnText}>Let it go</Text>
-          </TouchableOpacity>
+          />
         </View>
       )}
       {needsReflection && (
-        <TouchableOpacity
-          onPress={() => router.push({ pathname: '/reflect/[id]', params: { id: experiment.id } })}>
-          <Text style={styles.reflectLink}>Reflect on this →</Text>
-        </TouchableOpacity>
+        <Button
+          label="Reflect on this →"
+          variant="ghost"
+          onPress={() => router.push({ pathname: '/reflect/[id]', params: { id: experiment.id } })}
+        />
       )}
-    </View>
+    </Card>
   );
 }
 
-export default function IntegrationScreen() {
+export default function ReflectionsScreen() {
   const db = useSQLiteContext();
   const parts = useParts();
   const patterns = useSurfacingPatterns();
@@ -157,126 +137,97 @@ export default function IntegrationScreen() {
 
   async function handleStatusChange(id: string, status: 'done' | 'let-go') {
     await updateExperimentStatus(db, id, status);
-    setExperiments((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status } : e)),
-    );
+    setExperiments((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.heading}>Integration</Text>
-        <Text style={styles.tagline}>What you've been sitting with.</Text>
+    <Screen withTabBar>
+      <Text style={styles.heading}>Reflections</Text>
+      <Text style={styles.tagline}>What you&apos;ve been sitting with.</Text>
 
-        <View style={styles.divider} />
+      {isEmpty && (
+        <Text style={styles.empty}>
+          Nothing here yet. Come back after noticing a few reactions or sitting with a part.
+        </Text>
+      )}
 
-        {isEmpty && (
-          <Text style={styles.empty}>
-            Nothing here yet. Come back after noticing a few reactions or sitting with a part.
+      {hasPriorWork && (
+        <Card onPress={() => router.push('/flow/integration.after_meeting.v1')} style={styles.carryCard}>
+          <Text style={styles.carryLabel}>Carry something forward</Text>
+          <Text style={styles.carryBody}>
+            Turn what you&apos;ve sat with into one small thing you can do this week.
           </Text>
-        )}
+          <Text style={styles.carryCta}>Begin →</Text>
+        </Card>
+      )}
 
-        {hasPriorWork && (
-          <TouchableOpacity
-            style={styles.carryCard}
-            onPress={() => router.push('/flow/integration.after_meeting.v1')}>
-            <Text style={styles.carryLabel}>Carry something forward</Text>
-            <Text style={styles.carryBody}>
-              Turn what you've sat with into one small thing you can do this week.
+      {parts.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader>Parts you&apos;ve sat with</SectionHeader>
+          {parts.map((part) => (
+            <PartCard key={part.id} part={part} />
+          ))}
+        </View>
+      )}
+
+      {patterns.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader>What keeps surfacing</SectionHeader>
+          {patterns.map((p) => (
+            <Text key={p.quality} style={styles.patternText}>
+              {patternSentence(p.quality, p.count)}
             </Text>
-            <Text style={styles.carryCta}>Begin →</Text>
-          </TouchableOpacity>
-        )}
+          ))}
+        </View>
+      )}
 
-        {parts.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Parts you've sat with</Text>
-            {parts.map((part) => (
-              <PartCard key={part.id} part={part} />
-            ))}
-          </View>
-        )}
+      {experiments.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader>Experiments</SectionHeader>
+          {openExperiments.map((e) => (
+            <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
+          ))}
+          {closedExperiments.length > 0 && openExperiments.length > 0 && (
+            <View style={styles.closedDivider} />
+          )}
+          {closedExperiments.map((e) => (
+            <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
+          ))}
+        </View>
+      )}
 
-        {patterns.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>What keeps surfacing</Text>
-            {patterns.map((p) => (
-              <PatternRow key={p.quality} pattern={p} />
-            ))}
-          </View>
-        )}
-
-        {experiments.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Experiments</Text>
-            {openExperiments.map((e) => (
-              <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
-            ))}
-            {closedExperiments.length > 0 && openExperiments.length > 0 && (
-              <View style={styles.closedDivider} />
-            )}
-            {closedExperiments.map((e) => (
-              <ExperimentCard key={e.id} experiment={e} onStatusChange={handleStatusChange} />
-            ))}
-          </View>
-        )}
-
-        {entries.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Recently noticed</Text>
-            {shownEntries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} />
-            ))}
-            {hasMoreEntries && (
-              <TouchableOpacity
-                style={styles.seeAllLink}
-                onPress={() => router.push('/history')}>
-                <Text style={styles.seeAllText}>See all →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+      {entries.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader>Recently noticed</SectionHeader>
+          {shownEntries.map((entry) => (
+            <EntryRow key={entry.id} entry={entry} />
+          ))}
+          {hasMoreEntries && (
+            <Button label="See all →" variant="ghost" onPress={() => router.push('/history')} />
+          )}
+        </View>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  container: {
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.four,
-    flexGrow: 1,
-  },
-  heading: { ...typography.heading, fontSize: 26, lineHeight: 34 },
-  tagline: { ...typography.body, color: colors.textSecondary, lineHeight: 26 },
-  divider: { height: 1, backgroundColor: colors.border },
+  heading: { ...typography.display },
+  tagline: { ...typography.body, color: colors.textSecondary },
   empty: {
-    ...typography.body,
+    ...typography.serifBody,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 26,
     marginTop: Spacing.four,
   },
   section: { gap: Spacing.two },
-  sectionLabel: {
-    ...typography.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.textSecondary,
-    marginBottom: Spacing.one,
-  },
 
-  // Carry forward entry
+  // Carry forward
   carryCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.accentMuted,
     padding: Spacing.four,
     gap: Spacing.two,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   carryLabel: {
     ...typography.caption,
@@ -288,74 +239,24 @@ const styles = StyleSheet.create({
   carryCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
 
   // Recently noticed
-  entryRow: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: Spacing.three,
-    gap: Spacing.two,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   entryMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   entryDate: { ...typography.caption, color: colors.textSecondary },
   entryQuality: { ...typography.bodySmall, fontStyle: 'italic' },
-  dots: { flexDirection: 'row', gap: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  dotFilled: { backgroundColor: colors.accentWarm },
-  dotEmpty: { backgroundColor: colors.border },
-  seeAllLink: { alignSelf: 'flex-end', paddingTop: Spacing.one },
-  seeAllText: { ...typography.caption, color: colors.accent },
 
-  // Part card
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: Spacing.three,
-    gap: Spacing.one,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardMuted: { opacity: 0.55 },
+  // Parts
   partHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   partName: { ...typography.body, fontWeight: '500', flex: 1 },
-  goldenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.accentWarm,
-  },
+  goldenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accentWarm },
   partMeta: { ...typography.caption, color: colors.textSecondary },
-  partDate: { ...typography.caption, color: colors.textSecondary },
 
   // Patterns
-  patternText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    lineHeight: 26,
-  },
+  patternText: { ...typography.serifBody, color: colors.textSecondary },
 
   // Experiments
   experimentDescription: { ...typography.body, lineHeight: 24 },
   textMuted: { color: colors.textSecondary },
   statusLabel: { ...typography.caption, color: colors.textSecondary, marginTop: Spacing.one },
-  statusActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    marginTop: Spacing.two,
-  },
-  statusBtn: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: Spacing.one + Spacing.half,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statusBtnText: { ...typography.caption, color: colors.textSecondary },
+  statusActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  statusBtn: { flex: 1, paddingVertical: Spacing.two, borderRadius: radii.sm },
   closedDivider: { height: 1, backgroundColor: colors.border, marginVertical: Spacing.one },
-  reflectLink: {
-    ...typography.caption,
-    color: colors.accent,
-    marginTop: Spacing.one,
-  },
 });
