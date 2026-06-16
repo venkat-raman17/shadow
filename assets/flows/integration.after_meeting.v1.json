@@ -22,14 +22,19 @@
       "placeholder": "A sentence or two…"
     },
     {
+      "id": "if_then_prime",
+      "type": "passage",
+      "body": "The strongest intentions name the moment in advance.\n\nNot 'I'll be braver' — but 'Next time this exact thing happens, I will do that.' You're deciding ahead of time, so when the old reflex shows up, it doesn't get the only vote.\n\nIt works because you've already chosen."
+    },
+    {
       "id": "intention",
       "type": "prompt",
-      "title": "What's one thing you can do differently this week?",
-      "body": "Not a transformation. One moment, one relationship, one choice where this insight gets to live.",
+      "title": "Write it as a plan: Next time ___, I will ___.",
+      "body": "Name the trigger and the small action together. One moment, one choice where this insight gets to live. Keep it small enough that you'll actually do it.",
       "inputKey": "intention",
       "multiline": true,
       "optional": false,
-      "placeholder": "Something small, specific, and possible…"
+      "placeholder": "Next time I feel the urge to shrink in a meeting, I will say one sentence before I talk myself out of it."
     },
     {
       "id": "obstacle",
@@ -45,7 +50,7 @@
   ],
   "exit": {
     "type": "close",
-    "body": "Your intention is saved in the Integration tab. The distance between insight and living it closes one act at a time.",
+    "body": "Your plan is saved in the Reflections tab. The distance between insight and living it closes one act at a time.",
     "celebrate": false
   }
 }

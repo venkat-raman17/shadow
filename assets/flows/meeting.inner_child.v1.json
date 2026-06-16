@@ -1,0 +1,134 @@
+{
+  "id": "meeting.inner_child.v1",
+  "kind": "meeting",
+  "title": "Meet your younger self",
+  "subtitle": "A gentle written meeting with the child you once were.",
+  "estimatedMinutes": 15,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "chargeAfter",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "You're about to meet a younger part of yourself — the child you once were.\n\nGo gently. If you're feeling far from yourself right now, or hearing voices that aren't your own thoughts, this isn't the practice for this moment. The Support tab is there for you."
+    },
+    {
+      "id": "entry_breath",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Take a breath. Let yourself arrive here."
+    },
+    {
+      "id": "consent",
+      "type": "exitOffer",
+      "body": "Ready to meet them? You can also stop here — they'll be waiting whenever you come back."
+    },
+    {
+      "id": "name",
+      "type": "prompt",
+      "title": "What would you call this younger part of you?",
+      "body": "A name, an age, a nickname you went by. Whatever fits.",
+      "inputKey": "partName",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Little one, my younger self, a nickname…"
+    },
+    {
+      "id": "image",
+      "type": "prompt",
+      "title": "Picture them. What do they look like?",
+      "body": "What they're wearing, where they are, the look on their face. Let an image arrive.",
+      "inputKey": "partImage",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Don't analyze — just describe what appears."
+    },
+    {
+      "id": "age",
+      "type": "prompt",
+      "title": "How old do they feel?",
+      "inputKey": "partAge",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "An age, or a season of life…"
+    },
+    {
+      "id": "anchor",
+      "type": "passage",
+      "body": "Before you speak to them, rest a hand on your chest.\n\nLet them feel that you're here now — grown, and on their side. You made it. You came back for them."
+    },
+    {
+      "id": "d1",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let them speak first. What do they want to say to you — or ask you? Write as them.",
+      "hint": "Don't plan it. Let it surprise you.",
+      "inputKey": "dialogue_1"
+    },
+    {
+      "id": "d2",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What do you say back to them?",
+      "inputKey": "dialogue_2"
+    },
+    {
+      "id": "d3",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Ask them: what did you most need, back then? Write their answer in their words.",
+      "inputKey": "dialogue_3"
+    },
+    {
+      "id": "breathe",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Stay with what they told you for a moment. There's no rush to respond."
+    },
+    {
+      "id": "d4",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What do you want them to know — from where you stand now?",
+      "inputKey": "dialogue_4"
+    },
+    {
+      "id": "d5",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let them respond. What do they feel, hearing that?",
+      "inputKey": "dialogue_5"
+    },
+    {
+      "id": "need",
+      "type": "prompt",
+      "title": "What does this younger part need from you now?",
+      "body": "One honest thing. It might be small. It might be something you've never offered them before.",
+      "inputKey": "need",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "aftercare",
+      "type": "scale",
+      "title": "How are you right now?",
+      "body": "After meeting a younger self, the charge sometimes shifts. Just notice.",
+      "inputKey": "chargeAfter",
+      "min": 0,
+      "max": 10,
+      "minLabel": "settled",
+      "maxLabel": "still stirred up"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "That's enough for today. The child you were is still in there — and now they know you came back for them. What surfaced can get louder before it eases; that's normal, and you're still safe.",
+    "celebrate": false
+  }
+}

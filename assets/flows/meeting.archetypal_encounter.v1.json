@@ -1,0 +1,122 @@
+{
+  "id": "meeting.archetypal_encounter.v1",
+  "kind": "meeting",
+  "title": "Sit with what you already know",
+  "subtitle": "A quieter dialogue with the steadier, deeper part of you.",
+  "estimatedMinutes": 12,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "chargeBefore",
+    "threshold": 5,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "This is a quieter practice.\n\nYou're not meeting a wounded part now, but a part of you that already knows something — call it a deeper steadiness, an inner ground. It speaks best when you're reasonably settled. Whatever comes will be yours, not a voice from outside."
+    },
+    {
+      "id": "entry_charge",
+      "type": "scale",
+      "title": "How settled do you feel, coming in?",
+      "body": "An honest read. There's no wrong answer.",
+      "inputKey": "chargeBefore",
+      "min": 0,
+      "max": 10,
+      "minLabel": "settled",
+      "maxLabel": "stirred up",
+      "branch": [
+        { "when": { "inputKey": "chargeBefore", "gte": 5 }, "goTo": "settle_first" },
+        { "when": { "inputKey": "chargeBefore", "lte": 4 }, "goTo": "arrive" }
+      ]
+    },
+    {
+      "id": "settle_first",
+      "type": "exitOffer",
+      "body": "There's some charge here, and this practice asks for a steady base. You might settle first — the grounding practice is on the home screen — and come back. Or, if you feel steady enough, keep going. Your call."
+    },
+    {
+      "id": "arrive",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Take a few slow breaths. Let yourself settle into the present, into your body, into the chair."
+    },
+    {
+      "id": "invite",
+      "type": "prompt",
+      "title": "Is there an image for this deeper knowing in you?",
+      "body": "A figure, a presence, a place, a steadiness. What would you call it?",
+      "inputKey": "partName",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "A still figure, a light, a quiet voice, a wide place…"
+    },
+    {
+      "id": "image",
+      "type": "prompt",
+      "title": "What does it look or feel like?",
+      "inputKey": "partImage",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Let it take a shape."
+    },
+    {
+      "id": "d1",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let this part speak. What does it want you to know right now? Write as it.",
+      "hint": "Let it surprise you — this isn't the advice you'd reach for on your own.",
+      "inputKey": "dialogue_1"
+    },
+    {
+      "id": "d2",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What do you want to ask it?",
+      "inputKey": "dialogue_2"
+    },
+    {
+      "id": "d3",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let it answer, in its own words.",
+      "inputKey": "dialogue_3"
+    },
+    {
+      "id": "breathe",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Sit with that for a moment. Let it land."
+    },
+    {
+      "id": "d4",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "Anything you want to say back?",
+      "inputKey": "dialogue_4"
+    },
+    {
+      "id": "d5",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let it offer one last thing before you go.",
+      "inputKey": "dialogue_5"
+    },
+    {
+      "id": "carry",
+      "type": "prompt",
+      "title": "What, of what this part knows, do you want to carry with you?",
+      "inputKey": "need",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Whatever came, it came from you. That knowing was yours all along — you just made room to hear it.",
+    "celebrate": false
+  }
+}

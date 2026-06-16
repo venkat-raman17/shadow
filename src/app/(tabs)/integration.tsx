@@ -168,6 +168,10 @@ export default function ReflectionsScreen() {
           {patterns.length > 0 && (
             <View style={styles.section}>
               <SectionHeader>What keeps surfacing</SectionHeader>
+              <Text style={styles.sectionNote}>
+                The bigger and warmer a word, the more recently and often it&apos;s come up — not a
+                score, just a weather. Tap one to see when.
+              </Text>
               <SurfacingField patterns={patterns} />
               {topPattern && (
                 <Pressable

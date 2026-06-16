@@ -1,0 +1,81 @@
+{
+  "id": "noticing.expressive_writing.v1",
+  "kind": "noticing",
+  "title": "Write it out",
+  "subtitle": "Free writing to untangle what's knotted — no one reads it but you.",
+  "estimatedMinutes": 10,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "This is free writing — the kind that helps untangle what's knotted just by getting it out of your head.\n\nIt's not therapy. If something acute is here, the Support tab has people who can help. Write only what you want to. There are no rules."
+    },
+    {
+      "id": "readiness",
+      "type": "scale",
+      "title": "How activated do you feel right now?",
+      "body": "A quick read before you begin.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "calm",
+      "maxLabel": "very",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "settle_offer" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "situation" }
+      ]
+    },
+    {
+      "id": "settle_offer",
+      "type": "exitOffer",
+      "body": "That's a lot to be carrying right now. You might settle first, or write just a little and stop. There's no need to push into it."
+    },
+    {
+      "id": "situation",
+      "type": "prompt",
+      "title": "What's the situation or feeling you want to write about?",
+      "body": "A line is enough to start.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "What's on your mind…"
+    },
+    {
+      "id": "freewrite",
+      "type": "prompt",
+      "title": "Now write freely about it.",
+      "body": "What happened, how it felt, what it stirs up. Don't worry about making sense or sounding right. No one reads this but you.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Let it come out however it comes…"
+    },
+    {
+      "id": "acceptance",
+      "type": "passage",
+      "body": "Whatever you wrote — that feeling exists, and it has its own logic. You don't have to agree with it, act on it, or call what happened okay.\n\nYou're just letting it be seen, by you. That alone changes something."
+    },
+    {
+      "id": "notice",
+      "type": "prompt",
+      "title": "Reading it back — is there anything you notice now that you didn't before?",
+      "body": "Or leave it blank. Sometimes the noticing comes later.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You let something surface and looked at it without flinching. That's the work — not fixing it, meeting it.",
+    "celebrate": false
+  }
+}

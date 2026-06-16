@@ -106,10 +106,23 @@ export interface FlowSafety {
   onHighCharge: string;
 }
 
+/**
+ * An optional, authored "next gesture" rendered beside Done on the closing
+ * screen — a single invitation into the natural next step (never a score, level,
+ * or required path). seedKeys names input keys to carry forward as flow-runner
+ * params (only single-line values; e.g. 'quality' → seedQuality).
+ */
+export interface FlowNext {
+  label: string;
+  flowId: string;
+  seedKeys?: string[];
+}
+
 export interface FlowExit {
   type: 'close';
   body: string;
   celebrate: false;
+  next?: FlowNext;
 }
 
 export interface Flow {

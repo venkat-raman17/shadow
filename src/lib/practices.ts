@@ -11,6 +11,7 @@ type IconName = SymbolViewProps['name'];
 export const FLOWS: Record<string, Flow> = {
   'noticing.projection_recall.v1': require('@/assets/flows/noticing.projection_recall.v1.json'),
   'noticing.somatic.v1': require('@/assets/flows/noticing.somatic.v1.json'),
+  'noticing.in_the_moment.v1': require('@/assets/flows/noticing.in_the_moment.v1.json'),
   'noticing.facing_shame.v1': require('@/assets/flows/noticing.facing_shame.v1.json'),
   'noticing.golden_shadow.v1': require('@/assets/flows/noticing.golden_shadow.v1.json'),
   'noticing.anima_projection.v1': require('@/assets/flows/noticing.anima_projection.v1.json'),
@@ -48,6 +49,13 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Start from a sensation — no situation or person needed.',
     depth: 'notice',
     icon: { ios: 'figure.mind.and.body', web: 'self_improvement' },
+  },
+  {
+    id: 'noticing.in_the_moment.v1',
+    title: 'Something just happened',
+    blurb: "Catch a reaction while it's still warm — thirty seconds, no setup.",
+    depth: 'notice',
+    icon: { ios: 'bolt.heart', web: 'bolt' },
   },
   {
     id: 'noticing.projection_recall.v1',

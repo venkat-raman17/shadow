@@ -1,0 +1,87 @@
+{
+  "id": "noticing.unlived_expression.v1",
+  "kind": "noticing",
+  "title": "What did you set aside?",
+  "subtitle": "Follow an unlived part of you back to what still wants expression.",
+  "estimatedMinutes": 8,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "Some of who you are got set aside — too much, too loud, not allowed, not safe to be.\n\nNot gone, though. Just waiting. This is a gentle look at what's been kept in the dark."
+    },
+    {
+      "id": "set_aside",
+      "type": "prompt",
+      "title": "Is there a quality or way of being you set aside long ago?",
+      "body": "A talent, a boldness, a softness, a desire. Name it, however roughly.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Something I used to be, or never let myself be…"
+    },
+    {
+      "id": "unsafe",
+      "type": "prompt",
+      "title": "What, or who, taught you it wasn't allowed?",
+      "body": "Not to assign blame — just to see that this was learned, which means it isn't simply fact.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "A parent, the times, myself, a moment…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How does it feel to name this?",
+      "body": "Naming something unlived can stir grief. Just notice where you are.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "light",
+      "maxLabel": "heavy",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "settle_pause" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "wants" }
+      ]
+    },
+    {
+      "id": "settle_pause",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Take a breath. There's often grief here — for the time, for what wasn't allowed. That's okay to feel."
+    },
+    {
+      "id": "wants",
+      "type": "prompt",
+      "title": "What wants expression through you now?",
+      "body": "Don't edit it. Just let it be said, even if it feels impossible.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "What's been waiting…"
+    },
+    {
+      "id": "doorway",
+      "type": "prompt",
+      "title": "If the smallest doorway opened — where might a little of it peek out?",
+      "body": "No obligation. Not a plan, not a transformation. Just notice where it might fit.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You met what wants to be known. Its becoming is entirely yours — the app won't track it, measure it, or tell you what to do with it.",
+    "celebrate": false
+  }
+}

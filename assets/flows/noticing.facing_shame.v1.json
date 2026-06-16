@@ -2,7 +2,7 @@
   "id": "noticing.facing_shame.v1",
   "kind": "noticing",
   "title": "What shame says about you",
-  "subtitle": "Not fixing it. Just naming it, and meeting it differently.",
+  "subtitle": "Not fixing it. Meeting it differently, until it loosens its grip.",
   "estimatedMinutes": 12,
   "entryGate": null,
   "safety": {
@@ -14,22 +14,58 @@
     {
       "id": "orient",
       "type": "passage",
-      "body": "Before anything else.\n\nThis is not a practice about fixing what's wrong with you. Shame says there's something fundamentally wrong with you. That's the thing we're here to look at — not confirm.\n\nGo slow. You can stop at any point."
+      "body": "Before anything else.\n\nThis is not a practice about fixing what's wrong with you. Shame says there's something fundamentally wrong with you. That's the thing we're here to meet — not confirm.\n\nGo slow. You can stop at any point."
     },
     {
       "id": "distinction",
       "type": "passage",
-      "body": "Two things that feel similar but aren't:\n\nGuilt says: 'I did something bad.' It's about an action — something that happened, something that can be acknowledged.\n\nShame says: 'I am bad.' It's about who you are — your whole self, not what you did.\n\nWe're here with the second one."
+      "body": "Two things that feel similar but aren't:\n\nGuilt says: 'I did something bad.' It's about an action — something that happened, something that can be acknowledged.\n\nShame says: 'I am bad.' It's about who you are — your whole self, not what you did.\n\nWe're here with the second one. And we'll start with your body, not your story."
     },
     {
-      "id": "locate",
+      "id": "body_locate",
       "type": "prompt",
-      "title": "What's the shame about?",
-      "body": "You can be as general as you need. 'Something I did.' 'The way I am.' 'Something that happened to me.' Just enough to make contact with it.",
+      "title": "Where do you feel it in your body?",
+      "body": "Shame usually lands somewhere before it has words. Just notice where — you don't have to do anything with it yet.",
       "inputKey": "subject",
-      "multiline": true,
+      "multiline": false,
       "optional": true,
-      "placeholder": "You don't have to name it precisely right now…"
+      "placeholder": "Chest, throat, stomach… or leave blank.",
+      "assistChips": [
+        "chest",
+        "throat",
+        "stomach",
+        "face",
+        "shoulders",
+        "everywhere",
+        "I can't feel it"
+      ]
+    },
+    {
+      "id": "body_texture",
+      "type": "prompt",
+      "title": "If that place had a texture, temperature, or colour — what is it?",
+      "body": "No need to make sense of it. Just let the felt sense have a shape.",
+      "inputKey": "bodyTexture",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Tight, hot, grey, heavy…"
+    },
+    {
+      "id": "body_doing",
+      "type": "prompt",
+      "title": "What is your body doing with it?",
+      "body": "Shame moves the body before the mind catches up — it shrinks, braces, hides, goes still. What's yours doing?",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "One word is enough.",
+      "assistChips": [
+        "shrinking",
+        "tightening",
+        "going numb",
+        "wanting to hide",
+        "frozen"
+      ]
     },
     {
       "id": "charge",
@@ -40,7 +76,22 @@
       "min": 0,
       "max": 10,
       "minLabel": "a low hum",
-      "maxLabel": "overwhelming"
+      "maxLabel": "overwhelming",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 6 }, "goTo": "settle_pause" },
+        { "when": { "inputKey": "charge", "lte": 5 }, "goTo": "common_humanity" }
+      ]
+    },
+    {
+      "id": "settle_pause",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That has some weight. Stay here for a moment — one slow breath. There's nothing to push through."
+    },
+    {
+      "id": "common_humanity",
+      "type": "passage",
+      "body": "Shame's oldest trick is to make you feel uniquely broken — as if you alone are this much, or this little.\n\nYou are not alone in this. Every person carries a part that learned, somewhere, that it was too much, or not enough. This is one of the most human things there is.\n\nYou're not the exception. You're in company you can't see."
     },
     {
       "id": "compassion_prime",
@@ -48,11 +99,21 @@
       "body": "The part of you that carries this shame is not bad. It is a part that was made to feel unworthy — by someone, or something, or a long series of messages that said you weren't enough.\n\nThere is a difference between being flawed and being unloved. That part learned the wrong lesson — the one that blamed itself."
     },
     {
+      "id": "self_compassion_need",
+      "type": "prompt",
+      "title": "Ask the part: what do you need right now?",
+      "body": "Put a hand where you felt it, if that feels okay. Then ask — not what you should need, what it actually needs. Usually it's something simple: safety, rest, to be believed.",
+      "inputKey": "shameNeed",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "To be heard. To stop hiding. To rest…"
+    },
+    {
       "id": "voice",
       "type": "prompt",
       "title": "Whose voice does this shame sound like?",
       "body": "The inner critic rarely speaks in its own voice. It usually sounds like someone. A parent, a teacher, someone who should have been safe. Or sometimes just a nameless 'you should know better.'",
-      "inputKey": "quality",
+      "inputKey": "voice",
       "multiline": false,
       "optional": true,
       "placeholder": "A name, a type of person, or leave blank…",
@@ -65,6 +126,42 @@
       ]
     },
     {
+      "id": "false_belief",
+      "type": "prompt",
+      "title": "What does that voice tell you about yourself?",
+      "body": "Say it plainly, in its words — not because it's true, but so it stops running in the dark.",
+      "inputKey": "belief",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "'You're too much.' 'You'll be found out.' 'You don't deserve…'"
+    },
+    {
+      "id": "origin_age",
+      "type": "prompt",
+      "title": "How old do you feel when this shame is loudest?",
+      "body": "Shame often carries the age it first arrived. Let a number or a season of life come, if one does.",
+      "inputKey": "originAge",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Seven. A teenager. Younger than I can remember…"
+    },
+    {
+      "id": "origin_taught",
+      "type": "prompt",
+      "title": "What were you taught — and by whom — that made this feel true?",
+      "body": "Not to assign blame. Just to see that this belief was learned, which means it isn't simply fact.",
+      "inputKey": "origin",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "edge_pause",
+      "type": "pause",
+      "seconds": 12,
+      "body": "You've touched something old. Come back to your breath for a moment before we turn toward it with some care."
+    },
+    {
       "id": "witness",
       "type": "prompt",
       "title": "Write to the part of you that carries this.",
@@ -75,20 +172,31 @@
       "placeholder": "You might start with: 'I see you…' or 'I know you've been carrying this…'"
     },
     {
-      "id": "underneath",
+      "id": "counter_narrative",
       "type": "prompt",
-      "title": "What is this shame actually protecting?",
-      "body": "Shame often guards something real — a wound, a need, a loss. Underneath 'I am bad' there's usually something softer. What would have to be faced if the shame weren't there?",
+      "title": "What truth contradicts the shame's message?",
+      "body": "Even small evidence counts — one moment, one person who saw you clearly, one thing you know about yourself that the shame conveniently forgets.",
       "inputKey": "reclaim",
       "multiline": true,
       "optional": true,
       "exitOffer": true,
       "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "embodied_close",
+      "type": "pause",
+      "seconds": 15,
+      "body": "One more breath — a hand on your heart, if it's there.\n\nYou met something that usually only gets hidden. Let your body feel that you're still here, and still safe."
     }
   ],
   "exit": {
     "type": "close",
-    "body": "Shame survives in silence. You named it — and you met it with something other than more shame. That's the practice.",
-    "celebrate": false
+    "body": "Shame survives in silence. You didn't fix yourself — you met the part that carries it, with something other than more shame.[[ You named what it needs: {shameNeed}.]]\n\nIt loosens its grip a little each time it's met like this.",
+    "celebrate": false,
+    "next": {
+      "label": "Sit with this part",
+      "flowId": "meeting.active_imagination.v1",
+      "seedKeys": ["quality"]
+    }
   }
 }

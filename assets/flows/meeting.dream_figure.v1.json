@@ -1,0 +1,131 @@
+{
+  "id": "meeting.dream_figure.v1",
+  "kind": "meeting",
+  "title": "A figure from a dream",
+  "subtitle": "Meet someone or something from a dream — not to decode it, to hear it.",
+  "estimatedMinutes": 15,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "chargeAfter",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "We're not here to decode your dream, or decide what the symbols 'mean.'\n\nWe're here to meet a figure from it — as if it were real and had something to say. Dreams speak in their own language; meeting one is enough.\n\nIf you're feeling far from yourself right now, this can wait. The Support tab is there."
+    },
+    {
+      "id": "consent",
+      "type": "exitOffer",
+      "body": "Ready to begin? You can stop here anytime."
+    },
+    {
+      "id": "figure",
+      "type": "prompt",
+      "title": "Bring to mind a figure or image from a recent dream — one that stayed with you.",
+      "body": "A person, a creature, a place, an object. Give it a name to call it by.",
+      "inputKey": "partName",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "The stranger, the locked door, the animal…"
+    },
+    {
+      "id": "image",
+      "type": "prompt",
+      "title": "Describe it as you saw it.",
+      "body": "Don't interpret — just describe. What it looked like, how it moved, the feeling around it.",
+      "inputKey": "partImage",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "As it appeared…"
+    },
+    {
+      "id": "era",
+      "type": "prompt",
+      "title": "Does it feel old or young — ancient, or new?",
+      "inputKey": "partAge",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "However it feels…"
+    },
+    {
+      "id": "body",
+      "type": "prompt",
+      "title": "When you bring it to mind now, where do you feel it in your body?",
+      "inputKey": "partBodyLocation",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Chest, gut, throat, nowhere in particular…"
+    },
+    {
+      "id": "d1",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let the figure speak. Don't decide in advance what it says. What does it want you to know?",
+      "hint": "Resist the urge to interpret. Just let it talk.",
+      "inputKey": "dialogue_1"
+    },
+    {
+      "id": "d2",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What do you ask it?",
+      "inputKey": "dialogue_2"
+    },
+    {
+      "id": "d3",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Ask it: why did you come to me? Write its answer.",
+      "inputKey": "dialogue_3"
+    },
+    {
+      "id": "breathe",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Stay with what it said. No need to make sense of it yet."
+    },
+    {
+      "id": "d4",
+      "type": "dialogue",
+      "speaker": "you",
+      "prompt": "What comes up in you?",
+      "inputKey": "dialogue_4"
+    },
+    {
+      "id": "d5",
+      "type": "dialogue",
+      "speaker": "part",
+      "prompt": "Let it tell you one more thing before it goes.",
+      "inputKey": "dialogue_5"
+    },
+    {
+      "id": "need",
+      "type": "prompt",
+      "title": "What does this figure seem to want from you — or want you to see?",
+      "body": "Not a translation. Just what you sense it's asking.",
+      "inputKey": "need",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "aftercare",
+      "type": "scale",
+      "title": "How are you now?",
+      "inputKey": "chargeAfter",
+      "min": 0,
+      "max": 10,
+      "minLabel": "settled",
+      "maxLabel": "still stirred up"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Dreams speak in their own language. You don't have to translate it — meeting it is enough. It may keep speaking, in time.",
+    "celebrate": false
+  }
+}

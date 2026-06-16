@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { colors, typography, Spacing, radii } from '@/constants/theme';
 import { Screen, TextField, Chip, Button } from '@/components/ui';
+import { getItem, setItem } from '@/lib/kv';
 import { getPractice } from '@/lib/practices';
 import { doorwaysFor, routeFromText } from '@/lib/threshold';
 import { useRecentEntries, useResurfacing } from '@/hooks/useEntries';
@@ -13,6 +14,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import type { EntryDetail } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const DEPTHS_SEEN_KEY = 'shadow.depths_seen';
 
 function getGreeting(name: string | null): string {
   const suffix = name ? `, ${name}` : '';
@@ -83,6 +85,27 @@ function ResurfacingCard({ entry, onDismiss }: { entry: EntryDetail; onDismiss: 
   );
 }
 
+// A one-time, dismissible map of the three depths — shown only to a newcomer so
+// the Notice → Sit → Carry spine isn't invisible. No ladder, no progress.
+function DepthsCard({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <View style={styles.depthsCard}>
+      <View style={styles.resurfaceHeader}>
+        <Text style={styles.resurfaceLabel}>How this works</Text>
+        <Pressable onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <SymbolView name={{ ios: 'xmark', web: 'close' }} size={13} tintColor={colors.textFaint} />
+        </Pressable>
+      </View>
+      <Text style={styles.depthsBody}>
+        Three depths, no ladder. <Text style={styles.depthsWord}>Notice</Text> what&apos;s here ·{' '}
+        <Text style={styles.depthsWord}>Sit</Text> with what keeps returning ·{' '}
+        <Text style={styles.depthsWord}>Carry</Text> one small thing into your life.
+      </Text>
+      <Text style={styles.depthsSub}>No streaks, no finishing — you return when you return.</Text>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const profile = useUserProfile();
   const entries = useRecentEntries(1);
@@ -96,6 +119,17 @@ export default function HomeScreen() {
 
   const [text, setText] = useState('');
   const doorways = doorwaysFor(profile?.gender);
+
+  // The first-run depths map: shown once to a newcomer, dismissible for good.
+  const [depthsDismissed, setDepthsDismissed] = useState<boolean | null>(null);
+  useEffect(() => {
+    getItem(DEPTHS_SEEN_KEY).then((v) => setDepthsDismissed(v === '1'));
+  }, []);
+  function dismissDepths() {
+    setDepthsDismissed(true);
+    setItem(DEPTHS_SEEN_KEY, '1');
+  }
+  const showDepths = firstRun && depthsDismissed === false;
 
   function enter(flowId: string) {
     router.push(`/flow/${flowId}`);
@@ -143,6 +177,17 @@ export default function HomeScreen() {
         />
       </View>
 
+      <Pressable style={styles.nowLink} onPress={() => enter('noticing.in_the_moment.v1')}>
+        <SymbolView
+          name={{ ios: 'bolt.heart', web: 'bolt' }}
+          size={15}
+          tintColor={colors.accentWarm}
+        />
+        <Text style={styles.nowLinkText}>Something just happened — catch it now →</Text>
+      </Pressable>
+
+      {showDepths && <DepthsCard onDismiss={dismissDepths} />}
+
       <View style={styles.doorways}>
         {doorways.map((d) => (
           <Chip key={d.key} label={d.label} onPress={() => enter(d.resolve(profile?.gender))} />
@@ -180,8 +225,25 @@ const styles = StyleSheet.create({
   prompt: { ...typography.serifPrompt, fontSize: 28, lineHeight: 38 },
   promptSub: { ...typography.body, color: colors.textSecondary, marginTop: -Spacing.one },
 
+  // In-the-moment fast lane
+  nowLink: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: -Spacing.one },
+  nowLinkText: { ...typography.body, color: colors.accentWarm },
+
   // Doorways
   doorways: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+
+  // Depths map (first-run)
+  depthsCard: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.accentMuted,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  depthsBody: { ...typography.serifBody, color: colors.textPrimary },
+  depthsWord: { color: colors.accent },
+  depthsSub: { ...typography.bodySmall, color: colors.textSecondary },
 
   // Resurfacing
   resurfaceCard: {

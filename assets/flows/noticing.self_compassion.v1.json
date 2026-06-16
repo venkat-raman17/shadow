@@ -1,0 +1,68 @@
+{
+  "id": "noticing.self_compassion.v1",
+  "kind": "noticing",
+  "title": "Turn toward yourself",
+  "subtitle": "A small practice in meeting your own pain with kindness.",
+  "estimatedMinutes": 6,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "This is a small practice in turning toward yourself the way you might turn toward someone you love who's hurting.\n\nNot to fix anything. Just to keep yourself company."
+    },
+    {
+      "id": "feel_body",
+      "type": "choice",
+      "title": "Can you feel your body right now?",
+      "body": "Your breath, your hands, the weight of you in the seat.",
+      "inputKey": "bodyAccess",
+      "options": [
+        { "label": "Yes, mostly", "value": "yes", "goTo": "gesture" },
+        { "label": "Not really — I feel numb or far away", "value": "no" }
+      ]
+    },
+    {
+      "id": "numb_note",
+      "type": "passage",
+      "body": "Numbness is its own kind of protection — there's nothing wrong with it. Be extra gentle here. Even resting a hand somewhere you can feel it, and noticing that, counts."
+    },
+    {
+      "id": "gesture",
+      "type": "pause",
+      "seconds": 15,
+      "body": "Rest a hand on your heart, or wherever feels right. Feel the warmth of your own hand. Let yourself receive it, just for a few breaths."
+    },
+    {
+      "id": "need",
+      "type": "prompt",
+      "title": "Ask the part of you that's hurting: what do you need right now?",
+      "body": "Not what you think you should need. What it actually needs — often something simple.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "To rest. To be believed. To stop hiding…"
+    },
+    {
+      "id": "common_humanity",
+      "type": "passage",
+      "body": "Whatever it is — you're not alone in needing it. Everyone does, at some point. This is part of being human, not proof that something is wrong with you."
+    },
+    {
+      "id": "met",
+      "type": "prompt",
+      "title": "What's one way this part of you could feel met — today, in the real world?",
+      "body": "A small kindness. Not a fix, not a project. One way it gets to feel held.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You turned toward yourself instead of away. That's not weakness, and it's not self-indulgence — it's the whole practice.",
+    "celebrate": false
+  }
+}

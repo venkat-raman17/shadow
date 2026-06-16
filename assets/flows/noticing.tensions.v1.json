@@ -1,0 +1,83 @@
+{
+  "id": "noticing.tensions.v1",
+  "kind": "noticing",
+  "title": "When two truths collide",
+  "subtitle": "Hold both sides without choosing — and let a third thing surface.",
+  "estimatedMinutes": 8,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "Some of the hardest things to hold are two truths that don't agree.\n\nWe're not here to pick a winner, or to talk you out of either one. We're here to hold both at once — and see what a third thing might be, in its own time."
+    },
+    {
+      "id": "pull_one",
+      "type": "prompt",
+      "title": "One side of you pulls toward…",
+      "body": "A wish, a fear, a direction. Say it plainly.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Part of me wants…"
+    },
+    {
+      "id": "pull_two",
+      "type": "prompt",
+      "title": "And another side knows, or wants, the opposite.",
+      "body": "Not the 'should' — the other true thing.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "And another part of me…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How much tension is in holding both?",
+      "body": "Just a read on where you are.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "barely any",
+      "maxLabel": "a lot",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "settle_pause" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "sit_both" }
+      ]
+    },
+    {
+      "id": "settle_pause",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That pull has some weight. One breath — you don't have to resolve anything here."
+    },
+    {
+      "id": "sit_both",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Now hold both at once, if you can. Don't choose. Let them both be true for a moment, side by side."
+    },
+    {
+      "id": "emerge",
+      "type": "prompt",
+      "title": "Is there anything that wants to emerge between them?",
+      "body": "Don't force it. A third thing — an image, a small move, a 'what if' — that isn't either side. Or leave it blank; it often comes later.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You held both sides without collapsing one into the other. That's the practice — the third thing comes in its own time, not on demand.",
+    "celebrate": false
+  }
+}

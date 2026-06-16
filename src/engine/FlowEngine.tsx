@@ -94,6 +94,13 @@ interface Props {
   seedInputs?: FlowInputs;
 }
 
+// Maps an exit.next seedKey (an input key) to the flow-runner param that carries
+// it forward. Only single-line echo values belong here (see flow/[id].tsx).
+const SEED_PARAM: Record<string, string> = {
+  quality: 'seedQuality',
+  partName: 'partName',
+};
+
 export default function FlowEngine({ flow, onComplete, existingPartId, seedInputs }: Props) {
   const router = useRouter();
   const db = useSQLiteContext();
@@ -275,7 +282,32 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
                   <Text style={styles.experimentConfirm}>Saved to your experiments.</Text>
                 )}
 
-                <Button label="Done" variant="secondary" onPress={onComplete} />
+                {flow.exit.next && (
+                  <Button
+                    label={flow.exit.next.label}
+                    variant="secondary"
+                    onPress={() => {
+                      const next = flow.exit.next!;
+                      const params: { id: string; seedQuality?: string; partName?: string } = {
+                        id: next.flowId,
+                      };
+                      for (const k of next.seedKeys ?? []) {
+                        const param = SEED_PARAM[k];
+                        const val = state.inputs[k];
+                        if (param && typeof val === 'string' && val.trim()) {
+                          (params as Record<string, string>)[param] = val.trim();
+                        }
+                      }
+                      router.replace({ pathname: '/flow/[id]', params });
+                    }}
+                  />
+                )}
+
+                <Button
+                  label="Done"
+                  variant={flow.exit.next ? 'ghost' : 'secondary'}
+                  onPress={onComplete}
+                />
               </FadeSlide>
             )}
           </View>

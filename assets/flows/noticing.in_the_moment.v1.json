@@ -1,0 +1,65 @@
+{
+  "id": "noticing.in_the_moment.v1",
+  "kind": "noticing",
+  "title": "Something just happened",
+  "subtitle": "Catch a reaction while it's still warm. Thirty seconds.",
+  "estimatedMinutes": 1,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "catch",
+      "type": "prompt",
+      "title": "Something just landed. What happened?",
+      "body": "A few words is plenty. You're not solving it — just catching it before it fades.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": false,
+      "placeholder": "What just happened…"
+    },
+    {
+      "id": "where",
+      "type": "prompt",
+      "title": "Where do you feel it right now?",
+      "body": "The body usually knows before the words arrive.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "One word.",
+      "assistChips": [
+        "tight",
+        "hot",
+        "sick",
+        "small",
+        "shaky",
+        "numb"
+      ]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How strong is it?",
+      "body": "Just a quick read.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a flicker",
+      "maxLabel": "a lot"
+    },
+    {
+      "id": "micro_pause",
+      "type": "pause",
+      "seconds": 8,
+      "body": "One breath. You caught it — that's the whole move right now. The rest can wait."
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Caught in the moment — that's the real practice. It's saved, and it'll be here when you want to sit with it properly.",
+    "celebrate": false
+  }
+}
