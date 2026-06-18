@@ -2,10 +2,15 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { useSQLiteContext } from 'expo-sqlite';
 
 import { Button, FadeSlide, Screen, TextField } from '@/components/ui';
-import { colors, radii, Spacing, typography } from '@/constants/theme';
+import { radii, Spacing, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { setItem } from '@/lib/kv';
+import { useSession } from '@/context/SessionContext';
+import { useCrypto } from '@/context/CryptoContext';
+import { pickAndRestoreBackup } from '@/lib/restore';
 import type { Gender } from '@/hooks/useUserProfile';
 
 // Paced one-thing-per-screen panels — the same contemplative rhythm as the
@@ -23,7 +28,18 @@ export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
   const [name, setName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
+  const styles = useThemedStyles(makeStyles);
+  const { refresh } = useSession();
+  const db = useSQLiteContext();
+  const { key } = useCrypto();
   const isLast = index === PANEL_COUNT - 1;
+
+  // Restore-from-backup (landing screen) state.
+  const [showRestore, setShowRestore] = useState(false);
+  const [restorePassphrase, setRestorePassphrase] = useState('');
+  const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
 
   // Disable Continue when the current panel requires input that hasn't been given.
   const canContinue = !(index === 4 && name.trim() === '') && !(index === 5 && gender === null);
@@ -34,7 +50,34 @@ export default function OnboardingScreen() {
       setItem('shadow.user_name', name.trim()),
       setItem('shadow.user_gender', gender!),
     ]);
+    await refresh();
     router.replace('/');
+  }
+
+  async function handleRestore() {
+    if (!key) return;
+    setRestoring(true);
+    setRestoreError(null);
+    const outcome = await pickAndRestoreBackup(db, key, restorePassphrase);
+    setRestoring(false);
+    if (outcome === 'canceled') return;
+    if (outcome === 'wrong_passphrase') {
+      setRestoreError('Incorrect passphrase.');
+      return;
+    }
+    if (outcome === 'invalid_file') {
+      setRestoreError("That file doesn't look like a Partwise backup.");
+      return;
+    }
+    if (outcome.signedIn) {
+      // The backup carried a profile — sign in and go straight to the app.
+      await refresh();
+      router.replace('/');
+    } else {
+      // Older backup with no profile: data is back; finish onboarding normally.
+      setShowRestore(false);
+      setRestored(true);
+    }
   }
 
   function next() {
@@ -58,6 +101,40 @@ export default function OnboardingScreen() {
               yourself you&apos;ve pushed away, and sitting with what you find.
             </Text>
             <Text style={styles.body}>Take it gently. There&apos;s nothing to finish here.</Text>
+
+            {restored ? (
+              <Text style={styles.restoredNote}>
+                Your reflections are back. Finish setting up below.
+              </Text>
+            ) : !showRestore ? (
+              <Pressable onPress={() => setShowRestore(true)}>
+                <Text style={styles.restoreLink}>Already have a backup? Restore it →</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.restoreForm}>
+                <TextField
+                  value={restorePassphrase}
+                  onChangeText={setRestorePassphrase}
+                  secureTextEntry
+                  placeholder="Backup passphrase…"
+                  editable={!restoring}
+                />
+                {restoreError ? <Text style={styles.restoreError}>{restoreError}</Text> : null}
+                <Button
+                  label={restoring ? 'Restoring…' : 'Choose backup & restore'}
+                  onPress={handleRestore}
+                  disabled={restoring}
+                />
+                <Button
+                  label="Cancel"
+                  variant="ghost"
+                  onPress={() => {
+                    setShowRestore(false);
+                    setRestoreError(null);
+                  }}
+                />
+              </View>
+            )}
           </>
         )}
 
@@ -162,7 +239,8 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   panel: { gap: Spacing.three },
   logo: { width: 96, height: 96, alignSelf: 'center' },
   title: { ...typography.display, marginBottom: Spacing.two },
@@ -173,6 +251,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   body: { ...typography.serifBody, color: colors.textSecondary, lineHeight: 30 },
+  restoreLink: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.two },
+  restoreForm: { gap: Spacing.two, marginTop: Spacing.two },
+  restoreError: { ...typography.caption, color: colors.accentWarm },
+  restoredNote: { ...typography.bodySmall, color: colors.accent, marginTop: Spacing.two },
   listItem: { ...typography.body, color: colors.textPrimary, lineHeight: 28 },
   genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   genderChip: {

@@ -168,6 +168,70 @@ export async function getEntryById(
   };
 }
 
+export interface SearchResult extends EntryListItem {
+  /** A short window of the matched text, for context in the results list. */
+  snippet: string | null;
+}
+
+/** A trimmed window of `text` around the first occurrence of `q`. */
+function snippetAround(text: string, q: string, pad = 40): string {
+  const idx = text.toLowerCase().indexOf(q);
+  const flat = (s: string) => s.replace(/\s+/g, ' ').trim();
+  if (idx < 0) return flat(text).slice(0, pad * 2);
+  const start = Math.max(0, idx - pad);
+  const end = Math.min(text.length, idx + q.length + pad);
+  return (start > 0 ? '…' : '') + flat(text.slice(start, end)) + (end < text.length ? '…' : '');
+}
+
+/**
+ * Find entries whose decrypted text (or quality) contains the query. The
+ * reflective fields are encrypted at rest, so this decrypts in memory on each
+ * search — we never persist a plaintext index. This is "find an entry I wrote",
+ * not pattern-mining: no counts, no scoring, plain newest-first. Case-insensitive
+ * substring match across subject / echo / reclaim / quality.
+ */
+export async function searchEntries(
+  db: SQLiteDatabase,
+  query: string,
+  key: Uint8Array,
+  limit = 50,
+): Promise<SearchResult[]> {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const rows = await db.getAllAsync<{
+    id: string;
+    created_at: number;
+    quality: string | null;
+    charge: number | null;
+    subject_enc: string | null;
+    echo_enc: string | null;
+    reclaim_enc: string | null;
+  }>(
+    `SELECT id, created_at, quality, charge, subject_enc, echo_enc, reclaim_enc
+     FROM entries
+     ORDER BY created_at DESC`,
+  );
+  const dec = (val: string | null) => (val ? decrypt(val, key) : null);
+  const results: SearchResult[] = [];
+  for (const row of rows) {
+    const subject = dec(row.subject_enc);
+    const echo = dec(row.echo_enc);
+    const reclaim = dec(row.reclaim_enc);
+    const hit = [subject, echo, reclaim, row.quality].find((f) => f && f.toLowerCase().includes(q));
+    if (!hit) continue;
+    results.push({
+      id: row.id,
+      created_at: row.created_at,
+      quality: row.quality,
+      charge: row.charge,
+      subject: firstLine(subject),
+      snippet: snippetAround(hit, q),
+    });
+    if (results.length >= limit) break;
+  }
+  return results;
+}
+
 export async function getEntryCount(db: SQLiteDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) as n FROM entries`);
   return row?.n ?? 0;
@@ -218,10 +282,16 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase): Promise<void> {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   const version = row?.user_version ?? 0;
 
-  if (version === 0) {
-    await db.execAsync(`
-      PRAGMA journal_mode = 'wal';
+  // WAL speeds up the native build but isn't supported by the web (WASM) VFS —
+  // run it on its own and tolerate failure so table creation still proceeds.
+  try {
+    await db.execAsync("PRAGMA journal_mode = 'wal';");
+  } catch {
+    // ignore (e.g. on web)
+  }
 
+  if (version < 1) {
+    await db.execAsync(`
       CREATE TABLE IF NOT EXISTS entries (
         id TEXT PRIMARY KEY NOT NULL,
         created_at INTEGER NOT NULL,
@@ -265,6 +335,13 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase): Promise<void> {
       );
     `);
     await db.execAsync('PRAGMA user_version = 1');
+  }
+
+  if (version < 2) {
+    // An optional imaginative sketch (Jung's Red Book), stored as encrypted
+    // vector-path JSON on the part it belongs to.
+    await db.execAsync(`ALTER TABLE parts ADD COLUMN sketch_enc TEXT`);
+    await db.execAsync('PRAGMA user_version = 2');
   }
 }
 
@@ -416,6 +493,8 @@ export interface PartDetail {
   /** Decrypted form JSON ({image, age} for difficult, {subject} for golden). */
   form: string | null;
   first_appeared: string | null;
+  /** Decrypted sketch JSON ({ w, h, paths } vector drawing), or null. */
+  sketch: string | null;
   sessions: PartSessionItem[];
 }
 
@@ -431,11 +510,12 @@ export async function getPartById(
     form_enc: string | null;
     body_location: string | null;
     first_appeared_enc: string | null;
+    sketch_enc: string | null;
     golden: number;
     created_at: number;
     last_met_at: number | null;
   }>(
-    `SELECT id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at
+    `SELECT id, name, form_enc, body_location, first_appeared_enc, sketch_enc, golden, created_at, last_met_at
      FROM parts WHERE id = ?`,
     [id],
   );
@@ -464,6 +544,7 @@ export async function getPartById(
     last_met_at: row.last_met_at,
     form: dec(row.form_enc),
     first_appeared: dec(row.first_appeared_enc),
+    sketch: dec(row.sketch_enc),
     sessions: sessionRows.map((s) => ({
       id: s.id,
       created_at: s.created_at,
@@ -478,6 +559,31 @@ export async function getPartById(
 /** Bump a part's last-met timestamp (used when re-meeting an existing part). */
 export async function touchPart(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync(`UPDATE parts SET last_met_at = ? WHERE id = ?`, [Date.now(), id]);
+}
+
+/** Save (or clear, with null) a part's imaginative sketch. `sketchJson` is the
+ *  serialized { w, h, paths } drawing; encrypted at rest like every other field. */
+export async function savePartSketch(
+  db: SQLiteDatabase,
+  partId: string,
+  sketchJson: string | null,
+  key: Uint8Array,
+): Promise<void> {
+  await db.runAsync(`UPDATE parts SET sketch_enc = ? WHERE id = ?`, [
+    sketchJson ? encrypt(sketchJson, key) : null,
+    partId,
+  ]);
+}
+
+/** Wipe every row from every journal table. Schema and migrations are left
+ *  intact — only data is removed (used by the "delete everything" reset). */
+export async function deleteAllData(db: SQLiteDatabase): Promise<void> {
+  await db.execAsync(`
+    DELETE FROM entries;
+    DELETE FROM parts;
+    DELETE FROM sessions;
+    DELETE FROM experiments;
+  `);
 }
 
 export interface ReturnablePart {
@@ -633,14 +739,15 @@ export async function restoreParts(
   for (const p of parts) {
     const result = await db.runAsync(
       `INSERT OR IGNORE INTO parts
-         (id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, name, form_enc, body_location, first_appeared_enc, sketch_enc, golden, created_at, last_met_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         p.id,
         p.name,
         p.form ? encrypt(p.form, key) : null,
         p.body_location,
         p.first_appeared ? encrypt(p.first_appeared, key) : null,
+        p.sketch ? encrypt(p.sketch, key) : null,
         p.golden,
         p.created_at,
         p.last_met_at,

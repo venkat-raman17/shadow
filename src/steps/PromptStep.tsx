@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { TextField, Chip, Button } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
 import type { PromptStep as PromptStepType } from '@/types/flow';
@@ -9,6 +10,7 @@ import type { StepProps } from './types';
 
 export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<PromptStepType>) {
   const [value, setValue] = useState('');
+  const styles = useThemedStyles(makeStyles);
 
   const canAdvance = step.optional || value.trim().length > 0;
   const title = resolveTokens(step.title, inputs);
@@ -53,7 +55,8 @@ export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<P
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   block: { gap: Spacing.three },
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },

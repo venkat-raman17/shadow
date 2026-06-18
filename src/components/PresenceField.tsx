@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
-import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import type { PartListItem } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -19,6 +20,7 @@ function metRecently(ms: number): boolean {
  * presence slightly; nothing is counted or ranked.
  */
 export function PresenceField({ parts }: { parts: PartListItem[] }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.field}>
       {parts.map((part) => (
@@ -29,6 +31,7 @@ export function PresenceField({ parts }: { parts: PartListItem[] }) {
 }
 
 function Presence({ part }: { part: PartListItem }) {
+  const styles = useThemedStyles(makeStyles);
   const recent = metRecently(part.last_met_at ?? part.created_at);
   const golden = part.golden === 1;
 
@@ -49,7 +52,8 @@ function Presence({ part }: { part: PartListItem }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   presence: {
     flexDirection: 'row',

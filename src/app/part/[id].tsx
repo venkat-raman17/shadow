@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, SectionHeader, Button } from '@/components/ui';
 import { ChargeDots } from '@/components/ChargeDots';
+import { SketchView, parseSketch } from '@/components/Sketch';
 import { usePart } from '@/hooks/useIntegration';
 import { feltSenseBand } from '@/lib/feltSense';
 import type { PartSessionItem } from '@/lib/db';
@@ -50,6 +52,7 @@ function SessionBlock({
   golden: boolean;
   index: number;
 }) {
+  const styles = useThemedStyles(makeStyles);
   // Render by the session's OWN captured shape, not the part-level golden flag.
   // (A part can be re-met via the other path; reading by part.golden would drop
   // a difficult session's dialogue from a golden part, or vice versa.)
@@ -116,6 +119,10 @@ function SessionBlock({
 export default function PartScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { part, loading } = usePart(id);
+  const { width } = useWindowDimensions();
+  const sketchBox = Math.min(width - Spacing.three * 2, 360);
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   if (loading) {
     return (
@@ -134,6 +141,7 @@ export default function PartScreen() {
   }
 
   const isGolden = part.golden === 1;
+  const sketch = parseSketch(part.sketch);
   const form = safeParse(part.form);
   const image = isGolden ? null : asText(form?.image);
   const age = isGolden ? null : asText(form?.age);
@@ -196,6 +204,15 @@ export default function PartScreen() {
           </View>
         ) : null}
 
+        {sketch ? (
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>How you drew it</Text>
+            <View style={[styles.sketchFrame, { width: sketchBox, height: sketchBox }]}>
+              <SketchView data={sketch} width={sketchBox} height={sketchBox} />
+            </View>
+          </View>
+        ) : null}
+
         <Button
           label={lastSaid ? 'Pick up where you left off' : 'Sit with this part again'}
           variant="secondary"
@@ -214,6 +231,12 @@ export default function PartScreen() {
           }
         />
 
+        <Button
+          label={sketch ? 'Edit your drawing' : 'Draw what it looks like'}
+          variant="ghost"
+          onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}
+        />
+
         {part.sessions.length > 0 && (
           <View style={styles.sessionsSection}>
             <SectionHeader>
@@ -229,7 +252,8 @@ export default function PartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   name: { ...typography.display, flexShrink: 1 },
   goldenDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accentWarm },
@@ -239,6 +263,13 @@ const styles = StyleSheet.create({
   field: { gap: Spacing.one },
   fieldLabel: { ...typography.bodySmall, color: colors.textSecondary },
   fieldValue: { ...typography.serifBody, color: colors.textPrimary },
+  sketchFrame: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
 
   lastSaid: { gap: Spacing.one },
   lastSaidRow: { flexDirection: 'row', gap: Spacing.three },

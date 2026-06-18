@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { TextField, Button } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
 import type { DialogueStep as DialogueStepType } from '@/types/flow';
@@ -9,6 +10,7 @@ import type { StepProps } from './types';
 
 export default function DialogueStep({ step, inputs, onNext, onExit }: StepProps<DialogueStepType>) {
   const [value, setValue] = useState('');
+  const styles = useThemedStyles(makeStyles);
 
   const speakerLabel = step.speaker === 'you' ? 'You' : 'The part';
   const prompt = resolveTokens(step.prompt, inputs);
@@ -35,7 +37,8 @@ export default function DialogueStep({ step, inputs, onNext, onExit }: StepProps
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   block: { gap: Spacing.three },
   speakerLabel: {
     ...typography.caption,

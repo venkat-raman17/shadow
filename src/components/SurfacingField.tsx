@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Palette, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import type { SurfacingPattern } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -15,6 +16,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * The honest sentence is preserved as the accessibility label.
  */
 export function SurfacingField({ patterns }: { patterns: SurfacingPattern[] }) {
+  const styles = useThemedStyles(makeStyles);
   // Order by recency (temporal, not a ranking of importance).
   const ordered = [...patterns].sort((a, b) => b.lastAt - a.lastAt);
   return (
@@ -56,7 +58,7 @@ function patternSentence(quality: string, count: number, lastAt: number): string
 
 // Visual weight from recency + frequency — kept at module scope so the time
 // read stays out of render. Returns presentation only; never a number on screen.
-function weightFor(pattern: SurfacingPattern): { fontSize: number; color: string } {
+function weightFor(pattern: SurfacingPattern, colors: Palette): { fontSize: number; color: string } {
   const recencyDays = (Date.now() - pattern.lastAt) / DAY_MS;
   const recencyFactor = recencyDays < 7 ? 1 : recencyDays < 35 ? 0.7 : recencyDays < 75 ? 0.5 : 0.35;
   // Cap the count contribution so a single quality can never dominate the field.
@@ -70,7 +72,9 @@ function weightFor(pattern: SurfacingPattern): { fontSize: number; color: string
 }
 
 function Word({ pattern }: { pattern: SurfacingPattern }) {
-  const { fontSize, color } = weightFor(pattern);
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const { fontSize, color } = weightFor(pattern, colors);
 
   return (
     <Pressable
@@ -85,7 +89,8 @@ function Word({ pattern }: { pattern: SurfacingPattern }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ typography }: Theme) =>
+  StyleSheet.create({
   field: {
     flexDirection: 'row',
     flexWrap: 'wrap',

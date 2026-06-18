@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "shadow",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.venkatramanks.shadow",
       "supportsTabletMode": true,
@@ -63,6 +63,12 @@
           "defaultChannel": "default",
           "icon": "./assets/images/notification-icon.png",
           "color": "#7c9e8e"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Use Face ID to keep your reflections private."
         }
       ]
     ],

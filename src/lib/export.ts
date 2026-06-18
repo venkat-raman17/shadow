@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -5,6 +6,7 @@ import * as Sharing from 'expo-sharing';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { decrypt, encrypt } from '@/lib/crypto';
+import { getItem } from '@/lib/kv';
 
 // ─── Internal helper ────────────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ export interface ExportPart {
   form: string | null;
   body_location: string | null;
   first_appeared: string | null;
+  sketch: string | null;
   golden: number;
   created_at: number;
   last_met_at: number | null;
@@ -68,6 +71,12 @@ export interface ExportExperiment {
   reflection: string | null;
 }
 
+/** Optional so a restore can fully sign the user back in (older backups omit it). */
+export interface ShadowProfile {
+  name: string | null;
+  gender: string | null;
+}
+
 export interface ShadowExport {
   version: 1;
   exportedAt: number;
@@ -75,6 +84,7 @@ export interface ShadowExport {
   parts: ExportPart[];
   sessions: ExportSession[];
   experiments: ExportExperiment[];
+  profile?: ShadowProfile;
 }
 
 // ─── Row types (what the DB returns) ────────────────────────────────────────
@@ -96,6 +106,7 @@ interface PartRow {
   form_enc: string | null;
   body_location: string | null;
   first_appeared_enc: string | null;
+  sketch_enc: string | null;
   golden: number;
   created_at: number;
   last_met_at: number | null;
@@ -158,7 +169,7 @@ export async function exportData(
 
   // 2. Query and decrypt parts
   const partRows = await db.getAllAsync<PartRow>(
-    'SELECT id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at FROM parts ORDER BY created_at DESC',
+    'SELECT id, name, form_enc, body_location, first_appeared_enc, sketch_enc, golden, created_at, last_met_at FROM parts ORDER BY created_at DESC',
   );
   const parts: ExportPart[] = partRows.map((r) => ({
     id: r.id,
@@ -166,6 +177,7 @@ export async function exportData(
     form: dec(r.form_enc, existingKey),
     body_location: r.body_location,
     first_appeared: dec(r.first_appeared_enc, existingKey),
+    sketch: dec(r.sketch_enc, existingKey),
     golden: r.golden,
     created_at: r.created_at,
     last_met_at: r.last_met_at,
@@ -199,7 +211,13 @@ export async function exportData(
     reflection: dec(r.reflection_enc, existingKey),
   }));
 
-  // 5. Assemble plaintext export object
+  // 5. Profile (name/gender) — lets a restore fully sign the user back in.
+  const profile: ShadowProfile = {
+    name: await getItem('shadow.user_name'),
+    gender: await getItem('shadow.user_gender'),
+  };
+
+  // 6. Assemble plaintext export object
   const exportObj: ShadowExport = {
     version: 1,
     exportedAt: Date.now(),
@@ -207,6 +225,7 @@ export async function exportData(
     parts,
     sessions,
     experiments,
+    profile,
   };
 
   // 6. Derive a new key from the passphrase (100k PBKDF2-SHA256 iterations)
@@ -227,9 +246,25 @@ export async function exportData(
     data: cipherData,
   });
 
-  // 9. Write to device cache and open share sheet
+  // 9. Save the backup. On web, trigger a browser download; on native, write to
+  //    the cache and open the system share sheet.
+  const filename = `shadow-backup-${Date.now()}.shadowexport`;
+
+  if (Platform.OS === 'web') {
+    const blob = new Blob([envelope], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
   const cacheDir = FileSystem.cacheDirectory ?? '';
-  const uri = `${cacheDir}shadow-backup-${Date.now()}.shadowexport`;
+  const uri = `${cacheDir}${filename}`;
   await FileSystem.writeAsStringAsync(uri, envelope);
   await Sharing.shareAsync(uri, {
     mimeType: 'application/octet-stream',

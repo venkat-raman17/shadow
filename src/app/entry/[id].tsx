@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen } from '@/components/ui';
 import { ChargeDots } from '@/components/ChargeDots';
 import { useEntry } from '@/hooks/useEntries';
@@ -20,6 +21,7 @@ function formatDate(ms: number): string {
 
 /** A captured answer: the original question, then the user's words. */
 function ReflectionBlock({ question, answer }: { question: string; answer: string }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.block}>
       <Text style={styles.question}>{question}</Text>
@@ -34,6 +36,8 @@ function ReflectionBlock({ question, answer }: { question: string; answer: strin
 export default function EntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { entry, loading } = useEntry(id);
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   if (loading) {
     return (
@@ -105,7 +109,8 @@ export default function EntryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   date: { ...typography.caption, color: colors.textSecondary },
   block: { gap: Spacing.two },
   question: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },

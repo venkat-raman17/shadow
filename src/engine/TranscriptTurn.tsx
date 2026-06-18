@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { resolveTokens } from '@/engine/tokens';
 import type { FlowInputs, Step } from '@/types/flow';
 
@@ -19,6 +20,7 @@ export default function TranscriptTurn({
   step: Step;
   inputs: FlowInputs;
 }) {
+  const styles = useThemedStyles(makeStyles);
   switch (step.type) {
     case 'prompt': {
       const answer = strValue(inputs[step.inputKey]);
@@ -94,6 +96,7 @@ export default function TranscriptTurn({
 }
 
 function Answer({ text, voice = 'you' }: { text: string; voice?: 'you' | 'part' }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.answerWrap}>
       <Text style={[styles.answer, voice === 'part' && styles.answerPart]}>{text}</Text>
@@ -106,7 +109,8 @@ function strValue(v: string | number | undefined): string {
   return String(v).trim();
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   turn: { gap: Spacing.two },
   guide: { ...typography.serifBody, color: colors.textSecondary },
   guideQuiet: { ...typography.serifBody, color: colors.textFaint },

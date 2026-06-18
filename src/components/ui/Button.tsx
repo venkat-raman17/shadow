@@ -8,7 +8,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 
@@ -36,10 +37,14 @@ export function Button({
   fullWidth = true,
   style,
 }: Props) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.base,
         variant === 'primary' && styles.primary,
@@ -65,7 +70,8 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   base: {
     borderRadius: radii.md,
     paddingVertical: Spacing.three,

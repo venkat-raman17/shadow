@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Switch, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme, type ThemePreference } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader, TextField, Button, Chip } from '@/components/ui';
 import { useCrypto } from '@/context/CryptoContext';
 import { exportData } from '@/lib/export';
@@ -13,6 +14,9 @@ import {
   getScheduledHour,
 } from '@/lib/notifications';
 import { pickAndRestoreBackup, type RestoreResult } from '@/lib/restore';
+import { isLockEnabled, setLockEnabled, canAuthenticate, authenticate } from '@/lib/appLock';
+import { resetAllData } from '@/lib/reset';
+import { useSession } from '@/context/SessionContext';
 
 // ─── Time slots for notification scheduling ───────────────────────────────────
 
@@ -23,11 +27,20 @@ const TIME_SLOTS = [
   { label: 'Night', hour: 21, minute: 0 },
 ] as const;
 
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'sepia', label: 'Sepia' },
+];
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
   const db = useSQLiteContext();
   const { key } = useCrypto();
+  const { colors, preference, setPreference } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // ── Export state ──────────────────────────────────────────────────────────
   const [showExportForm, setShowExportForm] = useState(false);
@@ -47,7 +60,16 @@ export default function SettingsScreen() {
   const [notifHour, setNotifHour] = useState<number | null>(null);
   const [notifPermDenied, setNotifPermDenied] = useState(false);
 
-  // Load current notification setting on mount
+  // ── App lock state ────────────────────────────────────────────────────────
+  const [lockOn, setLockOn] = useState(false);
+  const [lockUnavailable, setLockUnavailable] = useState(false);
+
+  // ── Delete-everything state ───────────────────────────────────────────────
+  const { refresh } = useSession();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Load current notification + lock settings on mount
   useEffect(() => {
     getScheduledHour().then((h) => {
       if (h !== null) {
@@ -55,6 +77,7 @@ export default function SettingsScreen() {
         setNotifHour(h);
       }
     });
+    isLockEnabled().then(setLockOn);
   }, []);
 
   // ── Export handlers ───────────────────────────────────────────────────────
@@ -150,6 +173,36 @@ export default function SettingsScreen() {
   async function handleTimeSlot(hour: number, minute: number) {
     await scheduleDaily(hour, minute);
     setNotifHour(hour);
+  }
+
+  // ── App lock handler ──────────────────────────────────────────────────────
+
+  async function handleLockToggle(value: boolean) {
+    setLockUnavailable(false);
+    if (value) {
+      // Confirm the device can authenticate AND that the user can pass it now,
+      // so enabling never strands them behind a lock they can't open.
+      if (!(await canAuthenticate())) {
+        setLockUnavailable(true);
+        return;
+      }
+      if (!(await authenticate())) return; // cancelled — leave it off
+      await setLockEnabled(true);
+      setLockOn(true);
+    } else {
+      await setLockEnabled(false);
+      setLockOn(false);
+    }
+  }
+
+  // ── Delete-everything handler ─────────────────────────────────────────────
+
+  async function handleDeleteAll() {
+    setDeleting(true);
+    await resetAllData(db);
+    // Flip the navigation gate → the app drops back to the onboarding/landing
+    // screen as a brand-new user (no reload needed).
+    await refresh();
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -255,6 +308,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* ── Daily reminder ─────────────────────────────────────────────────── */}
+      {Platform.OS !== 'web' && (
       <View style={styles.section}>
         <SectionHeader>Daily reminder</SectionHeader>
         <Text style={styles.sectionBody}>An optional nudge. Off by default — no pressure, ever.</Text>
@@ -288,6 +342,51 @@ export default function SettingsScreen() {
           </View>
         )}
       </View>
+      )}
+
+      {/* ── App lock ───────────────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <SectionHeader>App lock</SectionHeader>
+        <Text style={styles.sectionBody}>
+          Require Face ID, Touch ID, or your device passcode to open Partwise. Off by default. It
+          never interrupts a practice you&apos;re in the middle of.
+        </Text>
+
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>Lock when I leave the app</Text>
+          <Switch
+            value={lockOn}
+            onValueChange={handleLockToggle}
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={colors.background}
+          />
+        </View>
+
+        {lockUnavailable && (
+          <Text style={styles.errorText}>
+            Set up Face ID, Touch ID, or a device passcode first, then try again.
+          </Text>
+        )}
+      </View>
+
+      {/* ── Appearance ─────────────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <SectionHeader>Appearance</SectionHeader>
+        <Text style={styles.sectionBody}>
+          Choose how Partwise looks — it changes instantly. &ldquo;System&rdquo; follows your
+          device&apos;s light or dark setting.
+        </Text>
+        <View style={styles.timeSlots}>
+          {THEME_OPTIONS.map((opt) => (
+            <Chip
+              key={opt.value}
+              label={opt.label}
+              selected={preference === opt.value}
+              onPress={() => setPreference(opt.value)}
+            />
+          ))}
+        </View>
+      </View>
 
       {/* ── Privacy ────────────────────────────────────────────────────────── */}
       <View style={styles.section}>
@@ -300,13 +399,63 @@ export default function SettingsScreen() {
           In airplane mode, the app works exactly the same. That&apos;s by design.
         </Text>
       </View>
+
+      {/* ── Delete everything ──────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <SectionHeader>Delete everything</SectionHeader>
+        <Text style={styles.sectionBody}>
+          Permanently erase all your reflections, parts, drawings, and settings, and start over as a
+          new user. This can&apos;t be undone.
+        </Text>
+
+        {!showDeleteConfirm ? (
+          <Button
+            label="Delete everything"
+            variant="secondary"
+            fullWidth={false}
+            onPress={() => setShowDeleteConfirm(true)}
+            style={styles.selfStart}
+          />
+        ) : (
+          <Card style={styles.form}>
+            <Text style={styles.formLabel}>
+              This erases everything on this device and returns you to the welcome screen. If you
+              might want it back, export a backup first.
+            </Text>
+            <Button
+              label="Export a backup first"
+              variant="secondary"
+              onPress={() => {
+                setShowDeleteConfirm(false);
+                setShowExportForm(true);
+              }}
+            />
+            {deleting ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color={colors.danger} size="small" />
+                <Text style={styles.loadingText}>Deleting…</Text>
+              </View>
+            ) : (
+              <>
+                <Button
+                  label="Yes, delete everything"
+                  onPress={handleDeleteAll}
+                  style={styles.deleteBtn}
+                />
+                <Button label="Cancel" variant="ghost" onPress={() => setShowDeleteConfirm(false)} />
+              </>
+            )}
+          </Card>
+        )}
+      </View>
     </Screen>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   heading: { ...typography.display },
   section: { gap: Spacing.three },
   sectionBody: { ...typography.body, color: colors.textSecondary, lineHeight: 26 },
@@ -325,4 +474,5 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleLabel: { ...typography.body },
   timeSlots: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
+  deleteBtn: { backgroundColor: colors.danger },
 });

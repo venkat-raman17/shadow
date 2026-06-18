@@ -1,0 +1,42 @@
+{
+  "id": "grounding.urge_surf.v1",
+  "kind": "grounding",
+  "title": "Ride the urge",
+  "subtitle": "Urges rise, crest, and fall — like a wave. Ride it instead of fighting it.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "An urge feels like it will last forever and only grow. It won't.\n\nUrges rise, crest, and pass, like a wave. This is about riding it — not fighting it, and not feeding it. (If you're in real danger, the Support tab has people who can help right now.)"
+    },
+    {
+      "id": "name",
+      "type": "passage",
+      "body": "Notice the urge, without acting on it. You don't have to push it away or judge it. Just turn toward it, the way you'd watch a wave roll in."
+    },
+    {
+      "id": "locate",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Where do you feel it in your body? Notice its edges — where it's strong, where it fades. Just observe it, with a little curiosity."
+    },
+    {
+      "id": "ride",
+      "type": "pause",
+      "seconds": 16,
+      "body": "Now breathe, and ride it. Waves crest and pass. You don't have to do anything but stay with it as it moves and changes."
+    },
+    {
+      "id": "close",
+      "type": "passage",
+      "body": "Whatever it's doing now — bigger, smaller, the same — you stayed with it without being swept away. Each time you do this, it gets a little easier."
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You surfed it instead of being pulled under. The urge doesn't get the only vote — you do.",
+    "celebrate": false
+  }
+}

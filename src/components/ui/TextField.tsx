@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { TextInput, StyleSheet, type TextInputProps } from 'react-native';
 
-import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 
 interface Props extends TextInputProps {
   /** Taller input for long-form writing (dialogue, reflections). */
@@ -15,6 +16,8 @@ interface Props extends TextInputProps {
  */
 export function TextField({ large, multiline, style, ...rest }: Props) {
   const [focused, setFocused] = useState(false);
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <TextInput
@@ -41,7 +44,8 @@ export function TextField({ large, multiline, style, ...rest }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,

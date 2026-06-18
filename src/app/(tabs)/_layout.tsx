@@ -2,9 +2,10 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
-import { colors, typography } from '@/constants/theme';
+import { useTheme } from '@/constants/theme-context';
 
 export default function TabsLayout() {
+  const { colors, typography } = useTheme();
   return (
     <Tabs
       screenOptions={{
