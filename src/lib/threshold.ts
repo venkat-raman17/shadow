@@ -1,4 +1,5 @@
 import type { Gender } from '@/hooks/useUserProfile';
+import { getPractice } from '@/lib/practices';
 
 /**
  * The threshold router. The home screen lets the user speak into an open
@@ -103,4 +104,43 @@ export function routeFromText(text: string, gender: Gender | null | undefined): 
     if (rule.test.test(t)) return rule.resolve(gender);
   }
   return null;
+}
+
+/**
+ * The adaptive suggestion behind "Begin where I am" / "I'm not sure" — what to
+ * open when the user hasn't said anything specific. Lives here, alongside the
+ * text and doorway routers, so the whole "which flow comes next" decision has a
+ * single home. Pure and deterministic: the caller passes the data and the clock
+ * hour, so there's no hidden state and it stays trivially testable.
+ */
+export interface SuggestContext {
+  /** No prior entries, parts, or experiments yet. */
+  firstRun: boolean;
+  /** Highest surfacing-pattern count (0 when none recur). */
+  topPatternCount: number;
+  hasParts: boolean;
+  hasOpenExperiment: boolean;
+  gender: Gender | null | undefined;
+  /** Local hour 0–23, passed in to keep this pure. */
+  hour: number;
+}
+
+export function suggestFlow(ctx: SuggestContext): FlowId {
+  // A newcomer starts from the body — no situation or person required.
+  if (ctx.firstRun) return 'noticing.somatic.v1';
+
+  // Something keeps surfacing — invite sitting with it (the personification move).
+  if (ctx.topPatternCount >= 2 && getPractice('meeting.active_imagination.v1')) {
+    return 'meeting.active_imagination.v1';
+  }
+
+  // Parts met but nothing being carried — close the loop with an experiment.
+  if (ctx.hasParts && !ctx.hasOpenExperiment) return 'integration.after_meeting.v1';
+
+  // Otherwise a gentle noticing, shaped by time of day, then gender.
+  if (ctx.hour < 12) return 'noticing.somatic.v1';
+  if (ctx.hour < 18) return 'noticing.projection_recall.v1';
+  if (ctx.gender === 'man') return 'noticing.anima_projection.v1';
+  if (ctx.gender === 'woman') return 'noticing.animus_projection.v1';
+  return 'noticing.golden_shadow.v1';
 }
