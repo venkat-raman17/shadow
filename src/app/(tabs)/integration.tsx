@@ -3,7 +3,8 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 
-import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader, Button } from '@/components/ui';
 import { ChargeDots } from '@/components/ChargeDots';
 import { PresenceField } from '@/components/PresenceField';
@@ -31,6 +32,7 @@ function formatDateTime(ms: number): string {
 }
 
 function EntryRow({ entry }: { entry: EntryListItem }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Card onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}>
       {entry.subject ? (
@@ -65,6 +67,7 @@ function ExperimentCard({
   experiment: ExperimentItem;
   onStatusChange: (id: string, status: 'done' | 'let-go') => void;
 }) {
+  const styles = useThemedStyles(makeStyles);
   const isOpen = experiment.status === 'open';
   const needsReflection = isOpen && isOlderThanReflectAge(experiment.created_at);
 
@@ -112,6 +115,7 @@ export default function ReflectionsScreen() {
   const { experiments, setExperiments } = useExperiments();
   const entries = useRecentEntries(HISTORY_LIMIT + 1);
   const returnPart = useReturnInvitation();
+  const styles = useThemedStyles(makeStyles);
 
   // A recurring quality the user could personify and sit with (Zweig's move:
   // from an abstract tag to a part with a face). Patterns are count-sorted.
@@ -233,7 +237,8 @@ export default function ReflectionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   heading: { ...typography.display },
   tagline: { ...typography.body, color: colors.textSecondary },
   empty: {

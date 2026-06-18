@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,9 +9,11 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { Button } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { PauseStep as PauseStepType } from '@/types/flow';
 import type { StepProps } from './types';
 
@@ -19,34 +21,36 @@ const BREATH_MS = 4000;
 
 export default function PauseStep({ step, inputs, onNext }: StepProps<PauseStepType>) {
   const [remaining, setRemaining] = useState(step.seconds);
-  const [done, setDone] = useState(false);
+  const done = remaining <= 0; // derived — no setState in the effect below
 
   const body = resolveTokens(step.body, inputs);
+  const styles = useThemedStyles(makeStyles);
 
   // Countdown gates the Skip → Continue transition (no visible number).
   useEffect(() => {
-    if (remaining <= 0) {
-      setDone(true);
-      return;
-    }
+    if (remaining <= 0) return;
     const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
     return () => clearTimeout(t);
   }, [remaining]);
 
-  // Breathing animation. reanimated runs on web, but we keep a static circle
-  // there to avoid any worklet edge cases in the static web output.
+  // Breathing animation — reanimated runs on web too, so it animates everywhere.
+  // Held still only when the OS "Reduce Motion" setting is on (vestibular safety).
   const scale = useSharedValue(1);
-  const isWeb = Platform.OS === 'web';
+  const reducedMotion = useReducedMotion();
+  const stillCircle = reducedMotion;
 
   useEffect(() => {
-    if (isWeb) return;
+    if (stillCircle) {
+      scale.value = 1;
+      return;
+    }
     scale.value = withRepeat(
       withTiming(1.22, { duration: BREATH_MS, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
     return () => cancelAnimation(scale);
-  }, [isWeb, scale]);
+  }, [stillCircle, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -54,7 +58,7 @@ export default function PauseStep({ step, inputs, onNext }: StepProps<PauseStepT
     <View style={styles.block}>
       {body ? <Text style={styles.body}>{body}</Text> : null}
 
-      <View style={styles.circleWrap}>
+      <View style={styles.circleWrap} accessible={false} importantForAccessibility="no-hide-descendants">
         <Animated.View style={[styles.circle, animatedStyle]} />
       </View>
 
@@ -69,7 +73,8 @@ export default function PauseStep({ step, inputs, onNext }: StepProps<PauseStepT
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   block: { gap: Spacing.three, alignItems: 'center' },
   body: {
     ...typography.serifBody,

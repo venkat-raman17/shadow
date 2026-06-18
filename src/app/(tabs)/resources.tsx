@@ -1,13 +1,30 @@
 import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Screen, SectionHeader } from '@/components/ui';
-import { colors, Spacing, typography } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
+import { getDeviceRegion } from '@/lib/locale';
 import type { CrisisResources } from '@/types/flow';
 
 // Bundled at build time — never fetched from network
 const resources: CrisisResources = require('@/assets/resources/crisis.json');
 
+// Resolved once at module load. A null/unknown region falls back to the
+// international directory, so a user is never shown another country's numbers.
+const DEVICE_REGION = getDeviceRegion();
+const REGIONAL = (DEVICE_REGION && resources.regions[DEVICE_REGION]) || null;
+const CRISIS_LINES = REGIONAL ? REGIONAL.lines : resources.international.lines;
+const SHOWING_INTERNATIONAL = !REGIONAL;
+
+// Gentle "both/and" referral — not a fallback for failure, a complement. Broad
+// directories that resolve to the visitor's own country.
+const THERAPY_DIRECTORIES = [
+  { label: 'Find a therapist — Psychology Today', action: 'https://www.psychologytoday.com' },
+  { label: 'Find a Jungian analyst — IAAP', action: 'https://iaap.org/find-an-analyst/' },
+];
+
 export default function ResourcesScreen() {
+  const styles = useThemedStyles(makeStyles);
   function openLine(action: string) {
     Linking.openURL(action).catch(() => {});
   }
@@ -20,8 +37,8 @@ export default function ResourcesScreen() {
       </Text>
 
       <View style={styles.section}>
-        <SectionHeader>Crisis lines</SectionHeader>
-        {resources.lines.map((line) => (
+        <SectionHeader>Reach out to someone</SectionHeader>
+        {CRISIS_LINES.map((line) => (
           <Card key={line.action} onPress={() => openLine(line.action)} style={styles.lineCard}>
             <View style={styles.lineContent}>
               <Text style={styles.lineLabel}>{line.label}</Text>
@@ -32,6 +49,29 @@ export default function ResourcesScreen() {
                     ? 'Tap to text'
                     : 'Tap to open'}
               </Text>
+            </View>
+            <Text style={styles.lineArrow}>→</Text>
+          </Card>
+        ))}
+        {SHOWING_INTERNATIONAL && (
+          <Text style={styles.note}>
+            These open a directory that will find a line for your country.
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader>Working with someone</SectionHeader>
+        <Text style={styles.body}>
+          This app and a good therapist aren&apos;t either/or — they&apos;re both/and. If something
+          here keeps surfacing, or feels too big to hold alone, working with a person can go where an
+          app can&apos;t. That&apos;s not failure; it&apos;s wisdom.
+        </Text>
+        {THERAPY_DIRECTORIES.map((d) => (
+          <Card key={d.action} onPress={() => openLine(d.action)} style={styles.lineCard}>
+            <View style={styles.lineContent}>
+              <Text style={styles.lineLabel}>{d.label}</Text>
+              <Text style={styles.lineMeta}>Tap to open</Text>
             </View>
             <Text style={styles.lineArrow}>→</Text>
           </Card>
@@ -53,7 +93,8 @@ export default function ResourcesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   heading: { ...typography.display },
   subheading: { ...typography.body, color: colors.textSecondary },
   section: { gap: Spacing.two },
@@ -62,5 +103,6 @@ const styles = StyleSheet.create({
   lineLabel: { ...typography.body },
   lineMeta: { ...typography.caption, color: colors.accent },
   lineArrow: { ...typography.body, color: colors.textSecondary },
+  note: { ...typography.caption, color: colors.textFaint, marginTop: Spacing.one },
   body: { ...typography.body, color: colors.textSecondary, lineHeight: 26 },
 });

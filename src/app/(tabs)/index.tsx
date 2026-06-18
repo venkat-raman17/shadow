@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
-import { colors, typography, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, TextField, Chip, Button } from '@/components/ui';
 import { getItem, setItem } from '@/lib/kv';
 import { getPractice } from '@/lib/practices';
@@ -64,6 +65,8 @@ function relativeWhen(ms: number): string {
 
 // A quiet, dismissible nudge to revisit a past reflection — never a notification.
 function ResurfacingCard({ entry, onDismiss }: { entry: EntryDetail; onDismiss: () => void }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const text =
     (entry.reclaim && entry.reclaim.trim()) || (entry.subject && entry.subject.trim()) || '';
   if (!text) return null;
@@ -88,6 +91,8 @@ function ResurfacingCard({ entry, onDismiss }: { entry: EntryDetail; onDismiss: 
 // A one-time, dismissible map of the three depths — shown only to a newcomer so
 // the Notice → Sit → Carry spine isn't invisible. No ladder, no progress.
 function DepthsCard({ onDismiss }: { onDismiss: () => void }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.depthsCard}>
       <View style={styles.resurfaceHeader}>
@@ -119,6 +124,8 @@ export default function HomeScreen() {
 
   const [text, setText] = useState('');
   const doorways = doorwaysFor(profile?.gender);
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // The first-run depths map: shown once to a newcomer, dismissible for good.
   const [depthsDismissed, setDepthsDismissed] = useState<boolean | null>(null);
@@ -207,6 +214,12 @@ export default function HomeScreen() {
         />
       </Pressable>
 
+      {/* A calm, always-present way to settle — never a flashing panic button. */}
+      <Pressable style={styles.settleLink} onPress={() => enter('grounding.settle.v1')}>
+        <SymbolView name={{ ios: 'wind', web: 'air' }} size={15} tintColor={colors.textSecondary} />
+        <Text style={styles.settleLinkText}>Feeling unsteady? Take a moment to settle →</Text>
+      </Pressable>
+
       <View style={styles.footer}>
         <Text style={styles.footerText}>
           Nothing you write here leaves this device. No account, no cloud, no AI.
@@ -216,7 +229,8 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greeting: { ...typography.display },
 
@@ -275,6 +289,10 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   moreLinkText: { ...typography.body, color: colors.textSecondary },
+
+  // Quiet grounding affordance
+  settleLink: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  settleLinkText: { ...typography.bodySmall, color: colors.textSecondary },
 
   footer: { marginTop: Spacing.two, paddingTop: Spacing.three },
   footerText: { ...typography.caption, textAlign: 'center', lineHeight: 20 },

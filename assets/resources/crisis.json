@@ -1,19 +1,61 @@
 {
-  "lines": [
-    {
-      "label": "988 Suicide & Crisis Lifeline",
-      "action": "tel:988",
-      "kind": "call"
+  "lastUpdated": "2026-06",
+  "international": {
+    "lines": [
+      {
+        "label": "Find a Helpline — global directory for your country",
+        "action": "https://findahelpline.com",
+        "kind": "web"
+      },
+      {
+        "label": "International crisis centres (IASP)",
+        "action": "https://www.iasp.info/resources/Crisis_Centres/",
+        "kind": "web"
+      }
+    ]
+  },
+  "regions": {
+    "US": {
+      "lines": [
+        { "label": "988 Suicide & Crisis Lifeline", "action": "tel:988", "kind": "call" },
+        { "label": "Crisis Text Line — text HOME to 741741", "action": "sms:741741&body=HOME", "kind": "text" }
+      ]
     },
-    {
-      "label": "Crisis Text Line — text HOME to 741741",
-      "action": "sms:741741&body=HOME",
-      "kind": "text"
+    "CA": {
+      "lines": [
+        { "label": "9-8-8 Suicide Crisis Helpline", "action": "tel:988", "kind": "call" },
+        { "label": "Talk Suicide Canada", "action": "tel:18334564566", "kind": "call" }
+      ]
     },
-    {
-      "label": "International crisis centres (IASP)",
-      "action": "https://www.iasp.info/resources/Crisis_Centres/",
-      "kind": "web"
+    "GB": {
+      "lines": [
+        { "label": "Samaritans", "action": "tel:116123", "kind": "call" },
+        { "label": "Shout — text SHOUT to 85258", "action": "sms:85258&body=SHOUT", "kind": "text" }
+      ]
+    },
+    "IE": {
+      "lines": [
+        { "label": "Samaritans Ireland", "action": "tel:116123", "kind": "call" },
+        { "label": "Text About It — text HELLO to 50808", "action": "sms:50808&body=HELLO", "kind": "text" }
+      ]
+    },
+    "AU": {
+      "lines": [
+        { "label": "Lifeline Australia", "action": "tel:131114", "kind": "call" },
+        { "label": "13YARN (First Nations support)", "action": "tel:139276", "kind": "call" }
+      ]
+    },
+    "NZ": {
+      "lines": [
+        { "label": "1737 — Need to talk?", "action": "tel:1737", "kind": "call" },
+        { "label": "Lifeline Aotearoa", "action": "tel:0508828865", "kind": "call" }
+      ]
+    },
+    "IN": {
+      "lines": [
+        { "label": "KIRAN Mental Health Helpline", "action": "tel:18005990019", "kind": "call" },
+        { "label": "iCall (TISS)", "action": "tel:9152987821", "kind": "call" }
+      ]
     }
-  ]
+  }
 }

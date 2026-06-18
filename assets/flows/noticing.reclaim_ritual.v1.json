@@ -1,0 +1,47 @@
+{
+  "id": "noticing.reclaim_ritual.v1",
+  "kind": "noticing",
+  "title": "Set down what's not yours",
+  "subtitle": "A quiet closing: release the burden a part carried, keep the part.",
+  "estimatedMinutes": 7,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "When you've met a part and seen what it carried, there's a quiet step left.\n\nNot throwing the part away — it stays. Setting down the burden it carried for you. The weight was never really yours to hold forever."
+    },
+    {
+      "id": "carried",
+      "type": "prompt",
+      "title": "What has this part been carrying for you?",
+      "body": "A belief, a fear, a role, a weight handed to you long ago that you've been holding ever since.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "The thing it's been carrying…"
+    },
+    {
+      "id": "letting_go",
+      "type": "pause",
+      "seconds": 15,
+      "body": "Read it back, once. Then let it go — out loud, on the breath, or just in your chest.\n\nSome people write it on paper and burn it later. The gesture is yours to choose; none of it is required."
+    },
+    {
+      "id": "keep",
+      "type": "prompt",
+      "title": "And what's yours to keep?",
+      "body": "The part itself. The need underneath. What it was trying to protect all along.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You didn't throw anything away. You set down a weight, and kept what's yours. The shift shows up in how you live — not in how you feel in this exact moment.",
+    "celebrate": false
+  }
+}

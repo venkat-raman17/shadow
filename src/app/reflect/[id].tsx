@@ -3,7 +3,8 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, TextField, Button, Chip, SectionHeader } from '@/components/ui';
 import { useCrypto } from '@/context/CryptoContext';
 import { getExperimentById, saveExperimentReflection, type ExperimentItem } from '@/lib/db';
@@ -28,6 +29,8 @@ export default function ReflectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const db = useSQLiteContext();
   const { key } = useCrypto();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const [experiment, setExperiment] = useState<ExperimentItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -157,7 +160,8 @@ export default function ReflectScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   errorText: { ...typography.body, color: colors.textSecondary },
   savedText: {
     ...typography.display,

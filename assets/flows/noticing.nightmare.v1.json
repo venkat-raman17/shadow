@@ -1,0 +1,95 @@
+{
+  "id": "noticing.nightmare.v1",
+  "kind": "noticing",
+  "title": "Rewrite a recurring dream",
+  "subtitle": "Gently give a returning nightmare a new shape, while you're awake.",
+  "estimatedMinutes": 12,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "A recurring nightmare can lose its grip when you gently rewrite it while awake.\n\nThis is for a dream that keeps returning — not for fresh or raw trauma. If the memory is still raw, or you feel unsafe, this isn't the practice for right now; the Support tab is there for you."
+    },
+    {
+      "id": "gate",
+      "type": "exitOffer",
+      "body": "Is this a dream that repeats — and do you feel steady enough to look at it gently? You can stop here anytime, and it will be waiting."
+    },
+    {
+      "id": "recall",
+      "type": "prompt",
+      "title": "In a few lines, what happens in the nightmare?",
+      "body": "Only as much as feels okay. You don't have to relive it — just sketch it.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "A rough outline is enough…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How activating is it to recall?",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "manageable",
+      "maxLabel": "a lot",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "settle" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "feeling" }
+      ]
+    },
+    {
+      "id": "settle",
+      "type": "pause",
+      "seconds": 14,
+      "body": "That stirs something. Breathe. You're awake, here, and safe — the dream is not happening now. Go only as far as you choose."
+    },
+    {
+      "id": "feeling",
+      "type": "prompt",
+      "title": "What's the worst feeling it leaves you with?",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Helpless, trapped, alone…"
+    },
+    {
+      "id": "rescript",
+      "type": "prompt",
+      "title": "Now rewrite it.",
+      "body": "Change anything you want — the ending, what you're able to do, who arrives, how it feels. Give it a new shape, one you'd choose.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "The way you'd want it to go instead…"
+    },
+    {
+      "id": "rehearse",
+      "type": "pause",
+      "seconds": 14,
+      "body": "Read your new version once, slowly. Let it be the one you carry. Picture it as if this is simply how the dream goes now."
+    },
+    {
+      "id": "keep",
+      "type": "prompt",
+      "title": "Anything you want to hold onto from the new version?",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "Dreams can be revised. You gave this one a different shape — and the more you rehearse the new version awake, the more it can soften in sleep.",
+    "celebrate": false
+  }
+}

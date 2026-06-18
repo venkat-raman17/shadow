@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import { getItem, setItem } from '@/lib/kv';
@@ -14,6 +15,8 @@ const NOTIF_BODY = 'Your practice is here.';
  * Returns true if granted. On iOS, uses ios.status per SDK 56 guidance.
  */
 export async function requestPermission(): Promise<boolean> {
+  // Scheduled local notifications aren't supported on web — treat as unavailable.
+  if (Platform.OS === 'web') return false;
   const result = await Notifications.requestPermissionsAsync();
   return result.granted;
 }
@@ -23,6 +26,7 @@ export async function requestPermission(): Promise<boolean> {
  * Cancels any previously scheduled notification first.
  */
 export async function scheduleDaily(hour: number, minute: number): Promise<void> {
+  if (Platform.OS === 'web') return;
   const existingId = await getItem(NOTIF_ID_KEY);
   if (existingId) {
     try {
@@ -52,6 +56,7 @@ export async function scheduleDaily(hour: number, minute: number): Promise<void>
  * Cancel the active scheduled notification and clear stored state.
  */
 export async function cancelNotification(): Promise<void> {
+  if (Platform.OS === 'web') return;
   const existingId = await getItem(NOTIF_ID_KEY);
   if (existingId) {
     try {

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
@@ -7,6 +8,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { decrypt } from '@/lib/crypto';
 import type { ShadowExport } from '@/lib/export';
 import { restoreEntries, restoreParts, restoreSessions, restoreExperiments } from '@/lib/db';
+import { setItem } from '@/lib/kv';
 
 // ─── Result types ────────────────────────────────────────────────────────────
 
@@ -15,6 +17,8 @@ export interface RestoreResult {
   parts: number;
   sessions: number;
   experiments: number;
+  /** True when the backup carried a profile and the user was signed back in. */
+  signedIn: boolean;
 }
 
 export type RestoreOutcome =
@@ -69,10 +73,14 @@ export async function pickAndRestoreBackup(
 
   const uri = picked.assets[0].uri;
 
-  // 2. Read file
+  // 2. Read file. On web the picker hands back a blob: URL (FileSystem can't read
+  //    it) — fetch it instead; on native, read from the file URI.
   let raw: string;
   try {
-    raw = await FileSystem.readAsStringAsync(uri);
+    raw =
+      Platform.OS === 'web'
+        ? await fetch(uri).then((r) => r.text())
+        : await FileSystem.readAsStringAsync(uri);
   } catch {
     return 'invalid_file';
   }
@@ -124,5 +132,17 @@ export async function pickAndRestoreBackup(
     restoreExperiments(db, exportObj.experiments ?? [], deviceKey),
   ]);
 
-  return { entries, parts, sessions, experiments };
+  // 8. If the backup carried a profile, sign the user back in (skips onboarding).
+  let signedIn = false;
+  const profile = exportObj.profile;
+  if (profile && profile.name && profile.gender) {
+    await Promise.all([
+      setItem('shadow.user_name', profile.name),
+      setItem('shadow.user_gender', profile.gender),
+      setItem('shadow.onboarding_complete', 'true'),
+    ]);
+    signedIn = true;
+  }
+
+  return { entries, parts, sessions, experiments, signedIn };
 }

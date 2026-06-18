@@ -1,0 +1,47 @@
+{
+  "id": "grounding.tipp.v1",
+  "kind": "grounding",
+  "title": "Turn the dial down fast",
+  "subtitle": "When distress is very high, the quickest way back is through the body.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "When distress is very high, the fastest way back is through the body, not the mind.\n\nFour quick options below — use any that fit. If you're in danger or crisis, please reach out to a person now; the Support tab has crisis lines."
+    },
+    {
+      "id": "temperature",
+      "type": "passage",
+      "body": "Cold.\n\nHold something cold — splash cool water on your face, hold ice, step into cooler air. A sharp temperature change calms the body's alarm surprisingly fast."
+    },
+    {
+      "id": "movement",
+      "type": "passage",
+      "body": "Move.\n\nThirty seconds of intense movement — jumping jacks, a fast walk, running up stairs — burns off the surge of stress chemicals so they stop circling."
+    },
+    {
+      "id": "breath",
+      "type": "pause",
+      "seconds": 16,
+      "body": "Breathe.\n\nSlow your exhale longer than your inhale. Follow the circle for a few rounds — in as it grows, out as it shrinks."
+    },
+    {
+      "id": "relax",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Release.\n\nTense your shoulders hard for five seconds, then let go completely. Notice the difference. Do it anywhere you're holding."
+    },
+    {
+      "id": "close",
+      "type": "passage",
+      "body": "You used your body to turn the dial down. If the distress stays very high, that's a signal to reach out to a person — the Support tab is there for exactly this."
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You did something kind and practical for a nervous system in alarm. That's enough for right now.",
+    "celebrate": false
+  }
+}

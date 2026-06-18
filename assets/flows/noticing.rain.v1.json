@@ -1,0 +1,90 @@
+{
+  "id": "noticing.rain.v1",
+  "kind": "noticing",
+  "title": "Meet a hard feeling (RAIN)",
+  "subtitle": "Recognize, allow, investigate, nurture — without drowning in it.",
+  "estimatedMinutes": 9,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 7,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "RAIN is a way to meet a hard feeling without being swept under by it.\n\nFour gentle steps: Recognize it, Allow it, Investigate it, Nurture what's hurting. We go slow, and you can stop anytime."
+    },
+    {
+      "id": "recognize",
+      "type": "prompt",
+      "title": "What's here right now?",
+      "body": "Just name the feeling, simply. You don't have to explain it.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Fear. Anger. A heaviness…"
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How strong is it?",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "a flicker",
+      "maxLabel": "overwhelming",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 7 }, "goTo": "settle_pause" },
+        { "when": { "inputKey": "charge", "lte": 6 }, "goTo": "allow" }
+      ]
+    },
+    {
+      "id": "settle_pause",
+      "type": "pause",
+      "seconds": 12,
+      "body": "That's strong. One breath. You don't have to go all the way in — just to the edge."
+    },
+    {
+      "id": "allow",
+      "type": "passage",
+      "body": "Allow it to be here.\n\nYou don't have to like it, fix it, or make it leave. Just let it exist for a moment, exactly as it is. Even a quiet 'this belongs, for now' is enough."
+    },
+    {
+      "id": "investigate_body",
+      "type": "prompt",
+      "title": "Where do you feel it in your body?",
+      "body": "Gently, with curiosity — not interrogation.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Chest, throat, gut, everywhere…"
+    },
+    {
+      "id": "investigate_need",
+      "type": "prompt",
+      "title": "If it could speak, what does it want you to understand?",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Let it say what it needs you to know…"
+    },
+    {
+      "id": "nurture",
+      "type": "prompt",
+      "title": "What does this part of you need right now?",
+      "body": "A word, a gesture, a kindness — offer it, even silently. A hand on your heart counts.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You met it with RAIN instead of resistance. That's the practice — not making it disappear, but no longer facing it alone.",
+    "celebrate": false
+  }
+}

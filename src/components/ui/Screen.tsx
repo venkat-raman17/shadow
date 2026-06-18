@@ -1,14 +1,10 @@
 import React from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
-import { colors, Spacing, BottomTabInset, MaxContentWidth } from '@/constants/theme';
+import { Spacing, BottomTabInset, MaxContentWidth, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 
 interface Props {
   children: React.ReactNode;
@@ -39,6 +35,7 @@ export function Screen({
   contentStyle,
   keyboardShouldPersistTaps = 'handled',
 }: Props) {
+  const styles = useThemedStyles(makeStyles);
   const padding = [
     styles.content,
     withTabBar && { paddingBottom: BottomTabInset + Spacing.four },
@@ -49,13 +46,14 @@ export function Screen({
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
       {scroll ? (
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.flex}
           contentContainerStyle={padding}
           keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+          bottomOffset={Spacing.five}
           showsVerticalScrollIndicator={false}>
           <View style={styles.inner}>{children}</View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       ) : (
         <View style={[styles.flex, padding]}>
           <View style={[styles.inner, center && styles.flex]}>{children}</View>
@@ -65,7 +63,8 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   content: {

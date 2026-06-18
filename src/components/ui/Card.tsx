@@ -7,7 +7,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, Spacing, radii } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 
 interface Props {
   children: React.ReactNode;
@@ -15,6 +16,8 @@ interface Props {
   onPress?: () => void;
   /** Dim the card (e.g. closed experiments). */
   muted?: boolean;
+  /** Screen-reader label for a pressable card; falls back to its text content. */
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -22,11 +25,14 @@ interface Props {
  * The surface + radius + border container used everywhere (practice cards,
  * part cards, entry rows, the carry-forward CTA). Optionally pressable.
  */
-export function Card({ children, onPress, muted, style }: Props) {
+export function Card({ children, onPress, muted, accessibilityLabel, style }: Props) {
+  const styles = useThemedStyles(makeStyles);
   if (onPress) {
     return (
       <Pressable
         onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
         style={({ pressed }) => [
           styles.card,
           muted && styles.muted,
@@ -41,7 +47,8 @@ export function Card({ children, onPress, muted, style }: Props) {
   return <View style={[styles.card, muted && styles.muted, style]}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors }: Theme) =>
+  StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,

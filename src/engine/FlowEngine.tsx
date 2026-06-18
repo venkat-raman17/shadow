@@ -1,18 +1,15 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewRef,
+} from 'react-native-keyboard-controller';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { colors, typography, Spacing, radii, MaxContentWidth } from '@/constants/theme';
+import { Spacing, radii, MaxContentWidth, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { Button, TextField, FadeSlide } from '@/components/ui';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
 import { saveEntry, savePart, saveSession, addExperiment, touchPart } from '@/lib/db';
@@ -105,11 +102,12 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
   const router = useRouter();
   const db = useSQLiteContext();
   const { key } = useCrypto();
+  const styles = useThemedStyles(makeStyles);
 
   const [experimentText, setExperimentText] = useState('');
   const [experimentSaved, setExperimentSaved] = useState(false);
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null);
   // The session this run created (meeting flows), so a seeded experiment can
   // remember where it came from and the loop can later close.
   const sessionIdRef = useRef<string | undefined>(undefined);
@@ -226,16 +224,14 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
   return (
     <SafeAreaView style={styles.safe}>
       {groundingBanner}
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
+        ref={scrollRef}
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          ref={scrollRef}
-          style={styles.flex}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.inner}>
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={Spacing.six + Spacing.four}
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.inner}>
             {transcript}
 
             {currentStep && (
@@ -311,8 +307,7 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
               </FadeSlide>
             )}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -340,7 +335,8 @@ function ActiveStep({ step, inputs, onNext, onExit }: StepProps) {
   }
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   scrollContent: {

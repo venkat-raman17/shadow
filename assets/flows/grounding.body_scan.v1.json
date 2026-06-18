@@ -1,0 +1,49 @@
+{
+  "id": "grounding.body_scan.v1",
+  "kind": "grounding",
+  "title": "A short body scan",
+  "subtitle": "Come back into your body, one place at a time.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "A short scan to come back into your body.\n\nWe're not looking for anything in particular — just noticing what's already here. If anywhere feels like too much, skip past it. You can stop anytime."
+    },
+    {
+      "id": "feet",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Bring your attention to your feet. Their weight, their temperature, the contact with the floor. Just notice."
+    },
+    {
+      "id": "legs",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Let attention move up — legs, hips, belly, lower back. Nothing to change. Just visit each place, briefly."
+    },
+    {
+      "id": "chest",
+      "type": "pause",
+      "seconds": 14,
+      "body": "Rest at your chest. Feel it rise and fall. A few slow breaths, in their own rhythm."
+    },
+    {
+      "id": "upper",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Hands, shoulders, jaw, the muscles of your face. Let anything that's holding soften a little — or don't. Either is fine."
+    },
+    {
+      "id": "close",
+      "type": "passage",
+      "body": "You're here — in your body, in this room, in this moment. That's the whole practice."
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "However you feel now, you came back to yourself for a few minutes. You can return to this whenever you need it.",
+    "celebrate": false
+  }
+}

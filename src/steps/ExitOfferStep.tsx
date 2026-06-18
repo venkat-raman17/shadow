@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useThemedStyles } from '@/constants/theme-context';
 import { Card, Button } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
 import type { ExitOfferStep as ExitOfferStepType } from '@/types/flow';
@@ -9,6 +10,7 @@ import type { StepProps } from './types';
 
 export default function ExitOfferStep({ step, inputs, onNext, onExit }: StepProps<ExitOfferStepType>) {
   const body = resolveTokens(step.body, inputs) || 'You can stop here. That’s enough.';
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.block}>
@@ -24,7 +26,8 @@ export default function ExitOfferStep({ step, inputs, onNext, onExit }: StepProp
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   block: { gap: Spacing.three },
   body: { ...typography.serifBody, color: colors.textPrimary },
   actions: { gap: Spacing.two },

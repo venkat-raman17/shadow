@@ -145,6 +145,15 @@ export interface CrisisLine {
   kind: 'call' | 'text' | 'web';
 }
 
-export interface CrisisResources {
+export interface CrisisRegion {
   lines: CrisisLine[];
+}
+
+export interface CrisisResources {
+  /** Year-month the bundled numbers were last reviewed (shown faintly). */
+  lastUpdated: string;
+  /** Fallback when the device region isn't in `regions` — always safe. */
+  international: CrisisRegion;
+  /** Region-specific lines, keyed by ISO 3166-1 alpha-2 (e.g. "US", "GB"). */
+  regions: Record<string, CrisisRegion>;
 }

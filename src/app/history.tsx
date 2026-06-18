@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader } from '@/components/ui';
 import { ChargeDots } from '@/components/ChargeDots';
 import { useRecentEntries, useEntriesByQuality } from '@/hooks/useEntries';
@@ -22,6 +24,7 @@ function monthLabel(ms: number): string {
 }
 
 function EntryRow({ entry }: { entry: EntryListItem }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <Card onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}>
       {entry.subject ? (
@@ -47,6 +50,8 @@ export default function HistoryScreen() {
   const recent = useRecentEntries(200);
   const filtered = useEntriesByQuality(quality, 200);
   const entries = quality ? filtered : recent;
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // Patterns pass a normalized (lowercased) family token; tidy it for display.
   const qualityLabel = quality ? quality.charAt(0).toUpperCase() + quality.slice(1) : '';
@@ -71,6 +76,19 @@ export default function HistoryScreen() {
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textSecondary,
           headerBackTitle: '',
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push('/search')}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Search your reflections">
+              <SymbolView
+                name={{ ios: 'magnifyingglass', web: 'search' }}
+                size={18}
+                tintColor={colors.textSecondary}
+              />
+            </Pressable>
+          ),
         }}
       />
       <Screen edges={['bottom']} contentStyle={styles.content}>
@@ -95,7 +113,8 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   content: { paddingTop: Spacing.three },
   list: { gap: Spacing.two },
   monthHeader: { marginTop: Spacing.two },

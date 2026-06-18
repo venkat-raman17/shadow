@@ -1,0 +1,52 @@
+{
+  "id": "noticing.defusion.v1",
+  "kind": "noticing",
+  "title": "Unhook from a thought",
+  "subtitle": "Step back and watch a sticky thought, instead of being inside it.",
+  "estimatedMinutes": 5,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "A thought is not a fact, and it is not you.\n\nThis is a small practice in stepping back from a sticky thought — watching it pass, instead of being caught inside it."
+    },
+    {
+      "id": "thought",
+      "type": "prompt",
+      "title": "What's the thought that's got you hooked?",
+      "body": "Write it the way it actually sounds in your head.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "I'm going to fail. They don't really like me…"
+    },
+    {
+      "id": "name",
+      "type": "passage",
+      "body": "Now put this in front of it: 'I'm having the thought that…'\n\nNotice the small space that opens. You are the one noticing the thought — which means you are not the thought itself."
+    },
+    {
+      "id": "watch",
+      "type": "pause",
+      "seconds": 12,
+      "body": "Picture the thought as words on a leaf drifting down a stream, or a cloud crossing the sky. Watch it move, without grabbing it."
+    },
+    {
+      "id": "distance",
+      "type": "prompt",
+      "title": "From a half-step back, what do you notice?",
+      "body": "Is the thought as solid and true as it felt a minute ago?",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Or leave this blank…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You didn't argue with the thought or obey it — you watched it. Thoughts come and go; you're the sky they pass through.",
+    "celebrate": false
+  }
+}

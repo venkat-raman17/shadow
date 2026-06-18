@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import type { Flow } from '@/types/flow';
 import FlowEngine from '@/engine/FlowEngine';
 import { FLOWS } from '@/lib/practices';
@@ -30,6 +31,9 @@ export default function FlowScreen() {
     if (typeof seedQuality === 'string' && seedQuality) s.seedQuality = seedQuality;
     return s;
   }, [priorFelt, partName, seedQuality]);
+
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   if (!flow) {
     return (
@@ -59,7 +63,8 @@ export default function FlowScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   error: {
     flex: 1,
     backgroundColor: colors.background,

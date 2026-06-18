@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Slider from '@react-native-community/slider';
 
-import { colors, typography, Spacing } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Button } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
 import type { ScaleStep as ScaleStepType } from '@/types/flow';
@@ -11,6 +12,8 @@ import type { StepProps } from './types';
 export default function ScaleStep({ step, inputs, onNext }: StepProps<ScaleStepType>) {
   const mid = Math.round((step.min + step.max) / 2);
   const [value, setValue] = useState(mid);
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const title = resolveTokens(step.title, inputs);
   const body = resolveTokens(step.body, inputs);
@@ -44,7 +47,8 @@ export default function ScaleStep({ step, inputs, onNext }: StepProps<ScaleStepT
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) =>
+  StyleSheet.create({
   block: { gap: Spacing.three },
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
