@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { deleteAllData } from '@/lib/db';
-import { removeItem } from '@/lib/kv';
+import { setItem } from '@/lib/kv';
 import { cancelNotification } from '@/lib/notifications';
 
 // Every SecureStore key the app writes, EXCEPT the encryption master key
@@ -24,5 +24,8 @@ const RESET_KEYS = [
 export async function resetAllData(db: SQLiteDatabase): Promise<void> {
   await deleteAllData(db);
   await cancelNotification();
-  await Promise.all(RESET_KEYS.map((k) => removeItem(k)));
+  // Use setItem('') rather than removeItem — sets keys to empty so getItem
+  // returns '' which all gate checks treat as unset, and avoids any module
+  // caching issue with the removeItem export.
+  await Promise.all(RESET_KEYS.map((k) => setItem(k, '')));
 }

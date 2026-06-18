@@ -199,10 +199,13 @@ export default function SettingsScreen() {
 
   async function handleDeleteAll() {
     setDeleting(true);
-    await resetAllData(db);
-    // Flip the navigation gate → the app drops back to the onboarding/landing
-    // screen as a brand-new user (no reload needed).
-    await refresh();
+    try {
+      await resetAllData(db);
+    } finally {
+      // Always flip the nav gate, even if cleanup partially failed.
+      await refresh();
+      setDeleting(false);
+    }
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
