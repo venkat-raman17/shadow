@@ -7,12 +7,17 @@ import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, TextField, Chip, Button } from '@/components/ui';
 import { getItem, setItem } from '@/lib/kv';
-import { getPractice } from '@/lib/practices';
-import { doorwaysFor, routeFromText } from '@/lib/threshold';
-import { useRecentEntries, useResurfacing } from '@/hooks/useEntries';
-import { useParts, useSurfacingPatterns, useExperiments } from '@/hooks/useIntegration';
+import { doorwaysFor, routeFromText, suggestFlow } from '@/lib/threshold';
+import { useResurfacing } from '@/hooks/useEntries';
+import {
+  useParts,
+  useSurfacingPatterns,
+  useExperiments,
+  useReturnInvitation,
+} from '@/hooks/useIntegration';
+import { useHasPriorWork, useDaysSinceLastVisit } from '@/hooks/useProgress';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import type { EntryDetail } from '@/lib/db';
+import type { EntryDetail, ExperimentItem, ReturnablePart } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEPTHS_SEEN_KEY = 'shadow.depths_seen';
@@ -27,31 +32,23 @@ function getGreeting(name: string | null): string {
   return `Late night${suffix}.`;
 }
 
-// The flow to open when the user says "I'm not sure" — derived entirely from
-// existing data (no tracking, no new state). Mirrors the three-depths
-// progression that the old "Start here" card used.
+// The flow to open when the user says "I'm not sure". Gathers the existing
+// signals (no tracking, no new state) and hands the decision to suggestFlow in
+// the threshold router, so "which flow comes next" lives in one place.
 function useFallbackFlowId(firstRun: boolean): string {
   const patterns = useSurfacingPatterns(1);
   const parts = useParts();
   const { experiments } = useExperiments();
   const profile = useUserProfile();
 
-  if (firstRun) return 'noticing.somatic.v1';
-
-  const strong = patterns.find((pt) => pt.count >= 2);
-  if (strong && getPractice('meeting.active_imagination.v1')) {
-    return 'meeting.active_imagination.v1';
-  }
-
-  const hasOpenExperiment = experiments.some((e) => e.status === 'open');
-  if (parts.length > 0 && !hasOpenExperiment) return 'integration.after_meeting.v1';
-
-  const hour = new Date().getHours();
-  if (hour < 12) return 'noticing.somatic.v1';
-  if (hour < 18) return 'noticing.projection_recall.v1';
-  if (profile?.gender === 'man') return 'noticing.anima_projection.v1';
-  if (profile?.gender === 'woman') return 'noticing.animus_projection.v1';
-  return 'noticing.golden_shadow.v1';
+  return suggestFlow({
+    firstRun,
+    topPatternCount: patterns[0]?.count ?? 0,
+    hasParts: parts.length > 0,
+    hasOpenExperiment: experiments.some((e) => e.status === 'open'),
+    gender: profile?.gender,
+    hour: new Date().getHours(),
+  });
 }
 
 function relativeWhen(ms: number): string {
@@ -63,26 +60,121 @@ function relativeWhen(ms: number): string {
   return 'a while ago';
 }
 
-// A quiet, dismissible nudge to revisit a past reflection — never a notification.
-function ResurfacingCard({ entry, onDismiss }: { entry: EntryDetail; onDismiss: () => void }) {
+const REFLECT_AGE_MS = 3 * DAY_MS;
+const LONG_GAP_DAYS = 14;
+
+// The single thread to pick back up, chosen from existing gentle signals in a
+// fixed priority. After a long time away we don't open deep work — we offer an
+// easy way back in (titration, mirroring the threshold's "settle before depth").
+type PickBackUp =
+  | { kind: 'ease' }
+  | { kind: 'reflect'; experiment: ExperimentItem }
+  | { kind: 'return'; part: ReturnablePart }
+  | { kind: 'pattern'; quality: string }
+  | { kind: 'resurface'; entry: EntryDetail };
+
+function choosePickBackUp(args: {
+  gapDays: number | null;
+  experiments: ExperimentItem[];
+  returnPart: ReturnablePart | null;
+  patterns: { quality: string; count: number }[];
+  resurfaced: EntryDetail | null;
+}): PickBackUp | null {
+  const { gapDays, experiments, returnPart, patterns, resurfaced } = args;
+
+  // Back after a long gap: lead with low-friction re-entry, not depth.
+  if (gapDays !== null && gapDays >= LONG_GAP_DAYS) return { kind: 'ease' };
+
+  const reflectable = experiments.find(
+    (e) => e.status === 'open' && Date.now() - e.created_at > REFLECT_AGE_MS,
+  );
+  if (reflectable) return { kind: 'reflect', experiment: reflectable };
+
+  if (returnPart) return { kind: 'return', part: returnPart };
+
+  const top = patterns.find((p) => p.count >= 2);
+  if (top) return { kind: 'pattern', quality: top.quality };
+
+  if (resurfaced) return { kind: 'resurface', entry: resurfaced };
+
+  return null;
+}
+
+// The copy + destination for each kind. Calm, first-person, never a demand.
+function pickDisplay(pick: PickBackUp): {
+  label: string;
+  body: string;
+  cta: string;
+  go: () => void;
+} {
+  switch (pick.kind) {
+    case 'ease':
+      return {
+        label: 'Welcome back',
+        body: 'No need to catch up. Take a slow minute to settle, then start wherever you are.',
+        cta: 'Settle for a moment →',
+        go: () => router.push('/flow/grounding.settle.v1'),
+      };
+    case 'reflect':
+      return {
+        label: 'Something you’re carrying',
+        body: `You set out to: ${pick.experiment.description}. How has that been going?`,
+        cta: 'Reflect on this →',
+        go: () => router.push({ pathname: '/reflect/[id]', params: { id: pick.experiment.id } }),
+      };
+    case 'return':
+      return {
+        label: 'A thread to pick back up',
+        body: `It’s been a while since you sat with ${pick.part.name ?? 'this part'}. Return — what’s here now?`,
+        cta: 'Return →',
+        go: () => router.push({ pathname: '/part/[id]', params: { id: pick.part.id } }),
+      };
+    case 'pattern':
+      return {
+        label: 'What keeps surfacing',
+        body: `“${pick.quality}” has come up more than once. Sit with the part that carries it?`,
+        cta: 'Sit with it →',
+        go: () =>
+          router.push({
+            pathname: '/flow/[id]',
+            params: { id: 'meeting.active_imagination.v1', seedQuality: pick.quality },
+          }),
+      };
+    case 'resurface': {
+      const text =
+        (pick.entry.reclaim && pick.entry.reclaim.trim()) ||
+        (pick.entry.subject && pick.entry.subject.trim()) ||
+        '';
+      return {
+        label: 'Something you sat with before',
+        body: text,
+        cta: `From ${relativeWhen(pick.entry.created_at)} · revisit →`,
+        go: () => router.push({ pathname: '/entry/[id]', params: { id: pick.entry.id } }),
+      };
+    }
+  }
+}
+
+// One calm, dismissible card so a returning user lands on a thread to pick back
+// up, not a blank threshold. Pull-only, never a notification, never persisted.
+function PickBackUpCard({ pick, onDismiss }: { pick: PickBackUp; onDismiss: () => void }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const text =
-    (entry.reclaim && entry.reclaim.trim()) || (entry.subject && entry.subject.trim()) || '';
-  if (!text) return null;
+  const { label, body, cta, go } = pickDisplay(pick);
+  if (!body) return null;
   return (
-    <View style={styles.resurfaceCard}>
-      <View style={styles.resurfaceHeader}>
-        <Text style={styles.resurfaceLabel}>Something you sat with before</Text>
+    <View style={styles.pickCard}>
+      <View style={styles.nudgeHeader}>
+        <Text style={styles.nudgeLabel}>{label}</Text>
         <Pressable onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <SymbolView name={{ ios: 'xmark', web: 'close' }} size={13} tintColor={colors.textFaint} />
         </Pressable>
       </View>
-      <Pressable onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}>
-        <Text style={styles.resurfaceText} numberOfLines={3}>
-          {text}
+      <Pressable onPress={go}>
+        <Text style={styles.pickText} numberOfLines={3}>
+          {body}
         </Text>
-        <Text style={styles.resurfaceCta}>From {relativeWhen(entry.created_at)} · revisit →</Text>
+        <Text style={styles.pickCta}>{cta}</Text>
       </Pressable>
     </View>
   );
@@ -95,8 +187,8 @@ function DepthsCard({ onDismiss }: { onDismiss: () => void }) {
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.depthsCard}>
-      <View style={styles.resurfaceHeader}>
-        <Text style={styles.resurfaceLabel}>How this works</Text>
+      <View style={styles.nudgeHeader}>
+        <Text style={styles.nudgeLabel}>How this works</Text>
         <Pressable onPress={onDismiss} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <SymbolView name={{ ios: 'xmark', web: 'close' }} size={13} tintColor={colors.textFaint} />
         </Pressable>
@@ -113,14 +205,32 @@ function DepthsCard({ onDismiss }: { onDismiss: () => void }) {
 
 export default function HomeScreen() {
   const profile = useUserProfile();
-  const entries = useRecentEntries(1);
-  const parts = useParts();
-  const { experiments } = useExperiments();
-
-  const firstRun = entries.length === 0 && parts.length === 0 && experiments.length === 0;
+  const hasPriorWork = useHasPriorWork();
+  const firstRun = !hasPriorWork;
 
   const fallbackFlowId = useFallbackFlowId(firstRun);
+  const gapDays = useDaysSinceLastVisit();
+
+  // Gentle continuation signals — all pull-only, all already in the app.
+  const { experiments } = useExperiments();
+  const returnPart = useReturnInvitation();
+  const patterns = useSurfacingPatterns(1);
   const { entry: resurfaced, dismiss: dismissResurfaced } = useResurfacing();
+
+  const [pickDismissed, setPickDismissed] = useState(false);
+  const pick = pickDismissed
+    ? null
+    : choosePickBackUp({ gapDays, experiments, returnPart, patterns, resurfaced });
+
+  function dismissPick() {
+    // If the thread was a resurfaced entry, advance its pool too so the same one
+    // doesn't reappear this session.
+    if (pick?.kind === 'resurface') dismissResurfaced();
+    setPickDismissed(true);
+  }
+
+  // A soft welcome after a moderate gap; longer gaps get the 'ease' card instead.
+  const showWelcomeBack = gapDays !== null && gapDays >= 7 && gapDays < LONG_GAP_DAYS;
 
   const [text, setText] = useState('');
   const doorways = doorwaysFor(profile?.gender);
@@ -162,6 +272,14 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
+      {showWelcomeBack && (
+        <Text style={styles.welcomeBack}>Welcome back — no need to catch up.</Text>
+      )}
+
+      {/* A single thread to pick back up, above the threshold — continuity for a
+          returning user, invisible to a newcomer (no signals yet). */}
+      {pick && <PickBackUpCard pick={pick} onDismiss={dismissPick} />}
+
       {/* The threshold: speak into it, or step through a doorway below. */}
       <View style={styles.threshold}>
         <Text style={styles.prompt}>What&apos;s here right now?</Text>
@@ -201,8 +319,6 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {resurfaced && <ResurfacingCard entry={resurfaced} onDismiss={dismissResurfaced} />}
-
       <Pressable style={styles.moreLink} onPress={() => router.push('/practices')}>
         <Text style={styles.moreLinkText}>
           {firstRun ? 'See the gentle starting practices' : 'Other ways to notice'}
@@ -233,6 +349,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greeting: { ...typography.display },
+  welcomeBack: { ...typography.body, color: colors.textSecondary, marginTop: -Spacing.one },
 
   // Threshold
   threshold: { gap: Spacing.three },
@@ -259,8 +376,8 @@ const makeStyles = ({ colors, typography }: Theme) =>
   depthsWord: { color: colors.accent },
   depthsSub: { ...typography.bodySmall, color: colors.textSecondary },
 
-  // Resurfacing
-  resurfaceCard: {
+  // Pick-back-up card (and the shared header used by the depths map)
+  pickCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -268,19 +385,19 @@ const makeStyles = ({ colors, typography }: Theme) =>
     padding: Spacing.three,
     gap: Spacing.two,
   },
-  resurfaceHeader: {
+  nudgeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  resurfaceLabel: {
+  nudgeLabel: {
     ...typography.caption,
     textTransform: 'uppercase',
     letterSpacing: 1,
     color: colors.textSecondary,
   },
-  resurfaceText: { ...typography.serifBody, color: colors.textPrimary },
-  resurfaceCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
+  pickText: { ...typography.serifBody, color: colors.textPrimary },
+  pickCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
 
   // More ways
   moreLink: {

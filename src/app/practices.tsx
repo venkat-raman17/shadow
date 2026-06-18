@@ -7,18 +7,10 @@ import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, SectionHeader } from '@/components/ui';
 import { PracticeCard } from '@/components/PracticeCard';
-import { practicesByDepth, getPractice, type Depth, type Practice } from '@/lib/practices';
-import { useRecentEntries } from '@/hooks/useEntries';
-import { useParts, useExperiments } from '@/hooks/useIntegration';
+import { practicesByDepth, getPractice, DEPTHS, type Practice } from '@/lib/practices';
+import { useHasPriorWork } from '@/hooks/useProgress';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useFavorites } from '@/hooks/useFavorites';
-
-const GROUPS: { depth: Depth; label: string }[] = [
-  { depth: 'notice', label: 'Notice' },
-  { depth: 'sit', label: 'Go deeper' },
-  { depth: 'carry', label: 'Carry forward' },
-  { depth: 'ground', label: 'Steady yourself' },
-];
 
 /** Exclude practices whose gender requirement doesn't match this user. */
 function useGenderFilter(): (p: Practice) => boolean {
@@ -32,9 +24,6 @@ function useGenderFilter(): (p: Practice) => boolean {
 }
 
 export default function PracticesScreen() {
-  const entries = useRecentEntries(1);
-  const parts = useParts();
-  const { experiments } = useExperiments();
   const genderAllowed = useGenderFilter();
   const { favorites, isFavorite, toggle } = useFavorites();
   const { colors } = useTheme();
@@ -42,7 +31,7 @@ export default function PracticesScreen() {
 
   // Deeper work (sit / carry) opens once there's something to build on — the
   // same progressive-disclosure gate Home uses.
-  const hasPriorWork = entries.length > 0 || parts.length > 0 || experiments.length > 0;
+  const hasPriorWork = useHasPriorWork();
 
   // The "Yours" shelf: pinned practices the user chose, resolved through the
   // catalogue so removed/renamed flows simply drop out. Shown only once there's
@@ -76,23 +65,19 @@ export default function PracticesScreen() {
           </View>
         )}
 
-        {GROUPS.map(({ depth, label }) => {
+        {DEPTHS.map(({ depth, label, lockedHint }) => {
           const practices = practicesByDepth(depth).filter(genderAllowed);
           if (practices.length === 0) return null;
 
           // Notice and the grounding toolkit are always open; deeper work
           // (sit / carry) waits until there's something to build on.
-          const locked = (depth === 'sit' || depth === 'carry') && !hasPriorWork;
+          const locked = !!lockedHint && !hasPriorWork;
 
           return (
             <View key={depth} style={styles.section}>
               <SectionHeader>{label}</SectionHeader>
               {locked ? (
-                <Text style={styles.lockedHint}>
-                  {depth === 'sit'
-                    ? "These open once you've noticed a few things."
-                    : "This opens once you've met a part to carry forward."}
-                </Text>
+                <Text style={styles.lockedHint}>{lockedHint}</Text>
               ) : (
                 practices.map((p) => (
                   <PracticeCard

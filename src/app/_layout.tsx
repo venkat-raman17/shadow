@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, AppState } from 'react-native';
 import { Stack, SplashScreen } from 'expo-router';
 import { SQLiteProvider } from 'expo-sqlite';
 import * as Notifications from 'expo-notifications';
@@ -18,6 +18,7 @@ import { SessionProvider, useSession } from '@/context/SessionContext';
 import { AppErrorBoundary } from '@/components/ErrorBoundary';
 import { useAppLock } from '@/hooks/useAppLock';
 import { LockScreen } from '@/components/LockScreen';
+import { recordOpen, touch } from '@/lib/usage';
 
 // Show notifications when the app is in the foreground (e.g. user is in the app
 // when a scheduled reminder fires). Without this, foreground notifications are silently dropped.
@@ -75,6 +76,17 @@ function RootNavigator() {
       SplashScreen.hideAsync();
     }
   }, [appReady]);
+
+  // Remember when the app was last opened — local-only, used solely to soften
+  // re-entry after a long gap. Record once on launch, and keep the marker fresh
+  // when the app returns to the foreground during a long-running session.
+  useEffect(() => {
+    recordOpen();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') touch();
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!appReady) {
     return (

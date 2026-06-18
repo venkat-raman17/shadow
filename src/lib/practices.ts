@@ -252,6 +252,29 @@ export function practicesByDepth(depth: Depth): Practice[] {
   return PRACTICES.filter((p) => p.depth === depth);
 }
 
+export interface DepthGroup {
+  depth: Depth;
+  /** Section label in the Practices browser. */
+  label: string;
+  /** Shown in place of the practices while this depth is still locked. */
+  lockedHint?: string;
+}
+
+// The presentation of the depth spine, shared by the Practices browser and the
+// Home screen so the Notice → Sit → Carry → Ground language reads identically
+// everywhere. 'sit' and 'carry' carry a lock hint; 'notice' and the grounding
+// toolkit are always open. Order here is the order shown.
+export const DEPTHS: DepthGroup[] = [
+  { depth: 'notice', label: 'Notice' },
+  { depth: 'sit', label: 'Go deeper', lockedHint: "These open once you've noticed a few things." },
+  {
+    depth: 'carry',
+    label: 'Carry forward',
+    lockedHint: "This opens once you've met a part to carry forward.",
+  },
+  { depth: 'ground', label: 'Steady yourself' },
+];
+
 export function getPractice(id: string): Practice | undefined {
   return PRACTICES.find((p) => p.id === id);
 }
