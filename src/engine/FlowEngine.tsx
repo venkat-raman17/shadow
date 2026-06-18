@@ -12,7 +12,14 @@ import { Spacing, radii, MaxContentWidth, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { Button, TextField, FadeSlide } from '@/components/ui';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
-import { saveEntry, savePart, saveSession, addExperiment, touchPart } from '@/lib/db';
+import {
+  saveEntry,
+  savePart,
+  saveSession,
+  addExperiment,
+  touchPart,
+  getMostRecentSessionId,
+} from '@/lib/db';
 import { useCrypto } from '@/context/CryptoContext';
 import { resolveTokens } from '@/engine/tokens';
 import TranscriptTurn from '@/engine/TranscriptTurn';
@@ -145,7 +152,12 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
         } else if (flow.kind === 'integration') {
           const intention = inputs.intention;
           if (typeof intention === 'string' && intention.trim()) {
-            await addExperiment(db, intention.trim(), key);
+            // Attribute the carried intention to the most recent meeting so the
+            // integration loop stays whole: a standalone integration experiment
+            // can later surface a return invitation, just like one seeded inline
+            // at the end of a meeting. Null when no part has been met yet.
+            const sourceSessionId = (await getMostRecentSessionId(db)) ?? undefined;
+            await addExperiment(db, intention.trim(), key, sourceSessionId);
           }
         }
         // 'grounding' flows: nothing to persist

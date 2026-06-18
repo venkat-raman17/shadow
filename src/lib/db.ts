@@ -561,6 +561,21 @@ export async function touchPart(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync(`UPDATE parts SET last_met_at = ? WHERE id = ?`, [Date.now(), id]);
 }
 
+/**
+ * The id of the most recent meeting session (one tied to a part), or null if
+ * none exists. Used to attribute a standalone integration experiment to the
+ * part the user most recently sat with — the same meeting its "what came up
+ * last time?" prompt refers to — so the integration loop can later invite a
+ * return. Without this, experiments carried via the standalone integration
+ * flow have no provenance and never surface a return invitation.
+ */
+export async function getMostRecentSessionId(db: SQLiteDatabase): Promise<string | null> {
+  const row = await db.getFirstAsync<{ id: string }>(
+    `SELECT id FROM sessions WHERE part_id IS NOT NULL ORDER BY created_at DESC LIMIT 1`,
+  );
+  return row?.id ?? null;
+}
+
 /** Save (or clear, with null) a part's imaginative sketch. `sketchJson` is the
  *  serialized { w, h, paths } drawing; encrypted at rest like every other field. */
 export async function savePartSketch(
@@ -595,8 +610,10 @@ export interface ReturnablePart {
 /**
  * Parts that have a CLOSED experiment linked to one of their sessions — the
  * integration loop is open to a return ("sit with this again — what's shifted?").
- * Provenance comes from experiments.source_session_id (populated when an
- * experiment is seeded from a meeting). Longest-since-met first.
+ * Provenance comes from experiments.source_session_id, populated whether the
+ * experiment was seeded inline at the end of a meeting or carried later via the
+ * standalone integration flow (attributed to the most recent meeting).
+ * Longest-since-met first.
  */
 export async function getReturnableParts(db: SQLiteDatabase): Promise<ReturnablePart[]> {
   return db.getAllAsync<ReturnablePart>(
