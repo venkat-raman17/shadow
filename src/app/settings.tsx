@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Switch, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
+import { router } from 'expo-router';
 
 import { Spacing, type Theme, type ThemePreference } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
@@ -401,6 +402,17 @@ export default function SettingsScreen() {
         <Text style={styles.sectionBody}>
           In airplane mode, the app works exactly the same. That&apos;s by design.
         </Text>
+      </View>
+
+      {/* ── Need support? ──────────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <SectionHeader>Need support?</SectionHeader>
+        <Text style={styles.sectionBody}>
+          If you&apos;re in crisis or need to talk to someone, reach out to a person — not an app.
+        </Text>
+        <Card onPress={() => router.push('/resources')}>
+          <Text style={styles.sectionBody}>Crisis lines &amp; therapy directories →</Text>
+        </Card>
       </View>
 
       {/* ── Delete everything ──────────────────────────────────────────────── */}

@@ -313,17 +313,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.moreLink} onPress={() => router.push('/practices')}>
-        <Text style={styles.moreLinkText}>
-          {firstRun ? 'See the gentle starting practices' : 'Other ways to notice'}
-        </Text>
-        <SymbolView
-          name={{ ios: 'chevron.right', web: 'chevron_right' }}
-          size={15}
-          tintColor={colors.textSecondary}
-        />
-      </Pressable>
-
       <View style={styles.momentsSection}>
         <Text style={styles.momentsLabel}>For specific moments</Text>
         <View style={styles.momentsCard}>
@@ -405,14 +394,6 @@ const makeStyles = ({ colors, typography }: Theme) =>
   },
   pickText: { ...typography.serifBody, color: colors.textPrimary },
   pickCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
-
-  // More ways
-  moreLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  moreLinkText: { ...typography.body, color: colors.textSecondary },
 
   // Specific moments card
   momentsSection: { gap: Spacing.two },
