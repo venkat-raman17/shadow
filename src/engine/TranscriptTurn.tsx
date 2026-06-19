@@ -4,7 +4,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { resolveTokens } from '@/engine/tokens';
+import { SketchView, parseSketch } from '@/components/Sketch';
+import { ChargeGauge } from '@/components/ChargeGauge';
 import type { FlowInputs, Step } from '@/types/flow';
+
+/** Size of the read-only drawing thumbnail frozen into the transcript. */
+const SKETCH_THUMB = 180;
 
 /**
  * A completed step, frozen into the scrolling thread as a read-only turn — the
@@ -49,15 +54,7 @@ export default function TranscriptTurn({
       return (
         <View style={styles.turn}>
           <Text style={styles.guide}>{resolveTokens(step.title, inputs)}</Text>
-          {typeof v === 'number' ? (
-            <Text style={styles.scaleValue}>
-              {v}
-              <Text style={styles.scaleContext}>
-                {'  ·  '}
-                {v <= (step.min + step.max) / 2 ? step.minLabel : step.maxLabel}
-              </Text>
-            </Text>
-          ) : null}
+          {typeof v === 'number' ? <ChargeGauge charge={v} max={step.max} /> : null}
         </View>
       );
     }
@@ -69,6 +66,20 @@ export default function TranscriptTurn({
         <View style={styles.turn}>
           <Text style={styles.guide}>{resolveTokens(step.title, inputs)}</Text>
           {chosen ? <Answer text={resolveTokens(chosen.label, inputs)} /> : null}
+        </View>
+      );
+    }
+
+    case 'draw': {
+      const data = parseSketch(strValue(inputs[step.inputKey]));
+      return (
+        <View style={styles.turn}>
+          <Text style={styles.guide}>{resolveTokens(step.title, inputs)}</Text>
+          {data ? (
+            <View style={styles.sketchFrame}>
+              <SketchView data={data} width={SKETCH_THUMB} height={SKETCH_THUMB} />
+            </View>
+          ) : null}
         </View>
       );
     }
@@ -128,8 +139,14 @@ const makeStyles = ({ colors, typography }: Theme) =>
   },
   answer: { ...typography.body, color: colors.textPrimary },
   answerPart: { ...typography.serifBody, fontStyle: 'italic' },
-  scaleValue: { ...typography.body, color: colors.accent, fontWeight: '500' },
-  scaleContext: { ...typography.caption, color: colors.textSecondary, fontWeight: '400' },
+  sketchFrame: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: Spacing.two,
+  },
   pauseTurn: { alignItems: 'center', paddingVertical: Spacing.one },
   pauseDot: {
     width: 6,

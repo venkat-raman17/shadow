@@ -1,0 +1,39 @@
+{
+  "id": "noticing.draw_whats_here.v1",
+  "kind": "noticing",
+  "title": "Draw what's here",
+  "subtitle": "No words needed — just a shape.",
+  "estimatedMinutes": 3,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "Some things don't have words yet.\n\nBefore you try to name it — let your hand move. A shape, a scribble, a colour of feeling. There's no right way, and no one else sees it."
+    },
+    {
+      "id": "draw",
+      "type": "draw",
+      "title": "What's here, as a shape?",
+      "body": "Let your hand find it. Stop whenever it feels done.",
+      "inputKey": "sketch",
+      "optional": false
+    },
+    {
+      "id": "name",
+      "type": "prompt",
+      "title": "If a word wanted to come now, what would it be?",
+      "body": "Only if one does — the drawing is enough on its own.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "A word, or leave it blank…",
+      "exitOffer": true
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You gave it a shape before words could pin it down. That's a real way of knowing.[[ What you called it: {subject}.]]",
+    "celebrate": false
+  }
+}

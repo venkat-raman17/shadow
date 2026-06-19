@@ -23,6 +23,8 @@ import {
 import { useCrypto } from '@/context/CryptoContext';
 import { resolveTokens } from '@/engine/tokens';
 import { getReading } from '@/lib/readings';
+import { resolveEntryRoute } from '@/lib/threshold';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import TranscriptTurn from '@/engine/TranscriptTurn';
 
 import PromptStep from '@/steps/PromptStep';
@@ -32,6 +34,7 @@ import PassageStep from '@/steps/PassageStep';
 import PauseStep from '@/steps/PauseStep';
 import DialogueStep from '@/steps/DialogueStep';
 import ResourceStep from '@/steps/ResourceStep';
+import DrawStep from '@/steps/DrawStep';
 import ExitOfferStep from '@/steps/ExitOfferStep';
 import type { StepProps } from '@/steps/types';
 
@@ -106,10 +109,29 @@ const SEED_PARAM: Record<string, string> = {
   partName: 'partName',
 };
 
+// Build the flow-runner route params for a handoff (exit.next or an entryway's
+// goToFlow), carrying only single-line echo values named by seedKeys.
+function paramsFromSeeds(
+  flowId: string,
+  inputs: FlowInputs,
+  seedKeys: string[] | undefined,
+): { id: string } & Record<string, string> {
+  const params: { id: string } & Record<string, string> = { id: flowId };
+  for (const k of seedKeys ?? []) {
+    const param = SEED_PARAM[k];
+    const val = inputs[k];
+    if (param && typeof val === 'string' && val.trim()) {
+      params[param] = val.trim();
+    }
+  }
+  return params;
+}
+
 export default function FlowEngine({ flow, onComplete, existingPartId, seedInputs }: Props) {
   const router = useRouter();
   const db = useSQLiteContext();
   const { key } = useCrypto();
+  const profile = useUserProfile();
   const styles = useThemedStyles(makeStyles);
 
   const [experimentText, setExperimentText] = useState('');
@@ -176,11 +198,25 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
   }, [persist, state.inputs, onComplete]);
 
   const advance = useCallback(
-    async (value?: string | number, goTo?: string) => {
+    async (value?: string | number, goTo?: string, goToFlow?: string, seedKeys?: string[]) => {
       const step = flow.steps[state.stepIndex];
       const nextInputs: FlowInputs = { ...state.inputs };
       if ('inputKey' in step && step.inputKey && value !== undefined) {
         nextInputs[step.inputKey] = value;
+      }
+
+      // Entryway handoff: a few-question router dispatching into the right
+      // technique flow. Re-route mid-thread (like exit.next, but from a step);
+      // 'entry' flows persist nothing, so just replace and return.
+      if (goToFlow) {
+        const target = goToFlow.startsWith('resolve:')
+          ? resolveEntryRoute(goToFlow.slice('resolve:'.length), profile?.gender)
+          : goToFlow;
+        router.replace({
+          pathname: '/flow/[id]',
+          params: paramsFromSeeds(target, nextInputs, seedKeys),
+        });
+        return;
       }
 
       // Safety check: if charge crosses threshold, offer grounding
@@ -212,7 +248,7 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
         dispatch({ type: 'COMPLETE' });
       }
     },
-    [flow, state, persist],
+    [flow, state, persist, router, profile?.gender],
   );
 
   const groundingBanner =
@@ -319,17 +355,10 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
                     variant="secondary"
                     onPress={() => {
                       const next = flow.exit.next!;
-                      const params: { id: string; seedQuality?: string; partName?: string } = {
-                        id: next.flowId,
-                      };
-                      for (const k of next.seedKeys ?? []) {
-                        const param = SEED_PARAM[k];
-                        const val = state.inputs[k];
-                        if (param && typeof val === 'string' && val.trim()) {
-                          (params as Record<string, string>)[param] = val.trim();
-                        }
-                      }
-                      router.replace({ pathname: '/flow/[id]', params });
+                      router.replace({
+                        pathname: '/flow/[id]',
+                        params: paramsFromSeeds(next.flowId, state.inputs, next.seedKeys),
+                      });
                     }}
                   />
                 )}
@@ -363,6 +392,8 @@ function ActiveStep({ step, inputs, onNext, onExit }: StepProps) {
       return <DialogueStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
     case 'resource':
       return <ResourceStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
+    case 'draw':
+      return <DrawStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
     case 'exitOffer':
       return <ExitOfferStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
     default:

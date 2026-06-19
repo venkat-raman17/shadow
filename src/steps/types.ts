@@ -9,6 +9,9 @@ import type { FlowInputs, Step } from '@/types/flow';
 export interface StepProps<T extends Step = Step> {
   step: T;
   inputs: FlowInputs;
-  onNext: (value?: string | number, goTo?: string) => void;
+  /** Commit the step's value and advance. `goTo` jumps within this flow;
+   *  `goToFlow` hands off to another flow (the entryway spine), optionally
+   *  carrying `seedKeys` forward as echo params. */
+  onNext: (value?: string | number, goTo?: string, goToFlow?: string, seedKeys?: string[]) => void;
   onExit: () => void;
 }

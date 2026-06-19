@@ -144,6 +144,10 @@ function RootNavigator() {
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Reading' }}
         />
         <Stack.Screen
+          name="book/[id]"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Read' }}
+        />
+        <Stack.Screen
           name="sketch/[partId]"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
         />

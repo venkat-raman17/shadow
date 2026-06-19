@@ -1,0 +1,22 @@
+{
+  "id": "entry.steady.v1",
+  "kind": "entry",
+  "title": "Steady myself",
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "pick",
+      "type": "choice",
+      "title": "What would help right now?",
+      "body": "First the body — pick whatever fits how strong it is. No need to go deep.",
+      "inputKey": "entryChoice",
+      "options": [
+        { "label": "Slow down and settle", "value": "settle", "goToFlow": "grounding.settle.v1" },
+        { "label": "Come back into my body", "value": "body", "goToFlow": "grounding.body_scan.v1" },
+        { "label": "Ride out an urge", "value": "urge", "goToFlow": "grounding.urge_surf.v1" },
+        { "label": "It's very high — turn it down fast", "value": "high", "goToFlow": "grounding.tipp.v1" }
+      ]
+    }
+  ],
+  "exit": { "type": "close", "body": "Whenever you're ready.", "celebrate": false }
+}

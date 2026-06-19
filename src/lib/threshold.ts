@@ -58,6 +58,24 @@ export function doorwaysFor(gender: Gender | null | undefined): Doorway[] {
   return doorways;
 }
 
+/**
+ * Resolve an entryway option's deferred route ("resolve:<key>") at runtime,
+ * where the destination depends on data a flow JSON can't branch on (gender,
+ * a sensible default). Keeps every gender-aware decision in the one file that
+ * owns routing. Falls back to the body-first noticing — the safe universal door.
+ */
+export function resolveEntryRoute(key: string, gender: Gender | null | undefined): FlowId {
+  switch (key) {
+    case 'captivated':
+      return captivatedFlow(gender);
+    case 'voice':
+      return voiceFlow(gender);
+    case 'suggest':
+    default:
+      return 'noticing.somatic.v1';
+  }
+}
+
 // Keyword groups, scanned in priority order. Acute-overwhelm first (settle
 // before going deep), then the container-first shame work, then the rest.
 const RULES: { test: RegExp; resolve: (g: Gender | null | undefined) => FlowId }[] = [

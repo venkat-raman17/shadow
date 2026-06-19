@@ -6,6 +6,7 @@ export type StepType =
   | 'pause'
   | 'dialogue'
   | 'resource'
+  | 'draw'
   | 'exitOffer';
 
 export interface BranchCondition {
@@ -51,6 +52,12 @@ export interface ChoiceOption {
   label: string;
   value: string;
   goTo?: string;
+  /** Hand off to another flow instead of jumping within this one — the entryway
+   *  spine. A "resolve:<key>" value is resolved at runtime (e.g. gender-aware
+   *  routing) in threshold.ts; any other value is a literal flow id. */
+  goToFlow?: string;
+  /** Single-line input keys carried forward as flow-runner params on handoff. */
+  seedKeys?: string[];
 }
 
 export interface ChoiceStep extends BaseStep {
@@ -85,6 +92,22 @@ export interface ResourceStep extends BaseStep {
   body: string;
 }
 
+/**
+ * An imaginative drawing (Jung's Red Book made first-class). The committed
+ * value is a serialized { w, h, paths } sketch placed in inputs[inputKey]; a
+ * noticing flow persists it to entries.sketch_enc (inputKey 'sketch'), a meeting
+ * flow to parts.sketch_enc (inputKey 'partSketch'). Always skippable when
+ * optional — drawing is an invitation, never a gate.
+ */
+export interface DrawStep extends BaseStep {
+  type: 'draw';
+  title: string;
+  body?: string;
+  inputKey: string;
+  optional?: boolean;
+  exitOffer?: boolean;
+}
+
 export interface ExitOfferStep extends BaseStep {
   type: 'exitOffer';
   body?: string;
@@ -98,6 +121,7 @@ export type Step =
   | PauseStep
   | DialogueStep
   | ResourceStep
+  | DrawStep
   | ExitOfferStep;
 
 export interface FlowSafety {
@@ -128,7 +152,9 @@ export interface FlowExit {
 
 export interface Flow {
   id: string;
-  kind: 'noticing' | 'meeting' | 'golden' | 'integration' | 'grounding';
+  /** 'entry' flows are thin few-question routers that dispatch into a technique
+   *  flow via a choice option's goToFlow; they persist nothing. */
+  kind: 'noticing' | 'meeting' | 'golden' | 'integration' | 'grounding' | 'entry';
   title: string;
   subtitle?: string;
   estimatedMinutes?: number;

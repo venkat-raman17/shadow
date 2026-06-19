@@ -47,6 +47,14 @@
       ]
     },
     {
+      "id": "draw_feeling",
+      "type": "draw",
+      "title": "Give the feeling a shape — draw where it lives.",
+      "body": "Not a diagram of the body. Just let your hand show its size, its edges, its weight. No skill needed, and you can skip this.",
+      "inputKey": "sketch",
+      "optional": true
+    },
+    {
       "id": "charge",
       "type": "scale",
       "title": "How present is {quality|it}?",

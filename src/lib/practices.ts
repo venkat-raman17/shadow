@@ -12,6 +12,7 @@ export const FLOWS: Record<string, Flow> = {
   'noticing.projection_recall.v1': require('@/assets/flows/noticing.projection_recall.v1.json'),
   'noticing.somatic.v1': require('@/assets/flows/noticing.somatic.v1.json'),
   'noticing.in_the_moment.v1': require('@/assets/flows/noticing.in_the_moment.v1.json'),
+  'noticing.draw_whats_here.v1': require('@/assets/flows/noticing.draw_whats_here.v1.json'),
   'noticing.facing_shame.v1': require('@/assets/flows/noticing.facing_shame.v1.json'),
   'noticing.golden_shadow.v1': require('@/assets/flows/noticing.golden_shadow.v1.json'),
   'noticing.anima_projection.v1': require('@/assets/flows/noticing.anima_projection.v1.json'),
@@ -35,6 +36,12 @@ export const FLOWS: Record<string, Flow> = {
   'meeting.archetypal_encounter.v1': require('@/assets/flows/meeting.archetypal_encounter.v1.json'),
   'meeting.dream_figure.v1': require('@/assets/flows/meeting.dream_figure.v1.json'),
   'integration.after_meeting.v1': require('@/assets/flows/integration.after_meeting.v1.json'),
+  // Entryway routers (the spine): a few questions that dispatch into the flows
+  // above. Registered for the runner, but kept out of the CATALOGUE/Library.
+  'entry.notice.v1': require('@/assets/flows/entry.notice.v1.json'),
+  'entry.sit.v1': require('@/assets/flows/entry.sit.v1.json'),
+  'entry.steady.v1': require('@/assets/flows/entry.steady.v1.json'),
+  'entry.carry.v1': require('@/assets/flows/entry.carry.v1.json'),
 };
 
 // ─── The three depths ───────────────────────────────────────────────────────
@@ -70,6 +77,13 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: "Catch a reaction while it's still warm — thirty seconds, no setup.",
     depth: 'notice',
     icon: { ios: 'bolt.heart', web: 'bolt' },
+  },
+  {
+    id: 'noticing.draw_whats_here.v1',
+    title: "Draw what's here",
+    blurb: 'When there are no words yet — let your hand find the shape.',
+    depth: 'notice',
+    icon: { ios: 'scribble.variable', web: 'draw' },
   },
   {
     id: 'noticing.projection_recall.v1',

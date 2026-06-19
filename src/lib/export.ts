@@ -37,6 +37,7 @@ export interface ExportEntry {
   charge: number | null;
   echo: string | null;
   reclaim: string | null;
+  sketch: string | null;
 }
 
 export interface ExportPart {
@@ -98,6 +99,7 @@ interface EntryRow {
   charge: number | null;
   echo_enc: string | null;
   reclaim_enc: string | null;
+  sketch_enc: string | null;
 }
 
 interface PartRow {
@@ -154,7 +156,7 @@ export async function exportData(
 ): Promise<void> {
   // 1. Query and decrypt entries
   const entryRows = await db.getAllAsync<EntryRow>(
-    'SELECT id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc FROM entries ORDER BY created_at DESC',
+    'SELECT id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc, sketch_enc FROM entries ORDER BY created_at DESC',
   );
   const entries: ExportEntry[] = entryRows.map((r) => ({
     id: r.id,
@@ -165,6 +167,7 @@ export async function exportData(
     charge: r.charge,
     echo: dec(r.echo_enc, existingKey),
     reclaim: dec(r.reclaim_enc, existingKey),
+    sketch: dec(r.sketch_enc, existingKey),
   }));
 
   // 2. Query and decrypt parts

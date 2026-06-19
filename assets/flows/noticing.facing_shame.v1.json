@@ -68,6 +68,14 @@
       ]
     },
     {
+      "id": "draw_shame",
+      "type": "draw",
+      "title": "If it had a shape, draw where it sits in you.",
+      "body": "Drawing lets the body speak before the inner critic finds words. A scribble is enough — and you can skip this.",
+      "inputKey": "sketch",
+      "optional": true
+    },
+    {
       "id": "charge",
       "type": "scale",
       "title": "How present is it right now?",

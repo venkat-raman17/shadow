@@ -5,7 +5,7 @@ import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, SectionHeader, Button } from '@/components/ui';
-import { ChargeDots } from '@/components/ChargeDots';
+import { ChargeGauge } from '@/components/ChargeGauge';
 import { SketchView, parseSketch } from '@/components/Sketch';
 import { usePart } from '@/hooks/useIntegration';
 import { feltSenseBand } from '@/lib/feltSense';
@@ -86,13 +86,13 @@ function SessionBlock({
           {session.charge_before !== null && (
             <View style={styles.chargeItem}>
               <Text style={styles.chargeLabel}>Walked in</Text>
-              <ChargeDots charge={session.charge_before} />
+              <ChargeGauge charge={session.charge_before} />
             </View>
           )}
           {session.charge_after !== null && (
             <View style={styles.chargeItem}>
               <Text style={styles.chargeLabel}>Left</Text>
-              <ChargeDots charge={session.charge_after} />
+              <ChargeGauge charge={session.charge_after} />
             </View>
           )}
         </View>

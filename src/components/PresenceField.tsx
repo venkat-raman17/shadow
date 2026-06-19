@@ -4,9 +4,13 @@ import { router } from 'expo-router';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
+import { SketchView, parseSketch } from '@/components/Sketch';
 import type { PartListItem } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Edge of a drawn figure's face in the constellation. */
+const FIGURE_SIZE = 72;
 
 // Kept at module scope (not in the component body) so the time read stays out of
 // render — matches how the rest of the app computes recency.
@@ -34,6 +38,29 @@ function Presence({ part }: { part: PartListItem }) {
   const styles = useThemedStyles(makeStyles);
   const recent = metRecently(part.last_met_at ?? part.created_at);
   const golden = part.golden === 1;
+  const sketch = parseSketch(part.sketch);
+  const name = part.name ?? 'An unnamed part';
+
+  // A part you've drawn shows its face; one you haven't stays a quiet presence.
+  if (sketch && sketch.paths.length > 0) {
+    return (
+      <Pressable
+        onPress={() => router.push({ pathname: '/part/[id]', params: { id: part.id } })}
+        style={({ pressed }) => [styles.figure, pressed && styles.pressed]}>
+        <View
+          style={[
+            styles.figureFrame,
+            golden && styles.figureFrameGolden,
+            recent && styles.figureFrameRecent,
+          ]}>
+          <SketchView data={sketch} width={FIGURE_SIZE} height={FIGURE_SIZE} />
+        </View>
+        <Text style={styles.figureName} numberOfLines={1}>
+          {name}
+        </Text>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
@@ -46,7 +73,7 @@ function Presence({ part }: { part: PartListItem }) {
       ]}>
       <View style={[styles.dot, golden && styles.dotGolden, recent && styles.dotRecent]} />
       <Text style={styles.name} numberOfLines={1}>
-        {part.name ?? 'An unnamed part'}
+        {name}
       </Text>
     </Pressable>
   );
@@ -54,7 +81,23 @@ function Presence({ part }: { part: PartListItem }) {
 
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
-  field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'flex-start' },
+  figure: { alignItems: 'center', gap: Spacing.one, width: FIGURE_SIZE + Spacing.four * 2 },
+  figureFrame: {
+    width: FIGURE_SIZE + Spacing.two * 2,
+    height: FIGURE_SIZE + Spacing.two * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.two,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  figureFrameRecent: { borderColor: colors.borderStrong },
+  figureFrameGolden: { backgroundColor: colors.accentSoft, borderColor: colors.accentMuted },
+  figureName: { ...typography.bodySmall, color: colors.textPrimary, textAlign: 'center', maxWidth: FIGURE_SIZE + Spacing.four * 2 },
   presence: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -6,7 +6,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, TextField, Card } from '@/components/ui';
-import { ChargeDots } from '@/components/ChargeDots';
+import { ChargeGauge } from '@/components/ChargeGauge';
 import { useCrypto } from '@/context/CryptoContext';
 import { useParts } from '@/hooks/useIntegration';
 import { searchEntries, type SearchResult } from '@/lib/db';
@@ -110,7 +110,7 @@ export default function SearchScreen() {
                       <Text style={styles.date}>{formatDate(r.created_at)}</Text>
                       {r.quality ? <Text style={styles.quality}>{r.quality}</Text> : null}
                     </View>
-                    {r.charge !== null ? <ChargeDots charge={r.charge} /> : null}
+                    {r.charge !== null ? <ChargeGauge charge={r.charge} word={false} /> : null}
                   </Card>
                 ))}
               </View>

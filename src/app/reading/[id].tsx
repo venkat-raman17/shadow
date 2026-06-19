@@ -27,11 +27,17 @@ export default function ReadingScreen() {
         {reading ? (
           <>
             <Text style={styles.title}>{reading.title}</Text>
-            {reading.body.split('\n\n').map((para, i) => (
-              <Text key={i} style={styles.para}>
-                {para}
-              </Text>
-            ))}
+            {reading.body.split('\n\n').map((para, i) =>
+              para.startsWith('## ') ? (
+                <Text key={i} style={styles.subhead}>
+                  {para.slice(3)}
+                </Text>
+              ) : (
+                <Text key={i} style={styles.para}>
+                  {para}
+                </Text>
+              ),
+            )}
           </>
         ) : (
           <Text style={styles.missing}>That reading isn&apos;t here.</Text>
@@ -44,6 +50,14 @@ export default function ReadingScreen() {
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   title: { ...typography.display, fontSize: 28, lineHeight: 36, marginBottom: Spacing.two },
+  subhead: {
+    ...typography.displaySmall,
+    fontSize: 19,
+    lineHeight: 26,
+    color: colors.textPrimary,
+    marginTop: Spacing.two,
+    marginBottom: -Spacing.one,
+  },
   para: { ...typography.serifBody, color: colors.textPrimary, marginBottom: Spacing.three },
   missing: { ...typography.serifBody, color: colors.textSecondary, textAlign: 'center', marginTop: Spacing.six },
 });

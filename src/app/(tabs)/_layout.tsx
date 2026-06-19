@@ -51,9 +51,18 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="integration"
         options={{
-          title: 'Reflections',
+          title: 'Inner World',
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: 'moon', web: 'nightlight' }} size={24} tintColor={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="read"
+        options={{
+          title: 'Read',
+          tabBarIcon: ({ color }) => (
+            <SymbolView name={{ ios: 'books.vertical', web: 'auto_stories' }} size={24} tintColor={color} />
           ),
         }}
       />

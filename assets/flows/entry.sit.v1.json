@@ -1,0 +1,22 @@
+{
+  "id": "entry.sit.v1",
+  "kind": "entry",
+  "title": "Sit with a figure",
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "pick",
+      "type": "choice",
+      "title": "Who do you want to sit with?",
+      "body": "These are slower — a written back-and-forth with a part of you. At your own pace, stopping whenever you need.",
+      "inputKey": "entryChoice",
+      "options": [
+        { "label": "Something that keeps coming up", "value": "recurring", "goToFlow": "meeting.active_imagination.v1" },
+        { "label": "My younger self", "value": "child", "goToFlow": "meeting.inner_child.v1" },
+        { "label": "A figure from a dream", "value": "dream", "goToFlow": "meeting.dream_figure.v1" },
+        { "label": "Something steadier in me", "value": "steady", "goToFlow": "meeting.archetypal_encounter.v1" }
+      ]
+    }
+  ],
+  "exit": { "type": "close", "body": "Whenever you're ready.", "celebrate": false }
+}

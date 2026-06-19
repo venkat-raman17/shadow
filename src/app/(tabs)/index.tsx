@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { Screen, TextField, Chip, Button } from '@/components/ui';
+import { Screen, TextField, Button, Card } from '@/components/ui';
 import { getItem, setItem } from '@/lib/kv';
-import { doorwaysFor, routeFromText, suggestFlow } from '@/lib/threshold';
+import { routeFromText, suggestFlow } from '@/lib/threshold';
 import { useResurfacing } from '@/hooks/useEntries';
 import {
   useParts,
@@ -21,6 +21,48 @@ import type { EntryDetail, ExperimentItem, ReturnablePart } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEPTHS_SEEN_KEY = 'shadow.depths_seen';
+
+// The few ways in (the spine). Each opens a short, branching entryway that
+// re-routes from a couple of answers — not a flat menu of practices. The deeper
+// 'sit' and 'carry' doors open once there's prior work, mirroring titration:
+// notice and steady are always available, depth arrives when you're ready.
+interface Entryway {
+  id: string;
+  title: string;
+  sub: string;
+  icon: SymbolViewProps['name'];
+  gated: boolean;
+}
+const ENTRYWAYS: Entryway[] = [
+  {
+    id: 'entry.notice.v1',
+    title: "Notice what's here",
+    sub: 'A feeling, a person, a sensation',
+    icon: { ios: 'eye', web: 'visibility' },
+    gated: false,
+  },
+  {
+    id: 'entry.sit.v1',
+    title: 'Sit with a figure',
+    sub: 'Meet a part of you, in writing',
+    icon: { ios: 'bubble.left.and.bubble.right', web: 'forum' },
+    gated: true,
+  },
+  {
+    id: 'entry.carry.v1',
+    title: 'Carry & return',
+    sub: 'Bring it into your week',
+    icon: { ios: 'arrow.forward.circle', web: 'arrow_forward' },
+    gated: true,
+  },
+  {
+    id: 'entry.steady.v1',
+    title: 'Steady myself',
+    sub: 'Come back when things speed up',
+    icon: { ios: 'wind', web: 'air' },
+    gated: false,
+  },
+];
 
 function getGreeting(name: string | null): string {
   const suffix = name ? `, ${name}` : '';
@@ -194,11 +236,14 @@ function DepthsCard({ onDismiss }: { onDismiss: () => void }) {
         </Pressable>
       </View>
       <Text style={styles.depthsBody}>
-        Three depths, no ladder. <Text style={styles.depthsWord}>Notice</Text> what&apos;s here ·{' '}
-        <Text style={styles.depthsWord}>Sit</Text> with what keeps returning ·{' '}
-        <Text style={styles.depthsWord}>Carry</Text> one small thing into your life.
+        A few ways in, no ladder. <Text style={styles.depthsWord}>Notice</Text> what&apos;s here ·{' '}
+        <Text style={styles.depthsWord}>Sit</Text> with a figure ·{' '}
+        <Text style={styles.depthsWord}>Carry</Text> one small thing ·{' '}
+        <Text style={styles.depthsWord}>Steady</Text> yourself anytime.
       </Text>
-      <Text style={styles.depthsSub}>No streaks, no finishing — you return when you return.</Text>
+      <Text style={styles.depthsSub}>
+        No words for it? Just draw it. No streaks, no finishing — you return when you return.
+      </Text>
     </View>
   );
 }
@@ -233,7 +278,9 @@ export default function HomeScreen() {
   const showWelcomeBack = gapDays !== null && gapDays >= 7 && gapDays < LONG_GAP_DAYS;
 
   const [text, setText] = useState('');
-  const doorways = doorwaysFor(profile?.gender);
+  // Deep doors (sit / carry) appear once there's prior work; notice & steady
+  // are always open. Drawing and the open threshold sit above them all.
+  const entryways = ENTRYWAYS.filter((e) => !e.gated || hasPriorWork);
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
 
@@ -300,37 +347,35 @@ export default function HomeScreen() {
           label={text.trim() ? 'Sit with this →' : 'Begin where I am →'}
           onPress={beginFromText}
         />
+
+        <Button
+          label="Or draw what's here →"
+          variant="ghost"
+          onPress={() => enter('noticing.draw_whats_here.v1')}
+        />
       </View>
 
       {showDepths && <DepthsCard onDismiss={dismissDepths} />}
 
-      <View style={styles.doorwaysSection}>
-        <Text style={styles.doorwayLabel}>Or step through a doorway</Text>
-        <View style={styles.doorways}>
-          {doorways.map((d) => (
-            <Chip key={d.key} label={d.label} onPress={() => enter(d.resolve(profile?.gender))} />
+      <View style={styles.waysSection}>
+        <Text style={styles.waysLabel}>Or choose a way in</Text>
+        <View style={styles.tiles}>
+          {entryways.map((e) => (
+            <Card key={e.id} onPress={() => enter(e.id)} style={styles.tile}>
+              <SymbolView name={e.icon} size={22} tintColor={colors.accent} />
+              <View style={styles.tileText}>
+                <Text style={styles.tileTitle}>{e.title}</Text>
+                <Text style={styles.tileSub}>{e.sub}</Text>
+              </View>
+            </Card>
           ))}
         </View>
       </View>
 
-      <View style={styles.momentsSection}>
-        <Text style={styles.momentsLabel}>For specific moments</Text>
-        <View style={styles.momentsCard}>
-          <Pressable style={styles.momentsRow} onPress={() => enter('noticing.in_the_moment.v1')}>
-            <SymbolView
-              name={{ ios: 'bolt.heart', web: 'bolt' }}
-              size={15}
-              tintColor={colors.accentWarm}
-            />
-            <Text style={styles.nowLinkText}>Something just happened — catch it now →</Text>
-          </Pressable>
-          <View style={styles.momentsDivider} />
-          <Pressable style={styles.momentsRow} onPress={() => enter('grounding.settle.v1')}>
-            <SymbolView name={{ ios: 'wind', web: 'air' }} size={15} tintColor={colors.textSecondary} />
-            <Text style={styles.settleLinkText}>Feeling unsteady? Take a moment to settle →</Text>
-          </Pressable>
-        </View>
-      </View>
+      <Pressable style={styles.quickRow} onPress={() => enter('noticing.in_the_moment.v1')}>
+        <SymbolView name={{ ios: 'bolt.heart', web: 'bolt' }} size={15} tintColor={colors.accentWarm} />
+        <Text style={styles.nowLinkText}>Something just happened — catch it now →</Text>
+      </Pressable>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
@@ -354,10 +399,14 @@ const makeStyles = ({ colors, typography }: Theme) =>
 
   nowLinkText: { ...typography.body, color: colors.accentWarm },
 
-  // Doorways
-  doorwaysSection: { gap: Spacing.two },
-  doorwayLabel: { ...typography.caption, color: colors.textFaint },
-  doorways: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  // Ways in (entry tiles)
+  waysSection: { gap: Spacing.two },
+  waysLabel: { ...typography.caption, color: colors.textFaint },
+  tiles: { gap: Spacing.two },
+  tile: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three },
+  tileText: { flex: 1, gap: 2 },
+  tileTitle: { ...typography.body, color: colors.textPrimary },
+  tileSub: { ...typography.bodySmall, color: colors.textSecondary },
 
   // Depths map (first-run)
   depthsCard: {
@@ -395,23 +444,8 @@ const makeStyles = ({ colors, typography }: Theme) =>
   pickText: { ...typography.serifBody, color: colors.textPrimary },
   pickCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // Specific moments card
-  momentsSection: { gap: Spacing.two },
-  momentsLabel: { ...typography.caption, color: colors.textFaint },
-  momentsCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: Spacing.three,
-  },
-  momentsDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: Spacing.two,
-  },
-  momentsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
-  settleLinkText: { ...typography.bodySmall, color: colors.textSecondary },
+  // Quick "catch it now" link
+  quickRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
 
   footer: { marginTop: Spacing.two, paddingTop: Spacing.three },
   footerText: { ...typography.caption, textAlign: 'center', lineHeight: 20 },

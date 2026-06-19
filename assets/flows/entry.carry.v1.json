@@ -1,0 +1,20 @@
+{
+  "id": "entry.carry.v1",
+  "kind": "entry",
+  "title": "Carry & return",
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "pick",
+      "type": "choice",
+      "title": "What do you want to do?",
+      "body": "Insight lives when it touches your week. Choose what fits where you are.",
+      "inputKey": "entryChoice",
+      "options": [
+        { "label": "Carry one small thing into my week", "value": "carry", "goToFlow": "integration.after_meeting.v1" },
+        { "label": "Set down what isn't mine", "value": "release", "goToFlow": "noticing.reclaim_ritual.v1" }
+      ]
+    }
+  ],
+  "exit": { "type": "close", "body": "Whenever you're ready.", "celebrate": false }
+}

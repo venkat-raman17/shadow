@@ -6,7 +6,7 @@ import { SymbolView } from 'expo-symbols';
 import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader } from '@/components/ui';
-import { ChargeDots } from '@/components/ChargeDots';
+import { ChargeGauge } from '@/components/ChargeGauge';
 import { useRecentEntries, useEntriesByQuality } from '@/hooks/useEntries';
 import type { EntryListItem } from '@/lib/db';
 
@@ -40,7 +40,7 @@ function EntryRow({ entry }: { entry: EntryListItem }) {
         <Text style={styles.entryDate}>{formatDate(entry.created_at)}</Text>
         {entry.quality ? <Text style={styles.entryQuality}>{entry.quality}</Text> : null}
       </View>
-      {entry.charge !== null ? <ChargeDots charge={entry.charge} /> : null}
+      {entry.charge !== null ? <ChargeGauge charge={entry.charge} word={false} /> : null}
     </Card>
   );
 }

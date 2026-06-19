@@ -1,0 +1,24 @@
+{
+  "id": "entry.notice.v1",
+  "kind": "entry",
+  "title": "Notice what's here",
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "pick",
+      "type": "choice",
+      "title": "What's here right now?",
+      "body": "Pick whatever's closest — there's no wrong door, and you can come back for another.",
+      "inputKey": "entryChoice",
+      "options": [
+        { "label": "Something in my body", "value": "body", "goToFlow": "noticing.somatic.v1" },
+        { "label": "Someone got under my skin", "value": "skin", "goToFlow": "noticing.projection_recall.v1" },
+        { "label": "I admire — or can't stop thinking about — someone", "value": "admire", "goToFlow": "resolve:captivated" },
+        { "label": "Ashamed, not enough", "value": "shame", "goToFlow": "noticing.facing_shame.v1" },
+        { "label": "I'd rather just draw what's here", "value": "draw", "goToFlow": "noticing.draw_whats_here.v1" },
+        { "label": "I'm not sure — start me gently", "value": "unsure", "goToFlow": "resolve:suggest" }
+      ]
+    }
+  ],
+  "exit": { "type": "close", "body": "Whenever you're ready.", "celebrate": false }
+}

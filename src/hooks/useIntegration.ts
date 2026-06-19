@@ -9,6 +9,7 @@ import {
   getSurfacingPatterns,
   getExperiments,
   getReturnableParts,
+  getUsedFlowIds,
   PartListItem,
   PartDetail,
   SurfacingPattern,
@@ -20,18 +21,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function useParts(): PartListItem[] {
   const db = useSQLiteContext();
+  const { key } = useCrypto();
   const [parts, setParts] = useState<PartListItem[]>([]);
 
   useFocusEffect(
     useCallback(() => {
+      if (!key) return;
       let active = true;
-      getParts(db).then((rows) => {
+      getParts(db, key).then((rows) => {
         if (active) setParts(rows);
       }).catch(e => console.warn('[useIntegration]', e));
       return () => {
         active = false;
       };
-    }, [db]),
+    }, [db, key]),
   );
 
   return parts;
@@ -60,6 +63,28 @@ export function usePart(id: string | undefined): { part: PartDetail | null; load
   );
 
   return { part, loading };
+}
+
+/** Flow ids the user has run — curates the Read bookshelf to recent work. */
+export function useUsedFlowIds(): string[] {
+  const db = useSQLiteContext();
+  const [ids, setIds] = useState<string[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getUsedFlowIds(db)
+        .then((rows) => {
+          if (active) setIds(rows);
+        })
+        .catch((e) => console.warn('[useIntegration]', e));
+      return () => {
+        active = false;
+      };
+    }, [db]),
+  );
+
+  return ids;
 }
 
 export function useSurfacingPatterns(limit = 5): SurfacingPattern[] {

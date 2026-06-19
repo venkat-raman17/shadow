@@ -1,10 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Stack, router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { Spacing, type Theme } from '@/constants/theme';
-import { useTheme, useThemedStyles } from '@/constants/theme-context';
+import { useThemedStyles } from '@/constants/theme-context';
 import { Screen, SectionHeader } from '@/components/ui';
 import { PracticeCard } from '@/components/PracticeCard';
 import { practicesByDepth, getPractice, DEPTHS, type Practice } from '@/lib/practices';
@@ -26,7 +24,6 @@ function useGenderFilter(): (p: Practice) => boolean {
 export default function PracticesScreen() {
   const genderAllowed = useGenderFilter();
   const { favorites, isFavorite, toggle } = useFavorites();
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
 
   // Deeper work (sit / carry) opens once there's something to build on — the
@@ -43,11 +40,11 @@ export default function PracticesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: '' }} />
       <Screen>
-        <Text style={styles.heading}>Ways to notice</Text>
+        <Text style={styles.heading}>The library</Text>
         <Text style={styles.tagline}>
-          Start anywhere. Each one is a few quiet minutes &mdash; there&apos;s no order to follow.
+          Every practice in one place. Home offers a few ways in; here you can wander the rest
+          &mdash; there&apos;s no order to follow.
         </Text>
 
         {showShelf && (
@@ -91,15 +88,6 @@ export default function PracticesScreen() {
             </View>
           );
         })}
-
-        <Pressable style={styles.readingLink} onPress={() => router.push('/reading')}>
-          <SymbolView
-            name={{ ios: 'book.closed', web: 'menu_book' }}
-            size={15}
-            tintColor={colors.textSecondary}
-          />
-          <Text style={styles.readingLinkText}>Read about the work →</Text>
-        </Pressable>
       </Screen>
     </>
   );
@@ -117,6 +105,4 @@ const makeStyles = ({ colors, typography }: Theme) =>
     lineHeight: 22,
   },
   shelfNote: { ...typography.caption, color: colors.textFaint, marginTop: Spacing.half },
-  readingLink: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.two },
-  readingLinkText: { ...typography.body, color: colors.textSecondary },
 });

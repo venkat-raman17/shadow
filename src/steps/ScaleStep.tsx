@@ -6,6 +6,7 @@ import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Button } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
+import { feltSenseBand } from '@/lib/feltSense';
 import type { ScaleStep as ScaleStepType } from '@/types/flow';
 import type { StepProps } from './types';
 
@@ -24,7 +25,7 @@ export default function ScaleStep({ step, inputs, onNext }: StepProps<ScaleStepT
       {body ? <Text style={styles.body}>{body}</Text> : null}
 
       <View style={styles.sliderWrapper}>
-        <Text style={styles.valueLabel}>{value}</Text>
+        <Text style={styles.valueLabel}>{feltSenseBand(value)}</Text>
         <Slider
           style={styles.slider}
           minimumValue={step.min}
@@ -54,11 +55,12 @@ const makeStyles = ({ colors, typography }: Theme) =>
   body: { ...typography.body, color: colors.textSecondary },
   sliderWrapper: { gap: Spacing.two, marginTop: Spacing.one },
   valueLabel: {
-    ...typography.displaySmall,
-    fontSize: 36,
-    lineHeight: 44,
+    ...typography.serifBody,
+    fontSize: 20,
+    lineHeight: 28,
     textAlign: 'center',
-    color: colors.accent,
+    fontStyle: 'italic',
+    color: colors.accentWarm,
   },
   slider: { width: '100%', height: 40 },
   rangeLabels: { flexDirection: 'row', justifyContent: 'space-between' },

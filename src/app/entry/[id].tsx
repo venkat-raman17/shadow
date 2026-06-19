@@ -2,12 +2,16 @@ import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 
-import { Spacing, type Theme } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen } from '@/components/ui';
-import { ChargeDots } from '@/components/ChargeDots';
+import { ChargeGauge } from '@/components/ChargeGauge';
+import { SketchView, parseSketch } from '@/components/Sketch';
 import { useEntry } from '@/hooks/useEntries';
 import { readbackFields } from '@/lib/practices';
+
+/** Size of the drawing shown on an entry it belongs to. */
+const ENTRY_SKETCH_SIZE = 260;
 
 function formatDate(ms: number): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -75,6 +79,8 @@ export default function EntryScreen() {
     .map((f) => ({ ...f, value: valueFor[f.key] ?? null }))
     .filter((f) => f.value && f.value.trim());
 
+  const sketch = parseSketch(entry.sketch);
+
   return (
     <>
       <Stack.Screen
@@ -88,20 +94,29 @@ export default function EntryScreen() {
       <Screen>
         <Text style={styles.date}>{formatDate(entry.created_at)}</Text>
 
-        {written.length > 0 ? (
-          written.map((f) => (
-            <ReflectionBlock key={f.key} question={f.question} answer={f.value as string} />
-          ))
-        ) : (
+        {written.map((f) => (
+          <ReflectionBlock key={f.key} question={f.question} answer={f.value as string} />
+        ))}
+
+        {sketch ? (
+          <View style={styles.sketchBlock}>
+            <Text style={styles.question}>What you drew</Text>
+            <View style={styles.sketchFrame}>
+              <SketchView data={sketch} width={ENTRY_SKETCH_SIZE} height={ENTRY_SKETCH_SIZE} />
+            </View>
+          </View>
+        ) : null}
+
+        {written.length === 0 && !sketch ? (
           <Text style={styles.empty}>
             You sat with this one quietly — nothing was written down.
           </Text>
-        )}
+        ) : null}
 
         {entry.charge !== null && (
           <View style={styles.footer}>
             <Text style={styles.chargeLabel}>How present it felt</Text>
-            <ChargeDots charge={entry.charge} />
+            <ChargeGauge charge={entry.charge} />
           </View>
         )}
       </Screen>
@@ -121,6 +136,15 @@ const makeStyles = ({ colors, typography }: Theme) =>
     ...typography.serifBody,
     color: colors.textSecondary,
     fontStyle: 'italic',
+  },
+  sketchBlock: { gap: Spacing.two },
+  sketchFrame: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: Spacing.three,
   },
   footer: {
     flexDirection: 'row',

@@ -199,20 +199,16 @@ export default function SettingsScreen() {
 
   // ── Delete-everything handler ─────────────────────────────────────────────
 
+  // The countdown is seeded to 3 by the "Delete everything" button (the external
+  // event), so this effect never sets state synchronously — it only ticks the
+  // value down inside the timeout callback, one second at a time.
   useEffect(() => {
-    if (!showDeleteConfirm) {
-      setDeleteCountdown(null);
-      return;
-    }
-    setDeleteCountdown(3);
-    const id = setInterval(() => {
-      setDeleteCountdown((n) => {
-        if (n === null || n <= 1) { clearInterval(id); return 0; }
-        return n - 1;
-      });
+    if (!showDeleteConfirm || deleteCountdown === null || deleteCountdown <= 0) return;
+    const id = setTimeout(() => {
+      setDeleteCountdown((n) => (n === null ? null : n - 1));
     }, 1000);
-    return () => clearInterval(id);
-  }, [showDeleteConfirm]);
+    return () => clearTimeout(id);
+  }, [showDeleteConfirm, deleteCountdown]);
 
   async function handleDeleteAll() {
     setDeleting(true);
@@ -452,7 +448,10 @@ export default function SettingsScreen() {
             label="Delete everything"
             variant="secondary"
             fullWidth={false}
-            onPress={() => setShowDeleteConfirm(true)}
+            onPress={() => {
+              setDeleteCountdown(3);
+              setShowDeleteConfirm(true);
+            }}
             style={styles.selfStart}
           />
         ) : (

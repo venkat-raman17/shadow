@@ -24,7 +24,7 @@ export default function ChoiceStep({ step, inputs, onNext }: StepProps<ChoiceSte
           return (
             <Card
               key={opt.value}
-              onPress={() => onNext(opt.value, opt.goTo)}
+              onPress={() => onNext(opt.value, opt.goTo, opt.goToFlow, opt.seedKeys)}
               accessibilityLabel={optLabel}
               style={styles.option}>
               <Text style={styles.optionText}>{optLabel}</Text>

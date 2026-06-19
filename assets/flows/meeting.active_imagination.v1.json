@@ -91,6 +91,14 @@
       "placeholder": "Write what you see…"
     },
     {
+      "id": "d_draw",
+      "type": "draw",
+      "title": "Draw {partName|this part}, if an image wants to come.",
+      "body": "Active imagination is visual too. A face, a shape, a colour — however it appears. No skill needed, and you can skip this; it will keep its place in your inner world.",
+      "inputKey": "partSketch",
+      "optional": true
+    },
+    {
       "id": "d_age",
       "type": "prompt",
       "title": "How old does it feel?",

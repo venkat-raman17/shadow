@@ -22,6 +22,8 @@ export interface EntryListItem {
   charge: number | null;
   /** Decrypted first line of the entry's subject — used as a readable teaser. */
   subject: string | null;
+  /** Decrypted sketch JSON ({ w, h, paths }), or null — a thumbnail in lists. */
+  sketch: string | null;
 }
 
 interface EntryListRow {
@@ -30,6 +32,7 @@ interface EntryListRow {
   quality: string | null;
   charge: number | null;
   subject_enc: string | null;
+  sketch_enc: string | null;
 }
 
 /** First non-empty line of a block of text, for use as a one-line teaser. */
@@ -46,6 +49,7 @@ function toListItem(row: EntryListRow, key: Uint8Array): EntryListItem {
     quality: row.quality,
     charge: row.charge,
     subject: row.subject_enc ? firstLine(decrypt(row.subject_enc, key)) : null,
+    sketch: row.sketch_enc ? decrypt(row.sketch_enc, key) : null,
   };
 }
 
@@ -88,7 +92,7 @@ export async function getRecentEntries(
   limit = 20,
 ): Promise<EntryListItem[]> {
   const rows = await db.getAllAsync<EntryListRow>(
-    `SELECT id, created_at, quality, charge, subject_enc
+    `SELECT id, created_at, quality, charge, subject_enc, sketch_enc
      FROM entries
      ORDER BY created_at DESC
      LIMIT ?`,
@@ -108,7 +112,7 @@ export async function getEntriesByQuality(
   // decrypt the rows we actually return.
   const target = qualityFamily(quality);
   const rows = await db.getAllAsync<EntryListRow>(
-    `SELECT id, created_at, quality, charge, subject_enc
+    `SELECT id, created_at, quality, charge, subject_enc, sketch_enc
      FROM entries
      WHERE quality IS NOT NULL AND TRIM(quality) != ''
      ORDER BY created_at DESC`,
@@ -128,6 +132,8 @@ export interface EntryDetail {
   subject: string | null;
   echo: string | null;
   reclaim: string | null;
+  /** Decrypted sketch JSON ({ w, h, paths } vector drawing), or null. */
+  sketch: string | null;
 }
 
 /**
@@ -149,8 +155,9 @@ export async function getEntryById(
     subject_enc: string | null;
     echo_enc: string | null;
     reclaim_enc: string | null;
+    sketch_enc: string | null;
   }>(
-    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc, sketch_enc
      FROM entries WHERE id = ?`,
     [id],
   );
@@ -165,6 +172,7 @@ export async function getEntryById(
     subject: dec(row.subject_enc),
     echo: dec(row.echo_enc),
     reclaim: dec(row.reclaim_enc),
+    sketch: dec(row.sketch_enc),
   };
 }
 
@@ -206,8 +214,9 @@ export async function searchEntries(
     subject_enc: string | null;
     echo_enc: string | null;
     reclaim_enc: string | null;
+    sketch_enc: string | null;
   }>(
-    `SELECT id, created_at, quality, charge, subject_enc, echo_enc, reclaim_enc
+    `SELECT id, created_at, quality, charge, subject_enc, echo_enc, reclaim_enc, sketch_enc
      FROM entries
      ORDER BY created_at DESC`,
   );
@@ -225,6 +234,7 @@ export async function searchEntries(
       quality: row.quality,
       charge: row.charge,
       subject: firstLine(subject),
+      sketch: dec(row.sketch_enc),
       snippet: snippetAround(hit, q),
     });
     if (results.length >= limit) break;
@@ -235,6 +245,18 @@ export async function searchEntries(
 export async function getEntryCount(db: SQLiteDatabase): Promise<number> {
   const row = await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) as n FROM entries`);
   return row?.n ?? 0;
+}
+
+/**
+ * Distinct flow ids the user has actually run (entries + sessions). Plaintext,
+ * no decryption — used to curate the Read bookshelf to recent work, offline.
+ */
+export async function getUsedFlowIds(db: SQLiteDatabase): Promise<string[]> {
+  const rows = await db.getAllAsync<{ flow_id: string | null }>(
+    `SELECT DISTINCT flow_id FROM entries WHERE flow_id IS NOT NULL
+     UNION SELECT DISTINCT flow_id FROM sessions WHERE flow_id IS NOT NULL`,
+  );
+  return rows.map((r) => r.flow_id).filter((x): x is string => !!x);
 }
 
 /**
@@ -257,8 +279,9 @@ export async function getResurfacingPool(
     subject_enc: string | null;
     echo_enc: string | null;
     reclaim_enc: string | null;
+    sketch_enc: string | null;
   }>(
-    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc, sketch_enc
      FROM entries
      WHERE created_at < ? AND (reclaim_enc IS NOT NULL OR subject_enc IS NOT NULL)
      ORDER BY created_at DESC
@@ -275,6 +298,7 @@ export async function getResurfacingPool(
     subject: dec(row.subject_enc),
     echo: dec(row.echo_enc),
     reclaim: dec(row.reclaim_enc),
+    sketch: dec(row.sketch_enc),
   }));
 }
 
@@ -343,6 +367,13 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase): Promise<void> {
     await db.execAsync(`ALTER TABLE parts ADD COLUMN sketch_enc TEXT`);
     await db.execAsync('PRAGMA user_version = 2');
   }
+
+  if (version < 3) {
+    // The Red Book reframe: drawing becomes a first-class medium, so a noticing
+    // entry can carry its own sketch too — not only a part. Encrypted at rest.
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN sketch_enc TEXT`);
+    await db.execAsync('PRAGMA user_version = 3');
+  }
 }
 
 export async function savePart(
@@ -371,10 +402,17 @@ export async function savePart(
       ? encrypt(inputs.firstAppeared, key)
       : null;
 
+  // A figure drawn live during the meeting (a `draw` step writing inputKey
+  // 'partSketch'); the part screen's sketch editor can still revise it later.
+  const sketchEnc =
+    typeof inputs.partSketch === 'string' && inputs.partSketch.trim()
+      ? encrypt(inputs.partSketch, key)
+      : null;
+
   await db.runAsync(
-    `INSERT INTO parts (id, name, form_enc, body_location, first_appeared_enc, golden, created_at, last_met_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, name, encrypt(formPayload, key), bodyLocation, firstAppearedEnc, isGolden ? 1 : 0, now, now],
+    `INSERT INTO parts (id, name, form_enc, body_location, first_appeared_enc, sketch_enc, golden, created_at, last_met_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, name, encrypt(formPayload, key), bodyLocation, firstAppearedEnc, sketchEnc, isGolden ? 1 : 0, now, now],
   );
   return id;
 }
@@ -438,8 +476,8 @@ export async function saveEntry(
 
   await db.runAsync(
     `INSERT INTO entries
-       (id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc, sketch_enc)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       now,
@@ -449,6 +487,7 @@ export async function saveEntry(
       typeof inputs.charge === 'number' ? inputs.charge : null,
       enc(inputs.echo),
       enc(inputs.reclaim),
+      enc(inputs.sketch),
     ],
   );
 }
@@ -462,14 +501,33 @@ export interface PartListItem {
   golden: number;
   created_at: number;
   last_met_at: number | null;
+  /** Decrypted sketch JSON ({ w, h, paths }), or null — the figure's face. */
+  sketch: string | null;
 }
 
-export async function getParts(db: SQLiteDatabase): Promise<PartListItem[]> {
-  return db.getAllAsync<PartListItem>(
-    `SELECT id, name, body_location, golden, created_at, last_met_at
+export async function getParts(db: SQLiteDatabase, key: Uint8Array): Promise<PartListItem[]> {
+  const rows = await db.getAllAsync<{
+    id: string;
+    name: string | null;
+    body_location: string | null;
+    golden: number;
+    created_at: number;
+    last_met_at: number | null;
+    sketch_enc: string | null;
+  }>(
+    `SELECT id, name, body_location, golden, created_at, last_met_at, sketch_enc
      FROM parts
      ORDER BY last_met_at DESC, created_at DESC`,
   );
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    body_location: r.body_location,
+    golden: r.golden,
+    created_at: r.created_at,
+    last_met_at: r.last_met_at,
+    sketch: r.sketch_enc ? decrypt(r.sketch_enc, key) : null,
+  }));
 }
 
 export interface PartSessionItem {
@@ -729,8 +787,8 @@ export async function restoreEntries(
   for (const e of entries) {
     const result = await db.runAsync(
       `INSERT OR IGNORE INTO entries
-         (id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, created_at, flow_id, subject_enc, quality, charge, echo_enc, reclaim_enc, sketch_enc)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         e.id,
         e.created_at,
@@ -740,6 +798,7 @@ export async function restoreEntries(
         e.charge,
         e.echo ? encrypt(e.echo, key) : null,
         e.reclaim ? encrypt(e.reclaim, key) : null,
+        e.sketch ? encrypt(e.sketch, key) : null,
       ],
     );
     if (result.changes > 0) inserted++;
