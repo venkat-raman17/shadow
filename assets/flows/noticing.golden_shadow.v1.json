@@ -92,6 +92,7 @@
   "exit": {
     "type": "close",
     "body": "Whatever you can perceive in others, you have some capacity to perceive it with. The recognition you felt — that's already yours.",
-    "celebrate": false
+    "celebrate": false,
+    "readingId": "golden-shadow"
   }
 }

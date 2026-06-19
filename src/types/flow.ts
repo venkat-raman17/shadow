@@ -123,6 +123,7 @@ export interface FlowExit {
   body: string;
   celebrate: false;
   next?: FlowNext;
+  readingId?: string;
 }
 
 export interface Flow {

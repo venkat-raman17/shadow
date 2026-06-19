@@ -22,6 +22,7 @@ import {
 } from '@/lib/db';
 import { useCrypto } from '@/context/CryptoContext';
 import { resolveTokens } from '@/engine/tokens';
+import { getReading } from '@/lib/readings';
 import TranscriptTurn from '@/engine/TranscriptTurn';
 
 import PromptStep from '@/steps/PromptStep';
@@ -299,6 +300,19 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
                   <Text style={styles.experimentConfirm}>Saved to your experiments.</Text>
                 )}
 
+                {flow.exit.readingId && (() => {
+                  const r = getReading(flow.exit.readingId);
+                  return r ? (
+                    <Pressable
+                      style={styles.readingSuggestion}
+                      onPress={() => router.push({ pathname: '/reading/[id]', params: { id: r.id } })}>
+                      <Text style={styles.readingLabel}>Read about this</Text>
+                      <Text style={styles.readingTitle}>{r.title}</Text>
+                      <Text style={styles.readingBlurb} numberOfLines={2}>{r.blurb}</Text>
+                    </Pressable>
+                  ) : null;
+                })()}
+
                 {flow.exit.next && (
                   <Button
                     label={flow.exit.next.label}
@@ -405,4 +419,15 @@ const makeStyles = ({ colors, typography }: Theme) =>
     color: colors.accent,
     textAlign: 'center',
   },
+  readingSuggestion: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: Spacing.three,
+    gap: Spacing.one,
+  },
+  readingLabel: { ...typography.caption, color: colors.textFaint },
+  readingTitle: { ...typography.body, color: colors.textPrimary },
+  readingBlurb: { ...typography.bodySmall, color: colors.textSecondary, fontStyle: 'italic' },
 });

@@ -93,6 +93,7 @@
   "exit": {
     "type": "close",
     "body": "That's enough. You noticed something — that's the whole practice.",
-    "celebrate": false
+    "celebrate": false,
+    "readingId": "projection"
   }
 }

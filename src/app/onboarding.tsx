@@ -21,7 +21,7 @@ const PANEL_COUNT = 6;
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'man', label: 'Man' },
   { value: 'woman', label: 'Woman' },
-  { value: 'nonbinary', label: 'Not these categories' },
+  { value: 'nonbinary', label: 'Another identity' },
 ];
 
 export default function OnboardingScreen() {
@@ -117,6 +117,7 @@ export default function OnboardingScreen() {
                   onChangeText={setRestorePassphrase}
                   secureTextEntry
                   placeholder="Backup passphrase…"
+                  returnKeyType="done"
                   editable={!restoring}
                 />
                 {restoreError ? <Text style={styles.restoreError}>{restoreError}</Text> : null}

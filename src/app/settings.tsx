@@ -28,11 +28,11 @@ const TIME_SLOTS = [
   { label: 'Night', hour: 21, minute: 0 },
 ] as const;
 
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'sepia', label: 'Sepia' },
+const THEME_OPTIONS: { value: ThemePreference; label: string; swatch: string }[] = [
+  { value: 'system', label: 'System', swatch: '#2b2923' },
+  { value: 'light', label: 'Light', swatch: '#f4eedf' },
+  { value: 'dark', label: 'Dark', swatch: '#1a1915' },
+  { value: 'sepia', label: 'Sepia', swatch: '#f0e6d0' },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -69,6 +69,7 @@ export default function SettingsScreen() {
   const { refresh } = useSession();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState<number | null>(null);
 
   // Load current notification + lock settings on mount
   useEffect(() => {
@@ -198,6 +199,21 @@ export default function SettingsScreen() {
 
   // ── Delete-everything handler ─────────────────────────────────────────────
 
+  useEffect(() => {
+    if (!showDeleteConfirm) {
+      setDeleteCountdown(null);
+      return;
+    }
+    setDeleteCountdown(3);
+    const id = setInterval(() => {
+      setDeleteCountdown((n) => {
+        if (n === null || n <= 1) { clearInterval(id); return 0; }
+        return n - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [showDeleteConfirm]);
+
   async function handleDeleteAll() {
     setDeleting(true);
     try {
@@ -241,6 +257,7 @@ export default function SettingsScreen() {
               onChangeText={setExportPassphrase}
               secureTextEntry
               placeholder="Passphrase (8+ characters)…"
+              returnKeyType="done"
               autoFocus
               editable={!exporting}
             />
@@ -292,6 +309,7 @@ export default function SettingsScreen() {
               onChangeText={setRestorePassphrase}
               secureTextEntry
               placeholder="Passphrase…"
+              returnKeyType="done"
               autoFocus
               editable={!restoring}
             />
@@ -312,7 +330,12 @@ export default function SettingsScreen() {
       </View>
 
       {/* ── Daily reminder ─────────────────────────────────────────────────── */}
-      {Platform.OS !== 'web' && (
+      {Platform.OS === 'web' ? (
+        <View style={styles.section}>
+          <SectionHeader>Daily reminder</SectionHeader>
+          <Text style={styles.sectionBody}>Daily reminders are available on iOS and Android.</Text>
+        </View>
+      ) : (
       <View style={styles.section}>
         <SectionHeader>Daily reminder</SectionHeader>
         <Text style={styles.sectionBody}>An optional nudge. Off by default — no pressure, ever.</Text>
@@ -385,6 +408,7 @@ export default function SettingsScreen() {
             <Chip
               key={opt.value}
               label={opt.label}
+              swatch={opt.swatch}
               selected={preference === opt.value}
               onPress={() => setPreference(opt.value)}
             />
@@ -453,7 +477,8 @@ export default function SettingsScreen() {
             ) : (
               <>
                 <Button
-                  label="Yes, delete everything"
+                  label={deleteCountdown !== null && deleteCountdown > 0 ? `Wait ${deleteCountdown}…` : 'Yes, delete everything'}
+                  disabled={deleteCountdown !== null && deleteCountdown > 0}
                   onPress={handleDeleteAll}
                   style={styles.deleteBtn}
                 />

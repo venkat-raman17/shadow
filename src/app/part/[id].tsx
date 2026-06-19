@@ -47,10 +47,14 @@ function SessionBlock({
   session,
   golden,
   index,
+  expanded,
+  onToggle,
 }: {
   session: PartSessionItem;
   golden: boolean;
   index: number;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   // Render by the session's OWN captured shape, not the part-level golden flag.
@@ -65,10 +69,17 @@ function SessionBlock({
 
   return (
     <View style={styles.session}>
-      <Text style={styles.sessionDate}>
-        {index === 0 ? 'Most recent · ' : ''}
-        {formatDate(session.created_at)}
-      </Text>
+      <View style={styles.sessionDateRow}>
+        <Text style={styles.sessionDate}>
+          {index === 0 ? 'Most recent · ' : ''}
+          {formatDate(session.created_at)}
+        </Text>
+        {index > 0 && (
+          <Pressable onPress={onToggle}>
+            <Text style={styles.sessionToggle}>{expanded ? 'Hide ↑' : 'Show ↓'}</Text>
+          </Pressable>
+        )}
+      </View>
 
       {(session.charge_before !== null || session.charge_after !== null) && (
         <View style={styles.chargeRow}>
@@ -87,14 +98,14 @@ function SessionBlock({
         </View>
       )}
 
-      {origin && (
+      {expanded && origin && (
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>What you found</Text>
           <Text style={styles.fieldValue}>{origin}</Text>
         </View>
       )}
 
-      {turns.map((t) => (
+      {expanded && turns.map((t) => (
         <View key={t.key} style={styles.turn}>
           <Text style={styles.turnSpeaker}>{t.speaker === 'part' ? 'It said' : 'You said'}</Text>
           <View style={styles.turnRow}>
@@ -104,7 +115,7 @@ function SessionBlock({
         </View>
       ))}
 
-      {session.need && (
+      {expanded && session.need && (
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>
             {needIsGolden ? 'Where it could live' : 'What it needs'}
@@ -123,6 +134,7 @@ export default function PartScreen() {
   const sketchBox = Math.min(width - Spacing.three * 2, 360);
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
 
   if (loading) {
     return (
@@ -253,7 +265,21 @@ export default function PartScreen() {
               {part.sessions.length === 1 ? 'Your meeting' : 'Your meetings'}
             </SectionHeader>
             {part.sessions.map((s, i) => (
-              <SessionBlock key={s.id} session={s} golden={isGolden} index={i} />
+              <SessionBlock
+                key={s.id}
+                session={s}
+                golden={isGolden}
+                index={i}
+                expanded={i === 0 || expandedIds.has(s.id)}
+                onToggle={() =>
+                  setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(s.id)) next.delete(s.id);
+                    else next.add(s.id);
+                    return next;
+                  })
+                }
+              />
             ))}
           </View>
         )}
@@ -301,7 +327,9 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  sessionDateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sessionDate: { ...typography.caption, color: colors.textSecondary },
+  sessionToggle: { ...typography.caption, color: colors.accent },
   chargeRow: { flexDirection: 'row', gap: Spacing.five, flexWrap: 'wrap' },
   chargeItem: { gap: Spacing.one },
   chargeLabel: { ...typography.caption, color: colors.textFaint },
