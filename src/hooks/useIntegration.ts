@@ -27,7 +27,7 @@ export function useParts(): PartListItem[] {
       let active = true;
       getParts(db).then((rows) => {
         if (active) setParts(rows);
-      });
+      }).catch(e => console.warn('[useIntegration]', e));
       return () => {
         active = false;
       };
@@ -52,7 +52,7 @@ export function usePart(id: string | undefined): { part: PartDetail | null; load
         if (!active) return;
         setPart(p);
         setLoading(false);
-      });
+      }).catch(e => console.warn('[useIntegration]', e));
       return () => {
         active = false;
       };
@@ -71,7 +71,7 @@ export function useSurfacingPatterns(limit = 5): SurfacingPattern[] {
       let active = true;
       getSurfacingPatterns(db, limit).then((rows) => {
         if (active) setPatterns(rows);
-      });
+      }).catch(e => console.warn('[useIntegration]', e));
       return () => {
         active = false;
       };
@@ -96,7 +96,7 @@ export function useReturnInvitation(minDaysSinceMet = 5): ReturnablePart | null 
         if (!active) return;
         const cutoff = Date.now() - minDaysSinceMet * DAY_MS;
         setPart(rows.find((r) => !r.last_met_at || r.last_met_at < cutoff) ?? null);
-      });
+      }).catch(e => console.warn('[useIntegration]', e));
       return () => {
         active = false;
       };
@@ -120,7 +120,7 @@ export function useExperiments(): {
       let active = true;
       getExperiments(db, key).then((rows) => {
         if (active) setExperiments(rows);
-      });
+      }).catch(e => console.warn('[useIntegration]', e));
       return () => {
         active = false;
       };

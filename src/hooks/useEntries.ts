@@ -30,7 +30,7 @@ export function useRecentEntries(limit = 20): EntryListItem[] {
       let active = true;
       getRecentEntries(db, key, limit).then((rows) => {
         if (active) setEntries(rows);
-      });
+      }).catch(e => console.warn('[useEntries]', e));
       return () => {
         active = false;
       };
@@ -52,7 +52,7 @@ export function useEntriesByQuality(quality: string | undefined, limit = 200): E
       let active = true;
       getEntriesByQuality(db, quality, key, limit).then((rows) => {
         if (active) setEntries(rows);
-      });
+      }).catch(e => console.warn('[useEntries]', e));
       return () => {
         active = false;
       };
@@ -89,8 +89,8 @@ export function useResurfacing(
         const fresh = pool.filter((e) => !dismissedResurfacing.has(e.id));
         const withReclaim = fresh.filter((e) => e.reclaim && e.reclaim.trim());
         setEntry(withReclaim[0] ?? fresh[0] ?? null);
-      });
-    });
+      }).catch(e => console.warn('[useEntries]', e));
+    }).catch(e => console.warn('[useEntries]', e));
   }, [db, key, minEntries, olderThanDays]);
 
   useFocusEffect(
@@ -130,7 +130,7 @@ export function useEntry(id: string | undefined): {
         if (!active) return;
         setEntry(e);
         setLoading(false);
-      });
+      }).catch(e => console.warn('[useEntries]', e));
       return () => {
         active = false;
       };

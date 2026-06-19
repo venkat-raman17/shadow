@@ -51,6 +51,7 @@
   "exit": {
     "type": "close",
     "body": "Your plan is saved in the Reflections tab. The distance between insight and living it closes one act at a time.",
-    "celebrate": false
+    "celebrate": false,
+    "readingId": "integration"
   }
 }

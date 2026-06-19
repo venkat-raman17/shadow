@@ -31,20 +31,29 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="integration"
+        name="practice"
         options={{
-          title: 'Reflections',
+          title: 'Practice',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'book.closed', web: 'menu_book' }} size={24} tintColor={color} />
+            <SymbolView name={{ ios: 'figure.mind.and.body', web: 'self_improvement' }} size={24} tintColor={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="resources"
+        name="notebook"
         options={{
-          title: 'Support',
+          title: 'Notebook',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'lifepreserver', web: 'support' }} size={24} tintColor={color} />
+            <SymbolView name={{ ios: 'note.text', web: 'article' }} size={24} tintColor={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="integration"
+        options={{
+          title: 'Reflections',
+          tabBarIcon: ({ color }) => (
+            <SymbolView name={{ ios: 'moon', web: 'nightlight' }} size={24} tintColor={color} />
           ),
         }}
       />

@@ -22,6 +22,7 @@ import {
 } from '@/lib/db';
 import { useCrypto } from '@/context/CryptoContext';
 import { resolveTokens } from '@/engine/tokens';
+import { getReading } from '@/lib/readings';
 import TranscriptTurn from '@/engine/TranscriptTurn';
 
 import PromptStep from '@/steps/PromptStep';
@@ -233,9 +234,18 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
   const currentStep = !state.done ? flow.steps[state.stepIndex] : undefined;
 
+  const progressFraction = state.done
+    ? 1
+    : flow.steps.length > 0
+    ? state.history.length / flow.steps.length
+    : 0;
+
   return (
     <SafeAreaView style={styles.safe}>
       {groundingBanner}
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.min(progressFraction, 1) * 100}%` }]} />
+      </View>
       <KeyboardAwareScrollView
         ref={scrollRef}
         style={styles.flex}
@@ -289,6 +299,19 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
                 {experimentSaved && (
                   <Text style={styles.experimentConfirm}>Saved to your experiments.</Text>
                 )}
+
+                {flow.exit.readingId && (() => {
+                  const r = getReading(flow.exit.readingId);
+                  return r ? (
+                    <Pressable
+                      style={styles.readingSuggestion}
+                      onPress={() => router.push({ pathname: '/reading/[id]', params: { id: r.id } })}>
+                      <Text style={styles.readingLabel}>Read about this</Text>
+                      <Text style={styles.readingTitle}>{r.title}</Text>
+                      <Text style={styles.readingBlurb} numberOfLines={2}>{r.blurb}</Text>
+                    </Pressable>
+                  ) : null;
+                })()}
 
                 {flow.exit.next && (
                   <Button
@@ -350,6 +373,8 @@ function ActiveStep({ step, inputs, onNext, onExit }: StepProps) {
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  progressTrack: { height: 2, backgroundColor: colors.border, width: '100%' },
+  progressFill: { height: 2, backgroundColor: colors.accent },
   flex: { flex: 1 },
   scrollContent: {
     padding: Spacing.four,
@@ -394,4 +419,15 @@ const makeStyles = ({ colors, typography }: Theme) =>
     color: colors.accent,
     textAlign: 'center',
   },
+  readingSuggestion: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: Spacing.three,
+    gap: Spacing.one,
+  },
+  readingLabel: { ...typography.caption, color: colors.textFaint },
+  readingTitle: { ...typography.body, color: colors.textPrimary },
+  readingBlurb: { ...typography.bodySmall, color: colors.textSecondary, fontStyle: 'italic' },
 });

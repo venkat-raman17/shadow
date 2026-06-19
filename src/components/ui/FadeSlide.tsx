@@ -1,6 +1,6 @@
 import React from 'react';
 import { type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 import { motion } from '@/constants/theme';
 
@@ -26,8 +26,8 @@ export function FadeSlide({
   style,
 }: Props) {
   const entering = rise
-    ? FadeInDown.duration(duration).delay(delay)
-    : FadeIn.duration(duration).delay(delay);
+    ? FadeInDown.duration(duration).delay(delay).reduceMotion(ReduceMotion.System)
+    : FadeIn.duration(duration).delay(delay).reduceMotion(ReduceMotion.System);
 
   return (
     <Animated.View entering={entering} style={style}>

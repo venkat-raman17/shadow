@@ -252,6 +252,7 @@
   "exit": {
     "type": "close",
     "body": "That's enough for today. Whatever came up, it came up for a reason.",
-    "celebrate": false
+    "celebrate": false,
+    "readingId": "active-imagination"
   }
 }

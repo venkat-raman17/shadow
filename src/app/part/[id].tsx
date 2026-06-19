@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
@@ -47,10 +47,14 @@ function SessionBlock({
   session,
   golden,
   index,
+  expanded,
+  onToggle,
 }: {
   session: PartSessionItem;
   golden: boolean;
   index: number;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
   const styles = useThemedStyles(makeStyles);
   // Render by the session's OWN captured shape, not the part-level golden flag.
@@ -65,10 +69,17 @@ function SessionBlock({
 
   return (
     <View style={styles.session}>
-      <Text style={styles.sessionDate}>
-        {index === 0 ? 'Most recent · ' : ''}
-        {formatDate(session.created_at)}
-      </Text>
+      <View style={styles.sessionDateRow}>
+        <Text style={styles.sessionDate}>
+          {index === 0 ? 'Most recent · ' : ''}
+          {formatDate(session.created_at)}
+        </Text>
+        {index > 0 && (
+          <Pressable onPress={onToggle}>
+            <Text style={styles.sessionToggle}>{expanded ? 'Hide ↑' : 'Show ↓'}</Text>
+          </Pressable>
+        )}
+      </View>
 
       {(session.charge_before !== null || session.charge_after !== null) && (
         <View style={styles.chargeRow}>
@@ -87,14 +98,14 @@ function SessionBlock({
         </View>
       )}
 
-      {origin && (
+      {expanded && origin && (
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>What you found</Text>
           <Text style={styles.fieldValue}>{origin}</Text>
         </View>
       )}
 
-      {turns.map((t) => (
+      {expanded && turns.map((t) => (
         <View key={t.key} style={styles.turn}>
           <Text style={styles.turnSpeaker}>{t.speaker === 'part' ? 'It said' : 'You said'}</Text>
           <View style={styles.turnRow}>
@@ -104,7 +115,7 @@ function SessionBlock({
         </View>
       ))}
 
-      {session.need && (
+      {expanded && session.need && (
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>
             {needIsGolden ? 'Where it could live' : 'What it needs'}
@@ -123,6 +134,7 @@ export default function PartScreen() {
   const sketchBox = Math.min(width - Spacing.three * 2, 360);
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const [expandedIds, setExpandedIds] = React.useState<Set<string>>(new Set());
 
   if (loading) {
     return (
@@ -211,7 +223,15 @@ export default function PartScreen() {
               <SketchView data={sketch} width={sketchBox} height={sketchBox} />
             </View>
           </View>
-        ) : null}
+        ) : (
+          <Pressable
+            style={styles.sketchPlaceholder}
+            onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}>
+            <Text style={styles.sketchPlaceholderText}>
+              No drawing yet — tap to draw what this part looks like →
+            </Text>
+          </Pressable>
+        )}
 
         <Button
           label={lastSaid ? 'Pick up where you left off' : 'Sit with this part again'}
@@ -231,11 +251,13 @@ export default function PartScreen() {
           }
         />
 
-        <Button
-          label={sketch ? 'Edit your drawing' : 'Draw what it looks like'}
-          variant="ghost"
-          onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}
-        />
+        {sketch && (
+          <Button
+            label="Edit your drawing"
+            variant="ghost"
+            onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}
+          />
+        )}
 
         {part.sessions.length > 0 && (
           <View style={styles.sessionsSection}>
@@ -243,7 +265,21 @@ export default function PartScreen() {
               {part.sessions.length === 1 ? 'Your meeting' : 'Your meetings'}
             </SectionHeader>
             {part.sessions.map((s, i) => (
-              <SessionBlock key={s.id} session={s} golden={isGolden} index={i} />
+              <SessionBlock
+                key={s.id}
+                session={s}
+                golden={isGolden}
+                index={i}
+                expanded={i === 0 || expandedIds.has(s.id)}
+                onToggle={() =>
+                  setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(s.id)) next.delete(s.id);
+                    else next.add(s.id);
+                    return next;
+                  })
+                }
+              />
             ))}
           </View>
         )}
@@ -270,6 +306,14 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  sketchPlaceholder: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    borderRadius: radii.md,
+    padding: Spacing.three,
+  },
+  sketchPlaceholderText: { ...typography.bodySmall, color: colors.textFaint, fontStyle: 'italic' },
 
   lastSaid: { gap: Spacing.one },
   lastSaidRow: { flexDirection: 'row', gap: Spacing.three },
@@ -283,7 +327,9 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  sessionDateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sessionDate: { ...typography.caption, color: colors.textSecondary },
+  sessionToggle: { ...typography.caption, color: colors.accent },
   chargeRow: { flexDirection: 'row', gap: Spacing.five, flexWrap: 'wrap' },
   chargeItem: { gap: Spacing.one },
   chargeLabel: { ...typography.caption, color: colors.textFaint },

@@ -6,7 +6,6 @@ import { router } from 'expo-router';
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader, Button } from '@/components/ui';
-import { ChargeDots } from '@/components/ChargeDots';
 import { PresenceField } from '@/components/PresenceField';
 import { SurfacingField } from '@/components/SurfacingField';
 import {
@@ -16,42 +15,9 @@ import {
   useReturnInvitation,
 } from '@/hooks/useIntegration';
 
-import { useRecentEntries } from '@/hooks/useEntries';
-import { updateExperimentStatus, ExperimentItem, EntryListItem } from '@/lib/db';
+import { updateExperimentStatus, ExperimentItem } from '@/lib/db';
 
 const MEETING_FLOW_ID = 'meeting.active_imagination.v1';
-const HISTORY_LIMIT = 5;
-
-function formatDateTime(ms: number): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(ms));
-}
-
-function EntryRow({ entry }: { entry: EntryListItem }) {
-  const styles = useThemedStyles(makeStyles);
-  return (
-    <Card onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}>
-      {entry.subject ? (
-        <Text style={styles.entryTitle} numberOfLines={2}>
-          {entry.subject}
-        </Text>
-      ) : (
-        <Text style={[styles.entryTitle, styles.entryTitleEmpty]} numberOfLines={1}>
-          A quiet noticing
-        </Text>
-      )}
-      <View style={styles.entryMeta}>
-        <Text style={styles.entryDate}>{formatDateTime(entry.created_at)}</Text>
-        {entry.quality ? <Text style={styles.entryQuality}>{entry.quality}</Text> : null}
-      </View>
-      {entry.charge !== null ? <ChargeDots charge={entry.charge} /> : null}
-    </Card>
-  );
-}
 
 const REFLECT_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
@@ -71,14 +37,20 @@ function ExperimentCard({
   const isOpen = experiment.status === 'open';
   const needsReflection = isOpen && isOlderThanReflectAge(experiment.created_at);
 
+  const statusLabel = experiment.status === 'open' ? 'Open' : experiment.status === 'done' ? 'Done' : 'Let go';
+
   return (
     <Card muted={!isOpen}>
-      <Text style={[styles.experimentDescription, !isOpen && styles.textMuted]}>
-        {experiment.description}
-      </Text>
-      {!isOpen && (
-        <Text style={styles.statusLabel}>{experiment.status === 'done' ? 'Done' : 'Let go'}</Text>
-      )}
+      <View style={styles.expHeader}>
+        <Text style={[styles.experimentDescription, !isOpen && styles.textMuted, { flex: 1 }]}>
+          {experiment.description}
+        </Text>
+        <View style={[styles.statusPill, isOpen ? styles.statusPillOpen : styles.statusPillClosed]}>
+          <Text style={[styles.statusPillText, isOpen ? styles.statusPillTextOpen : styles.statusPillTextClosed]}>
+            {statusLabel}
+          </Text>
+        </View>
+      </View>
       {isOpen && (
         <View style={styles.statusActions}>
           <Button
@@ -113,7 +85,6 @@ export default function ReflectionsScreen() {
   const parts = useParts();
   const patterns = useSurfacingPatterns();
   const { experiments, setExperiments } = useExperiments();
-  const entries = useRecentEntries(HISTORY_LIMIT + 1);
   const returnPart = useReturnInvitation();
   const styles = useThemedStyles(makeStyles);
 
@@ -125,11 +96,7 @@ export default function ReflectionsScreen() {
   const closedExperiments = experiments.filter((e) => e.status !== 'open');
 
   const hasPriorWork = parts.length > 0 || experiments.length > 0;
-  const isEmpty =
-    parts.length === 0 && patterns.length === 0 && experiments.length === 0 && entries.length === 0;
-
-  const shownEntries = entries.slice(0, HISTORY_LIMIT);
-  const hasMoreEntries = entries.length > HISTORY_LIMIT;
+  const isEmpty = parts.length === 0 && patterns.length === 0 && experiments.length === 0;
 
   async function handleStatusChange(id: string, status: 'done' | 'let-go') {
     await updateExperimentStatus(db, id, status);
@@ -142,10 +109,16 @@ export default function ReflectionsScreen() {
       <Text style={styles.tagline}>A mirror of what you&apos;ve been sitting with.</Text>
 
       {isEmpty ? (
-        <Text style={styles.empty}>
-          Nothing here yet. Come back after noticing a few reactions or sitting with a part — this is
-          where it gathers.
-        </Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyHeading}>Nothing here yet.</Text>
+          <Text style={styles.emptyBody}>
+            Your inner world takes shape as you work with it. Start with one noticing — something you
+            felt, someone who got under your skin.
+          </Text>
+          <Pressable onPress={() => router.push('/')}>
+            <Text style={styles.emptyCtaText}>Start noticing →</Text>
+          </Pressable>
+        </View>
       ) : (
         <>
           {returnPart && (
@@ -220,17 +193,6 @@ export default function ReflectionsScreen() {
             </View>
           )}
 
-          {entries.length > 0 && (
-            <View style={styles.section}>
-              <SectionHeader>Lately</SectionHeader>
-              {shownEntries.map((entry) => (
-                <EntryRow key={entry.id} entry={entry} />
-              ))}
-              {hasMoreEntries && (
-                <Button label="See all →" variant="ghost" onPress={() => router.push('/history')} />
-              )}
-            </View>
-          )}
         </>
       )}
     </Screen>
@@ -241,12 +203,6 @@ const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   heading: { ...typography.display },
   tagline: { ...typography.body, color: colors.textSecondary },
-  empty: {
-    ...typography.serifBody,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: Spacing.four,
-  },
   section: { gap: Spacing.two },
   sectionNote: { ...typography.bodySmall, color: colors.textSecondary, marginTop: -Spacing.one },
 
@@ -285,17 +241,27 @@ const makeStyles = ({ colors, typography }: Theme) =>
   carryBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
   carryCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // Lately
-  entryTitle: { ...typography.body, fontWeight: '500', lineHeight: 24 },
-  entryTitleEmpty: { fontWeight: '400', fontStyle: 'italic', color: colors.textSecondary },
-  entryMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  entryDate: { ...typography.caption, color: colors.textSecondary },
-  entryQuality: { ...typography.bodySmall, fontStyle: 'italic' },
+  // Empty state
+  emptyState: { gap: Spacing.three, paddingVertical: Spacing.four },
+  emptyHeading: { ...typography.serifBody, color: colors.textPrimary },
+  emptyBody: { ...typography.body, color: colors.textSecondary },
+  emptyCtaText: { ...typography.body, color: colors.accent },
 
   // Experiments
+  expHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   experimentDescription: { ...typography.body, lineHeight: 24 },
   textMuted: { color: colors.textSecondary },
-  statusLabel: { ...typography.caption, color: colors.textSecondary, marginTop: Spacing.one },
+  statusPill: {
+    borderRadius: radii.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  statusPillOpen: { backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentMuted },
+  statusPillClosed: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  statusPillText: { fontSize: 11, lineHeight: 18 },
+  statusPillTextOpen: { color: colors.accent },
+  statusPillTextClosed: { color: colors.textFaint },
   statusActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
   statusBtn: { flex: 1, paddingVertical: Spacing.two, borderRadius: radii.sm },
   closedDivider: { height: 1, backgroundColor: colors.border, marginVertical: Spacing.one },

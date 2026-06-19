@@ -284,7 +284,7 @@ export default function HomeScreen() {
       <View style={styles.threshold}>
         <Text style={styles.prompt}>What&apos;s here right now?</Text>
         <Text style={styles.promptSub}>
-          A word or a sentence — whatever&apos;s present. Or choose a way in below.
+          A word or a sentence — whatever&apos;s present.
         </Text>
 
         <TextField
@@ -302,39 +302,35 @@ export default function HomeScreen() {
         />
       </View>
 
-      <Pressable style={styles.nowLink} onPress={() => enter('noticing.in_the_moment.v1')}>
-        <SymbolView
-          name={{ ios: 'bolt.heart', web: 'bolt' }}
-          size={15}
-          tintColor={colors.accentWarm}
-        />
-        <Text style={styles.nowLinkText}>Something just happened — catch it now →</Text>
-      </Pressable>
-
       {showDepths && <DepthsCard onDismiss={dismissDepths} />}
 
-      <View style={styles.doorways}>
-        {doorways.map((d) => (
-          <Chip key={d.key} label={d.label} onPress={() => enter(d.resolve(profile?.gender))} />
-        ))}
+      <View style={styles.doorwaysSection}>
+        <Text style={styles.doorwayLabel}>Or step through a doorway</Text>
+        <View style={styles.doorways}>
+          {doorways.map((d) => (
+            <Chip key={d.key} label={d.label} onPress={() => enter(d.resolve(profile?.gender))} />
+          ))}
+        </View>
       </View>
 
-      <Pressable style={styles.moreLink} onPress={() => router.push('/practices')}>
-        <Text style={styles.moreLinkText}>
-          {firstRun ? 'See the gentle starting practices' : 'Other ways to notice'}
-        </Text>
-        <SymbolView
-          name={{ ios: 'chevron.right', web: 'chevron_right' }}
-          size={15}
-          tintColor={colors.textSecondary}
-        />
-      </Pressable>
-
-      {/* A calm, always-present way to settle — never a flashing panic button. */}
-      <Pressable style={styles.settleLink} onPress={() => enter('grounding.settle.v1')}>
-        <SymbolView name={{ ios: 'wind', web: 'air' }} size={15} tintColor={colors.textSecondary} />
-        <Text style={styles.settleLinkText}>Feeling unsteady? Take a moment to settle →</Text>
-      </Pressable>
+      <View style={styles.momentsSection}>
+        <Text style={styles.momentsLabel}>For specific moments</Text>
+        <View style={styles.momentsCard}>
+          <Pressable style={styles.momentsRow} onPress={() => enter('noticing.in_the_moment.v1')}>
+            <SymbolView
+              name={{ ios: 'bolt.heart', web: 'bolt' }}
+              size={15}
+              tintColor={colors.accentWarm}
+            />
+            <Text style={styles.nowLinkText}>Something just happened — catch it now →</Text>
+          </Pressable>
+          <View style={styles.momentsDivider} />
+          <Pressable style={styles.momentsRow} onPress={() => enter('grounding.settle.v1')}>
+            <SymbolView name={{ ios: 'wind', web: 'air' }} size={15} tintColor={colors.textSecondary} />
+            <Text style={styles.settleLinkText}>Feeling unsteady? Take a moment to settle →</Text>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
@@ -356,11 +352,11 @@ const makeStyles = ({ colors, typography }: Theme) =>
   prompt: { ...typography.serifPrompt, fontSize: 28, lineHeight: 38 },
   promptSub: { ...typography.body, color: colors.textSecondary, marginTop: -Spacing.one },
 
-  // In-the-moment fast lane
-  nowLink: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: -Spacing.one },
   nowLinkText: { ...typography.body, color: colors.accentWarm },
 
   // Doorways
+  doorwaysSection: { gap: Spacing.two },
+  doorwayLabel: { ...typography.caption, color: colors.textFaint },
   doorways: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 
   // Depths map (first-run)
@@ -399,16 +395,22 @@ const makeStyles = ({ colors, typography }: Theme) =>
   pickText: { ...typography.serifBody, color: colors.textPrimary },
   pickCta: { ...typography.caption, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // More ways
-  moreLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
+  // Specific moments card
+  momentsSection: { gap: Spacing.two },
+  momentsLabel: { ...typography.caption, color: colors.textFaint },
+  momentsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: Spacing.three,
   },
-  moreLinkText: { ...typography.body, color: colors.textSecondary },
-
-  // Quiet grounding affordance
-  settleLink: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  momentsDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: Spacing.two,
+  },
+  momentsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   settleLinkText: { ...typography.bodySmall, color: colors.textSecondary },
 
   footer: { marginTop: Spacing.two, paddingTop: Spacing.three },
