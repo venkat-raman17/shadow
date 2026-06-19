@@ -71,14 +71,20 @@ function ExperimentCard({
   const isOpen = experiment.status === 'open';
   const needsReflection = isOpen && isOlderThanReflectAge(experiment.created_at);
 
+  const statusLabel = experiment.status === 'open' ? 'Open' : experiment.status === 'done' ? 'Done' : 'Let go';
+
   return (
     <Card muted={!isOpen}>
-      <Text style={[styles.experimentDescription, !isOpen && styles.textMuted]}>
-        {experiment.description}
-      </Text>
-      {!isOpen && (
-        <Text style={styles.statusLabel}>{experiment.status === 'done' ? 'Done' : 'Let go'}</Text>
-      )}
+      <View style={styles.expHeader}>
+        <Text style={[styles.experimentDescription, !isOpen && styles.textMuted, { flex: 1 }]}>
+          {experiment.description}
+        </Text>
+        <View style={[styles.statusPill, isOpen ? styles.statusPillOpen : styles.statusPillClosed]}>
+          <Text style={[styles.statusPillText, isOpen ? styles.statusPillTextOpen : styles.statusPillTextClosed]}>
+            {statusLabel}
+          </Text>
+        </View>
+      </View>
       {isOpen && (
         <View style={styles.statusActions}>
           <Button
@@ -142,10 +148,16 @@ export default function ReflectionsScreen() {
       <Text style={styles.tagline}>A mirror of what you&apos;ve been sitting with.</Text>
 
       {isEmpty ? (
-        <Text style={styles.empty}>
-          Nothing here yet. Come back after noticing a few reactions or sitting with a part — this is
-          where it gathers.
-        </Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyHeading}>Nothing here yet.</Text>
+          <Text style={styles.emptyBody}>
+            Your inner world takes shape as you work with it. Start with one noticing — something you
+            felt, someone who got under your skin.
+          </Text>
+          <Pressable onPress={() => router.push('/')}>
+            <Text style={styles.emptyCtaText}>Start noticing →</Text>
+          </Pressable>
+        </View>
       ) : (
         <>
           {returnPart && (
@@ -292,10 +304,27 @@ const makeStyles = ({ colors, typography }: Theme) =>
   entryDate: { ...typography.caption, color: colors.textSecondary },
   entryQuality: { ...typography.bodySmall, fontStyle: 'italic' },
 
+  // Empty state
+  emptyState: { gap: Spacing.three, paddingVertical: Spacing.four },
+  emptyHeading: { ...typography.serifBody, color: colors.textPrimary },
+  emptyBody: { ...typography.body, color: colors.textSecondary },
+  emptyCtaText: { ...typography.body, color: colors.accent },
+
   // Experiments
+  expHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   experimentDescription: { ...typography.body, lineHeight: 24 },
   textMuted: { color: colors.textSecondary },
-  statusLabel: { ...typography.caption, color: colors.textSecondary, marginTop: Spacing.one },
+  statusPill: {
+    borderRadius: radii.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  statusPillOpen: { backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentMuted },
+  statusPillClosed: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  statusPillText: { fontSize: 11, lineHeight: 18 },
+  statusPillTextOpen: { color: colors.accent },
+  statusPillTextClosed: { color: colors.textFaint },
   statusActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
   statusBtn: { flex: 1, paddingVertical: Spacing.two, borderRadius: radii.sm },
   closedDivider: { height: 1, backgroundColor: colors.border, marginVertical: Spacing.one },

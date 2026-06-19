@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
@@ -211,7 +211,15 @@ export default function PartScreen() {
               <SketchView data={sketch} width={sketchBox} height={sketchBox} />
             </View>
           </View>
-        ) : null}
+        ) : (
+          <Pressable
+            style={styles.sketchPlaceholder}
+            onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}>
+            <Text style={styles.sketchPlaceholderText}>
+              No drawing yet — tap to draw what this part looks like →
+            </Text>
+          </Pressable>
+        )}
 
         <Button
           label={lastSaid ? 'Pick up where you left off' : 'Sit with this part again'}
@@ -231,11 +239,13 @@ export default function PartScreen() {
           }
         />
 
-        <Button
-          label={sketch ? 'Edit your drawing' : 'Draw what it looks like'}
-          variant="ghost"
-          onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}
-        />
+        {sketch && (
+          <Button
+            label="Edit your drawing"
+            variant="ghost"
+            onPress={() => router.push({ pathname: '/sketch/[partId]', params: { partId: part.id } })}
+          />
+        )}
 
         {part.sessions.length > 0 && (
           <View style={styles.sessionsSection}>
@@ -270,6 +280,14 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  sketchPlaceholder: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    borderRadius: radii.md,
+    padding: Spacing.three,
+  },
+  sketchPlaceholderText: { ...typography.bodySmall, color: colors.textFaint, fontStyle: 'italic' },
 
   lastSaid: { gap: Spacing.one },
   lastSaidRow: { flexDirection: 'row', gap: Spacing.three },

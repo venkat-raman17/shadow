@@ -233,9 +233,18 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
   const currentStep = !state.done ? flow.steps[state.stepIndex] : undefined;
 
+  const progressFraction = state.done
+    ? 1
+    : flow.steps.length > 0
+    ? state.history.length / flow.steps.length
+    : 0;
+
   return (
     <SafeAreaView style={styles.safe}>
       {groundingBanner}
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.min(progressFraction, 1) * 100}%` }]} />
+      </View>
       <KeyboardAwareScrollView
         ref={scrollRef}
         style={styles.flex}
@@ -350,6 +359,8 @@ function ActiveStep({ step, inputs, onNext, onExit }: StepProps) {
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  progressTrack: { height: 2, backgroundColor: colors.border, width: '100%' },
+  progressFill: { height: 2, backgroundColor: colors.accent },
   flex: { flex: 1 },
   scrollContent: {
     padding: Spacing.four,
