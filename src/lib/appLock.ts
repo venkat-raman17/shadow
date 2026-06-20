@@ -38,10 +38,10 @@ export async function canAuthenticate(): Promise<boolean> {
  * on success. On any error returns false so callers can decide; the lock screen
  * keeps a manual retry, and enabling is gated on a successful prompt.
  */
-export async function authenticate(): Promise<boolean> {
+export async function authenticate(promptMessage = 'Unlock Partwise'): Promise<boolean> {
   try {
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Unlock Partwise',
+      promptMessage,
       cancelLabel: 'Cancel',
       disableDeviceFallback: false,
     });

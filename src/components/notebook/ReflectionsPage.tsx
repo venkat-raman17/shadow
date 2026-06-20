@@ -1,86 +1,32 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 
-import { Spacing, radii, type Theme } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
-import { Screen, Card, SectionHeader, Button } from '@/components/ui';
+import { Card, SectionHeader } from '@/components/ui';
 import { PresenceField } from '@/components/PresenceField';
 import { SurfacingField } from '@/components/SurfacingField';
+import { ExperimentCard } from '@/components/ExperimentCard';
 import {
   useParts,
   useSurfacingPatterns,
   useExperiments,
   useReturnInvitation,
 } from '@/hooks/useIntegration';
-
-import { updateExperimentStatus, ExperimentItem } from '@/lib/db';
+import { updateExperimentStatus } from '@/lib/db';
 
 const MEETING_FLOW_ID = 'meeting.active_imagination.v1';
 
-const REFLECT_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
-
-// At module scope so the time read stays out of render.
-function isOlderThanReflectAge(createdAt: number): boolean {
-  return Date.now() - createdAt > REFLECT_AGE_MS;
-}
-
-function ExperimentCard({
-  experiment,
-  onStatusChange,
-}: {
-  experiment: ExperimentItem;
-  onStatusChange: (id: string, status: 'done' | 'let-go') => void;
-}) {
-  const styles = useThemedStyles(makeStyles);
-  const isOpen = experiment.status === 'open';
-  const needsReflection = isOpen && isOlderThanReflectAge(experiment.created_at);
-
-  const statusLabel = experiment.status === 'open' ? 'Open' : experiment.status === 'done' ? 'Done' : 'Let go';
-
-  return (
-    <Card muted={!isOpen}>
-      <View style={styles.expHeader}>
-        <Text style={[styles.experimentDescription, !isOpen && styles.textMuted, { flex: 1 }]}>
-          {experiment.description}
-        </Text>
-        <View style={[styles.statusPill, isOpen ? styles.statusPillOpen : styles.statusPillClosed]}>
-          <Text style={[styles.statusPillText, isOpen ? styles.statusPillTextOpen : styles.statusPillTextClosed]}>
-            {statusLabel}
-          </Text>
-        </View>
-      </View>
-      {isOpen && (
-        <View style={styles.statusActions}>
-          <Button
-            label="Done"
-            variant="secondary"
-            fullWidth={false}
-            onPress={() => onStatusChange(experiment.id, 'done')}
-            style={styles.statusBtn}
-          />
-          <Button
-            label="Let it go"
-            variant="secondary"
-            fullWidth={false}
-            onPress={() => onStatusChange(experiment.id, 'let-go')}
-            style={styles.statusBtn}
-          />
-        </View>
-      )}
-      {needsReflection && (
-        <Button
-          label="Reflect on this →"
-          variant="ghost"
-          onPress={() => router.push({ pathname: '/reflect/[id]', params: { id: experiment.id } })}
-        />
-      )}
-    </Card>
-  );
-}
-
-export default function ReflectionsScreen() {
+/**
+ * The Notebook's opening page — your inner-world mirror. Holds everything that
+ * used to live on the separate Reflections tab: who you've sat with, what keeps
+ * surfacing, what you're carrying. Scrolls vertically inside the horizontal
+ * flip-book (orthogonal native scrollers, so no gesture wiring needed). Sized to
+ * the page `width` so it sits cleanly as page 0.
+ */
+export function ReflectionsPage({ width }: { width: number }) {
   const db = useSQLiteContext();
   const parts = useParts();
   const patterns = useSurfacingPatterns();
@@ -104,8 +50,10 @@ export default function ReflectionsScreen() {
   }
 
   return (
-    <Screen withTabBar>
-      <Text style={styles.heading}>Reflections</Text>
+    <ScrollView
+      style={[styles.scroll, { width }]}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}>
       <Text style={styles.subtitle}>Your inner world</Text>
       <Text style={styles.tagline}>A mirror of what you&apos;ve been sitting with.</Text>
 
@@ -193,78 +141,67 @@ export default function ReflectionsScreen() {
               ))}
             </View>
           )}
-
         </>
       )}
-    </Screen>
+    </ScrollView>
   );
 }
 
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
-  heading: { ...typography.display },
-  subtitle: { ...typography.displaySmall, color: colors.textSecondary, marginTop: -Spacing.one },
-  tagline: { ...typography.body, color: colors.textSecondary },
-  section: { gap: Spacing.two },
-  sectionNote: { ...typography.bodySmall, color: colors.textSecondary, marginTop: -Spacing.one },
+    scroll: { flex: 1 },
+    content: {
+      paddingTop: Spacing.one,
+      // The outer Notebook screen already reserves tab-bar clearance; this is
+      // just breathing room under the last card.
+      paddingBottom: Spacing.four,
+      gap: Spacing.four,
+    },
+    subtitle: { ...typography.displaySmall, color: colors.textSecondary },
+    tagline: { ...typography.body, color: colors.textSecondary, marginTop: -Spacing.two },
+    section: { gap: Spacing.two },
+    sectionNote: { ...typography.bodySmall, color: colors.textSecondary, marginTop: -Spacing.one },
 
-  // Return invitation (the integration loop closing)
-  returnCard: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accentMuted,
-    padding: Spacing.four,
-    gap: Spacing.two,
-  },
-  returnLabel: {
-    ...typography.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.accent,
-  },
-  returnBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
-  returnCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
+    // Return invitation (the integration loop closing)
+    returnCard: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accentMuted,
+      padding: Spacing.four,
+      gap: Spacing.two,
+    },
+    returnLabel: {
+      ...typography.caption,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      color: colors.accent,
+    },
+    returnBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
+    returnCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // Personification bridge
-  personifyLink: { ...typography.bodySmall, color: colors.accentWarm, marginTop: Spacing.one },
+    // Personification bridge
+    personifyLink: { ...typography.bodySmall, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // Carry forward
-  carryCard: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accentMuted,
-    padding: Spacing.four,
-    gap: Spacing.two,
-  },
-  carryLabel: {
-    ...typography.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.accent,
-  },
-  carryBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
-  carryCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
+    // Carry forward
+    carryCard: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accentMuted,
+      padding: Spacing.four,
+      gap: Spacing.two,
+    },
+    carryLabel: {
+      ...typography.caption,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      color: colors.accent,
+    },
+    carryBody: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
+    carryCta: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.one },
 
-  // Empty state
-  emptyState: { gap: Spacing.three, paddingVertical: Spacing.four },
-  emptyHeading: { ...typography.serifBody, color: colors.textPrimary },
-  emptyBody: { ...typography.body, color: colors.textSecondary },
-  emptyCtaText: { ...typography.body, color: colors.accent },
+    // Empty state
+    emptyState: { gap: Spacing.three, paddingVertical: Spacing.four },
+    emptyHeading: { ...typography.serifBody, color: colors.textPrimary },
+    emptyBody: { ...typography.body, color: colors.textSecondary },
+    emptyCtaText: { ...typography.body, color: colors.accent },
 
-  // Experiments
-  expHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
-  experimentDescription: { ...typography.body, lineHeight: 24 },
-  textMuted: { color: colors.textSecondary },
-  statusPill: {
-    borderRadius: radii.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
-  },
-  statusPillOpen: { backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentMuted },
-  statusPillClosed: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  statusPillText: { fontSize: 11, lineHeight: 18 },
-  statusPillTextOpen: { color: colors.accent },
-  statusPillTextClosed: { color: colors.textFaint },
-  statusActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
-  statusBtn: { flex: 1, paddingVertical: Spacing.two, borderRadius: radii.sm },
-  closedDivider: { height: 1, backgroundColor: colors.border, marginVertical: Spacing.one },
-});
+    closedDivider: { height: 1, backgroundColor: colors.border, marginVertical: Spacing.one },
+  });

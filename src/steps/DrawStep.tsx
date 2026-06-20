@@ -15,7 +15,7 @@ import type { StepProps } from './types';
  * canvas advances with `undefined`, leaving inputs[inputKey] unset — exactly
  * like a skipped optional prompt.
  */
-export default function DrawStep({ step, inputs, onNext, onExit }: StepProps<DrawStepType>) {
+export default function DrawStep({ step, inputs, onNext, onExit, onScrollLock }: StepProps<DrawStepType>) {
   const [data, setData] = useState<SketchData | null>(null);
   const styles = useThemedStyles(makeStyles);
 
@@ -29,7 +29,7 @@ export default function DrawStep({ step, inputs, onNext, onExit }: StepProps<Dra
       <Text style={styles.title}>{title}</Text>
       {body ? <Text style={styles.body}>{body}</Text> : null}
 
-      <SketchCanvas initial={null} onChange={setData} />
+      <SketchCanvas initial={null} onChange={setData} onStrokeActiveChange={onScrollLock} />
 
       <Button
         label="Continue"

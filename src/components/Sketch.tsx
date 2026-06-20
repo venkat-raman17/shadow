@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   PanResponder,
+  useWindowDimensions,
   type LayoutChangeEvent,
   type GestureResponderEvent,
 } from 'react-native';
@@ -35,6 +36,32 @@ export function parseSketch(json: string | null | undefined): SketchData | null 
 
 const round = (n: number) => Math.round(n * 10) / 10;
 const STROKE = 2.5;
+// Ignore pointer moves shorter than this (px): fewer points means fewer
+// re-renders on long strokes, and the curve smoothing hides the coarser sampling.
+const MIN_STEP = 2;
+// Cap the canvas at half the screen so a draw step (title + canvas + buttons)
+// fits the viewport without forcing a scroll mid-drawing.
+const MAX_CANVAS_FRACTION = 0.5;
+
+/**
+ * Build an SVG path from sampled points, smoothing the line with quadratic
+ * curves through the midpoints of successive points (each raw point is the
+ * control handle). One point renders as a round dot; two as a straight segment.
+ */
+function buildPath(pts: { x: number; y: number }[]): string {
+  if (pts.length === 0) return '';
+  const p0 = pts[0];
+  if (pts.length === 1) return `M ${p0.x} ${p0.y} L ${p0.x} ${p0.y}`;
+  let d = `M ${p0.x} ${p0.y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const mx = round((pts[i].x + pts[i + 1].x) / 2);
+    const my = round((pts[i].y + pts[i + 1].y) / 2);
+    d += ` Q ${pts[i].x} ${pts[i].y} ${mx} ${my}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` L ${last.x} ${last.y}`;
+  return d;
+}
 
 /** Read-only render of a sketch, scaled into the given box via viewBox. */
 export function SketchView({
@@ -73,22 +100,30 @@ export function SketchView({
 export function SketchCanvas({
   initial,
   onChange,
+  onStrokeActiveChange,
 }: {
   initial?: SketchData | null;
   onChange: (data: SketchData) => void;
+  /** Fired true on touch-down and false on stroke end, so a parent can lock its
+   *  scroll view while a stroke is in progress (keeps ink locked to the finger). */
+  onStrokeActiveChange?: (active: boolean) => void;
 }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const { height: screenH } = useWindowDimensions();
+  const maxCanvas = Math.round(screenH * MAX_CANVAS_FRACTION);
   const [paths, setPaths] = useState<string[]>(initial?.paths ?? []);
   const [current, setCurrent] = useState('');
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   const pathsRef = useRef<string[]>(initial?.paths ?? []);
-  const currentRef = useRef('');
+  const pointsRef = useRef<{ x: number; y: number }[]>([]);
   const sizeRef = useRef({ w: initial?.w ?? 0, h: initial?.h ?? 0 });
   const onChangeRef = useRef(onChange);
+  const onStrokeActiveRef = useRef(onStrokeActiveChange);
   useEffect(() => {
     onChangeRef.current = onChange;
+    onStrokeActiveRef.current = onStrokeActiveChange;
   });
 
   function emit(next: string[]) {
@@ -105,41 +140,53 @@ export function SketchCanvas({
   // Created once. Handlers only touch refs and stable setState setters, so the
   // empty dep list is intentional (and keeps strokes from resetting mid-draw).
   const pan = useMemo(() => {
-    // Commit the in-progress stroke. A bare tap (only "M x y", no line) becomes a
-    // round dot so a quick mark still registers and counts toward `hasDrawing`.
+    // Commit the in-progress stroke. buildPath turns a bare tap into a round dot,
+    // so a quick mark still registers and counts toward `hasDrawing`.
     const commitStroke = () => {
-      let d = currentRef.current;
-      if (d && !d.includes('L')) {
-        d = `${d} L ${d.slice(2)}`;
-      }
-      if (d.includes('L')) {
+      const pts = pointsRef.current;
+      if (pts.length) {
+        const d = buildPath(pts);
         pathsRef.current = [...pathsRef.current, d];
         setPaths(pathsRef.current);
         const s = sizeRef.current;
         onChangeRef.current({ w: s.w || 1, h: s.h || 1, paths: pathsRef.current });
       }
-      currentRef.current = '';
+      pointsRef.current = [];
       setCurrent('');
+      // Release the parent scroll lock once the stroke is committed.
+      onStrokeActiveRef.current?.(false);
     };
     // eslint-disable-next-line react-hooks/refs -- handlers read refs only at gesture time, never during render
     return PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        // Claim the gesture in the capture phase and refuse to yield it mid-stroke.
-        // Without this, RN defaults to surrendering the responder, letting the
-        // surrounding KeyboardAwareScrollView steal the drag and scroll the page.
+        // Claim the gesture in the capture phase — from the very first contact,
+        // not just on move — and refuse to yield it mid-stroke. Without this, RN
+        // defaults to surrendering the responder, letting the surrounding
+        // KeyboardAwareScrollView steal the drag and scroll the page.
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderTerminationRequest: () => false,
         onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
+          // Lock the parent scroll for the duration of the stroke.
+          onStrokeActiveRef.current?.(true);
           const { locationX, locationY } = e.nativeEvent;
-          currentRef.current = `M ${round(locationX)} ${round(locationY)}`;
-          setCurrent(currentRef.current);
+          pointsRef.current = [{ x: round(locationX), y: round(locationY) }];
+          setCurrent(buildPath(pointsRef.current));
         },
         onPanResponderMove: (e: GestureResponderEvent) => {
           const { locationX, locationY } = e.nativeEvent;
-          currentRef.current += ` L ${round(locationX)} ${round(locationY)}`;
-          setCurrent(currentRef.current);
+          const pts = pointsRef.current;
+          const last = pts[pts.length - 1];
+          // Drop sub-MIN_STEP moves to cut point count (and re-renders) on long strokes.
+          if (last) {
+            const dx = locationX - last.x;
+            const dy = locationY - last.y;
+            if (dx * dx + dy * dy < MIN_STEP * MIN_STEP) return;
+          }
+          pts.push({ x: round(locationX), y: round(locationY) });
+          setCurrent(buildPath(pts));
         },
         onPanResponderRelease: commitStroke,
         // If the OS force-terminates the gesture (backgrounded, edge swipe), keep the stroke.
@@ -163,7 +210,7 @@ export function SketchCanvas({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.canvas} onLayout={onLayout} {...pan.panHandlers}>
+      <View style={[styles.canvas, { maxHeight: maxCanvas }]} onLayout={onLayout} {...pan.panHandlers}>
         <Svg width={size.w} height={size.h}>
           {paths.map((d, i) => (
             <Path

@@ -14,8 +14,15 @@ import {
   cancelNotification,
   getScheduledHour,
 } from '@/lib/notifications';
-import { pickAndRestoreBackup, type RestoreResult } from '@/lib/restore';
 import { isLockEnabled, setLockEnabled, canAuthenticate, authenticate } from '@/lib/appLock';
+import {
+  isNotebookLockEnabled,
+  setPin as saveNotebookPin,
+  verifyPin as verifyNotebookPin,
+  disableNotebookLock,
+  isBiometricShortcutEnabled,
+  setBiometricShortcut,
+} from '@/lib/notebookLock';
 import { resetAllData } from '@/lib/reset';
 import { useSession } from '@/context/SessionContext';
 
@@ -49,13 +56,6 @@ export default function SettingsScreen() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  // ── Restore state ─────────────────────────────────────────────────────────
-  const [showRestoreForm, setShowRestoreForm] = useState(false);
-  const [restorePassphrase, setRestorePassphrase] = useState('');
-  const [restoring, setRestoring] = useState(false);
-  const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null);
-  const [restoreError, setRestoreError] = useState<string | null>(null);
-
   // ── Notification state ────────────────────────────────────────────────────
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [notifHour, setNotifHour] = useState<number | null>(null);
@@ -65,9 +65,24 @@ export default function SettingsScreen() {
   const [lockOn, setLockOn] = useState(false);
   const [lockUnavailable, setLockUnavailable] = useState(false);
 
-  // ── Delete-everything state ───────────────────────────────────────────────
+  // ── Notebook PIN state ────────────────────────────────────────────────────
+  const [pinLockOn, setPinLockOn] = useState(false);
+  const [pinForm, setPinForm] = useState<'none' | 'set' | 'change' | 'disable'>('none');
+  const [pinValue, setPinValue] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [pinCurrent, setPinCurrent] = useState('');
+  const [pinError, setPinError] = useState<string | null>(null);
+  const [allowBiometric, setAllowBiometric] = useState(false);
+  const [pinBiometricUnavailable, setPinBiometricUnavailable] = useState(false);
+
+  // ── Back-up-&-delete state ────────────────────────────────────────────────
+  // A two-step destructive flow: always back up FIRST, then confirm the wipe —
+  // so the device is never erased before a backup file actually exists.
   const { refresh } = useSession();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteStage, setDeleteStage] = useState<'idle' | 'backup' | 'confirm'>('idle');
+  const [deletePassphrase, setDeletePassphrase] = useState('');
+  const [deleteBackingUp, setDeleteBackingUp] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteCountdown, setDeleteCountdown] = useState<number | null>(null);
 
@@ -80,6 +95,8 @@ export default function SettingsScreen() {
       }
     });
     isLockEnabled().then(setLockOn);
+    isNotebookLockEnabled().then(setPinLockOn);
+    isBiometricShortcutEnabled().then(setAllowBiometric);
   }, []);
 
   // ── Export handlers ───────────────────────────────────────────────────────
@@ -107,49 +124,6 @@ export default function SettingsScreen() {
     setShowExportForm(false);
     setExportPassphrase('');
     setExportError(null);
-  }
-
-  // ── Restore handlers ──────────────────────────────────────────────────────
-
-  async function handleRestore() {
-    if (restorePassphrase.length < 8) {
-      setRestoreError('Passphrase must be at least 8 characters.');
-      return;
-    }
-    if (!key) return;
-    setRestoring(true);
-    setRestoreError(null);
-    setRestoreResult(null);
-
-    const outcome = await pickAndRestoreBackup(db, key, restorePassphrase);
-
-    setRestoring(false);
-
-    if (outcome === 'canceled') {
-      // File picker dismissed — silently reset
-      setShowRestoreForm(false);
-      setRestorePassphrase('');
-      return;
-    }
-    if (outcome === 'wrong_passphrase') {
-      setRestoreError('Incorrect passphrase.');
-      return;
-    }
-    if (outcome === 'invalid_file') {
-      setRestoreError("File doesn't look like a Partwise backup.");
-      return;
-    }
-
-    // Success
-    setRestoreResult(outcome);
-    setRestorePassphrase('');
-  }
-
-  function handleRestoreCancel() {
-    setShowRestoreForm(false);
-    setRestorePassphrase('');
-    setRestoreError(null);
-    setRestoreResult(null);
   }
 
   // ── Notification handlers ─────────────────────────────────────────────────
@@ -197,19 +171,113 @@ export default function SettingsScreen() {
     }
   }
 
-  // ── Delete-everything handler ─────────────────────────────────────────────
+  // ── Notebook PIN handlers ─────────────────────────────────────────────────
 
-  // The countdown is seeded to 3 by the "Delete everything" button (the external
-  // event), so this effect never sets state synchronously — it only ticks the
-  // value down inside the timeout callback, one second at a time.
+  function cancelPinForm() {
+    setPinForm('none');
+    setPinValue('');
+    setPinConfirm('');
+    setPinCurrent('');
+    setPinError(null);
+  }
+
+  function handlePinToggle(value: boolean) {
+    setPinError(null);
+    if (value) {
+      setPinForm('set'); // enabled only once a valid PIN is saved
+    } else {
+      setPinForm('disable'); // require the current PIN before turning it off
+    }
+  }
+
+  async function handleSavePin() {
+    if (!/^\d{4,6}$/.test(pinValue)) {
+      setPinError('Choose a PIN of 4 to 6 digits.');
+      return;
+    }
+    if (pinValue !== pinConfirm) {
+      setPinError('Those PINs don’t match.');
+      return;
+    }
+    await saveNotebookPin(pinValue);
+    setPinLockOn(true);
+    cancelPinForm();
+  }
+
+  async function handleConfirmDisable() {
+    if (!(await verifyNotebookPin(pinCurrent))) {
+      setPinError('That PIN didn’t match.');
+      return;
+    }
+    await disableNotebookLock();
+    setPinLockOn(false);
+    setAllowBiometric(false);
+    cancelPinForm();
+  }
+
+  async function handlePinBiometricToggle(value: boolean) {
+    setPinBiometricUnavailable(false);
+    if (value) {
+      if (!(await canAuthenticate())) {
+        setPinBiometricUnavailable(true);
+        return;
+      }
+      await setBiometricShortcut(true);
+      setAllowBiometric(true);
+    } else {
+      await setBiometricShortcut(false);
+      setAllowBiometric(false);
+    }
+  }
+
+  // ── Back-up-&-delete handlers ─────────────────────────────────────────────
+
+  function startBackupDelete() {
+    setDeleteStage('backup');
+    setDeletePassphrase('');
+    setDeleteError(null);
+  }
+
+  function cancelBackupDelete() {
+    setDeleteStage('idle');
+    setDeletePassphrase('');
+    setDeleteError(null);
+    setDeleteCountdown(null);
+  }
+
+  // Step 1: back up. Only on a successful export do we advance to the wipe
+  // confirmation — the device is never erased before a file exists.
+  async function handleBackupThenConfirm() {
+    if (deletePassphrase.length < 8) {
+      setDeleteError('Passphrase must be at least 8 characters.');
+      return;
+    }
+    if (!key) return;
+    setDeleteBackingUp(true);
+    setDeleteError(null);
+    try {
+      await exportData(db, key, deletePassphrase);
+      setDeletePassphrase('');
+      setDeleteStage('confirm');
+      setDeleteCountdown(3);
+    } catch {
+      setDeleteError('Backup failed. Please try again.');
+    } finally {
+      setDeleteBackingUp(false);
+    }
+  }
+
+  // The countdown is seeded to 3 when the backup succeeds (an event), so this
+  // effect never sets state synchronously — it only ticks down in the timeout.
   useEffect(() => {
-    if (!showDeleteConfirm || deleteCountdown === null || deleteCountdown <= 0) return;
+    if (deleteStage !== 'confirm' || deleteCountdown === null || deleteCountdown <= 0) return;
     const id = setTimeout(() => {
       setDeleteCountdown((n) => (n === null ? null : n - 1));
     }, 1000);
     return () => clearTimeout(id);
-  }, [showDeleteConfirm, deleteCountdown]);
+  }, [deleteStage, deleteCountdown]);
 
+  // Step 2: wipe.
   async function handleDeleteAll() {
     setDeleting(true);
     try {
@@ -227,17 +295,18 @@ export default function SettingsScreen() {
     <Screen keyboardShouldPersistTaps="handled">
       <Text style={styles.heading}>Settings</Text>
 
-      {/* ── Your data: export ──────────────────────────────────────────────── */}
+      {/* ── Back up ────────────────────────────────────────────────────────── */}
       <View style={styles.section}>
-        <SectionHeader>Your data</SectionHeader>
+        <SectionHeader>Back up</SectionHeader>
         <Text style={styles.sectionBody}>
-          Export a complete backup of your journal. The file is encrypted — only someone with your
-          passphrase can read it. Save it to Files, iCloud Drive, or anywhere you trust.
+          Save everything — your reflections, parts, drawings, settings, and locks — in one
+          encrypted file. Only someone with your passphrase can open it. Keep it in Files, iCloud
+          Drive, or anywhere you trust, and restore it later from the welcome screen.
         </Text>
 
         {!showExportForm ? (
           <Button
-            label="Export my journal"
+            label="Back up everything"
             variant="secondary"
             fullWidth={false}
             onPress={() => setShowExportForm(true)}
@@ -246,7 +315,8 @@ export default function SettingsScreen() {
         ) : (
           <Card style={styles.form}>
             <Text style={styles.formLabel}>
-              Choose a passphrase for this backup. You&apos;ll need it to restore on a new device.
+              Choose a passphrase for this backup. You&apos;ll need it to restore — keep it somewhere
+              safe.
             </Text>
             <TextField
               value={exportPassphrase}
@@ -265,60 +335,8 @@ export default function SettingsScreen() {
               </View>
             ) : (
               <>
-                <Button label="Export" onPress={handleExport} />
+                <Button label="Back up" onPress={handleExport} />
                 <Button label="Cancel" variant="ghost" onPress={handleExportCancel} />
-              </>
-            )}
-          </Card>
-        )}
-      </View>
-
-      {/* ── Your data: restore ─────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <SectionHeader>Restore from backup</SectionHeader>
-        <Text style={styles.sectionBody}>
-          Restore entries from a .shadowexport file. Existing data is kept — the backup is merged,
-          not replaced.
-        </Text>
-
-        {restoreResult ? (
-          <Text style={styles.successText}>
-            Added {restoreResult.entries} {restoreResult.entries === 1 ? 'entry' : 'entries'}
-            {restoreResult.parts > 0 ? `, ${restoreResult.parts} parts` : ''}
-            {restoreResult.experiments > 0 ? `, ${restoreResult.experiments} experiments` : ''}.
-          </Text>
-        ) : !showRestoreForm ? (
-          <Button
-            label="Choose backup file"
-            variant="secondary"
-            fullWidth={false}
-            onPress={() => setShowRestoreForm(true)}
-            style={styles.selfStart}
-          />
-        ) : (
-          <Card style={styles.form}>
-            <Text style={styles.formLabel}>
-              Enter the passphrase you used when exporting, then choose the file.
-            </Text>
-            <TextField
-              value={restorePassphrase}
-              onChangeText={setRestorePassphrase}
-              secureTextEntry
-              placeholder="Passphrase…"
-              returnKeyType="done"
-              autoFocus
-              editable={!restoring}
-            />
-            {restoreError ? <Text style={styles.errorText}>{restoreError}</Text> : null}
-            {restoring ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator color={colors.accent} size="small" />
-                <Text style={styles.loadingText}>Restoring…</Text>
-              </View>
-            ) : (
-              <>
-                <Button label="Choose file & restore" onPress={handleRestore} />
-                <Button label="Cancel" variant="ghost" onPress={handleRestoreCancel} />
               </>
             )}
           </Card>
@@ -392,6 +410,98 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      {/* ── Notebook PIN ───────────────────────────────────────────────────── */}
+      <View style={styles.section}>
+        <SectionHeader>Notebook PIN</SectionHeader>
+        <Text style={styles.sectionBody}>
+          A separate code to open your Notebook — apart from your device passcode, so your
+          reflections stay closed even to someone who can unlock the phone. Off by default.
+        </Text>
+
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>Lock my Notebook with a PIN</Text>
+          <Switch
+            value={pinForm === 'disable' ? false : pinLockOn || pinForm === 'set'}
+            onValueChange={handlePinToggle}
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={colors.background}
+          />
+        </View>
+
+        {(pinForm === 'set' || pinForm === 'change') && (
+          <Card style={styles.form}>
+            <Text style={styles.formLabel}>Choose a PIN of 4 to 6 digits.</Text>
+            <TextField
+              value={pinValue}
+              onChangeText={setPinValue}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              placeholder="New PIN"
+              autoFocus
+            />
+            <TextField
+              value={pinConfirm}
+              onChangeText={setPinConfirm}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              placeholder="Confirm PIN"
+            />
+            {pinError ? <Text style={styles.errorText}>{pinError}</Text> : null}
+            <Button label="Save PIN" onPress={handleSavePin} />
+            <Button label="Cancel" variant="ghost" onPress={cancelPinForm} />
+          </Card>
+        )}
+
+        {pinForm === 'disable' && (
+          <Card style={styles.form}>
+            <Text style={styles.formLabel}>Enter your current PIN to turn the lock off.</Text>
+            <TextField
+              value={pinCurrent}
+              onChangeText={setPinCurrent}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              placeholder="Current PIN"
+              autoFocus
+            />
+            {pinError ? <Text style={styles.errorText}>{pinError}</Text> : null}
+            <Button label="Turn off lock" onPress={handleConfirmDisable} />
+            <Button label="Cancel" variant="ghost" onPress={cancelPinForm} />
+          </Card>
+        )}
+
+        {pinLockOn && pinForm === 'none' && (
+          <>
+            <Button
+              label="Change PIN"
+              variant="secondary"
+              fullWidth={false}
+              onPress={() => {
+                setPinError(null);
+                setPinForm('change');
+              }}
+              style={styles.selfStart}
+            />
+            <View style={styles.toggleRow}>
+              <Text style={styles.toggleLabel}>Allow Face ID / Touch ID</Text>
+              <Switch
+                value={allowBiometric}
+                onValueChange={handlePinBiometricToggle}
+                trackColor={{ false: colors.border, true: colors.accent }}
+                thumbColor={colors.background}
+              />
+            </View>
+            {pinBiometricUnavailable && (
+              <Text style={styles.errorText}>
+                Set up Face ID, Touch ID, or a device passcode first, then try again.
+              </Text>
+            )}
+          </>
+        )}
+      </View>
+
       {/* ── Appearance ─────────────────────────────────────────────────────── */}
       <View style={styles.section}>
         <SectionHeader>Appearance</SectionHeader>
@@ -435,39 +545,61 @@ export default function SettingsScreen() {
         </Card>
       </View>
 
-      {/* ── Delete everything ──────────────────────────────────────────────── */}
+      {/* ── Back up & delete ───────────────────────────────────────────────── */}
       <View style={styles.section}>
-        <SectionHeader>Delete everything</SectionHeader>
+        <SectionHeader>Back up &amp; delete</SectionHeader>
         <Text style={styles.sectionBody}>
-          Permanently erase all your reflections, parts, drawings, and settings, and start over as a
-          new user. This can&apos;t be undone.
+          Save a full encrypted backup, then erase everything on this device and start fresh. You
+          can restore the backup any time from the welcome screen. The wipe can&apos;t be undone —
+          but your backup keeps it all.
         </Text>
 
-        {!showDeleteConfirm ? (
+        {deleteStage === 'idle' && (
           <Button
-            label="Delete everything"
+            label="Back up & delete"
             variant="secondary"
             fullWidth={false}
-            onPress={() => {
-              setDeleteCountdown(3);
-              setShowDeleteConfirm(true);
-            }}
+            onPress={startBackupDelete}
             style={styles.selfStart}
           />
-        ) : (
+        )}
+
+        {deleteStage === 'backup' && (
           <Card style={styles.form}>
             <Text style={styles.formLabel}>
-              This erases everything on this device and returns you to the welcome screen. If you
-              might want it back, export a backup first.
+              First, choose a passphrase for your backup. You&apos;ll need it to restore — keep it
+              somewhere safe.
             </Text>
-            <Button
-              label="Export a backup first"
-              variant="secondary"
-              onPress={() => {
-                setShowDeleteConfirm(false);
-                setShowExportForm(true);
-              }}
+            <TextField
+              value={deletePassphrase}
+              onChangeText={setDeletePassphrase}
+              secureTextEntry
+              placeholder="Passphrase (8+ characters)…"
+              returnKeyType="done"
+              autoFocus
+              editable={!deleteBackingUp}
             />
+            {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+            {deleteBackingUp ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color={colors.accent} size="small" />
+                <Text style={styles.loadingText}>Encrypting backup…</Text>
+              </View>
+            ) : (
+              <>
+                <Button label="Back up & continue" onPress={handleBackupThenConfirm} />
+                <Button label="Cancel" variant="ghost" onPress={cancelBackupDelete} />
+              </>
+            )}
+          </Card>
+        )}
+
+        {deleteStage === 'confirm' && (
+          <Card style={styles.form}>
+            <Text style={styles.formLabel}>
+              Your backup is saved. Make sure you&apos;ve kept the file somewhere safe — then erase
+              everything on this device.
+            </Text>
             {deleting ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator color={colors.danger} size="small" />
@@ -481,7 +613,7 @@ export default function SettingsScreen() {
                   onPress={handleDeleteAll}
                   style={styles.deleteBtn}
                 />
-                <Button label="Cancel" variant="ghost" onPress={() => setShowDeleteConfirm(false)} />
+                <Button label="Cancel" variant="ghost" onPress={cancelBackupDelete} />
               </>
             )}
           </Card>
@@ -502,7 +634,6 @@ const makeStyles = ({ colors, typography }: Theme) =>
   form: { gap: Spacing.two },
   formLabel: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },
   errorText: { ...typography.caption, color: colors.accentWarm, lineHeight: 20 },
-  successText: { ...typography.bodySmall, color: colors.accent, lineHeight: 22 },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',

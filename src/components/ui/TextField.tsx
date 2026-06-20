@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextInput, StyleSheet, type TextInputProps } from 'react-native';
+import { TextInput, StyleSheet, type TextInputProps, type TextInput as TextInputType } from 'react-native';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
@@ -14,35 +14,38 @@ interface Props extends TextInputProps {
  * padding. Replaces the input StyleSheets in Prompt/Dialogue steps and the
  * experiment seed.
  */
-export function TextField({ large, multiline, style, ...rest }: Props) {
-  const [focused, setFocused] = useState(false);
-  const { colors } = useTheme();
-  const styles = useThemedStyles(makeStyles);
+export const TextField = React.forwardRef<TextInputType, Props>(
+  function TextField({ large, multiline, style, ...rest }, ref) {
+    const [focused, setFocused] = useState(false);
+    const { colors } = useTheme();
+    const styles = useThemedStyles(makeStyles);
 
-  return (
-    <TextInput
-      {...rest}
-      multiline={multiline}
-      placeholderTextColor={colors.textFaint}
-      textAlignVertical={multiline ? 'top' : 'center'}
-      onFocus={(e) => {
-        setFocused(true);
-        rest.onFocus?.(e);
-      }}
-      onBlur={(e) => {
-        setFocused(false);
-        rest.onBlur?.(e);
-      }}
-      style={[
-        styles.input,
-        multiline && styles.multiline,
-        large && styles.large,
-        focused && styles.focused,
-        style,
-      ]}
-    />
-  );
-}
+    return (
+      <TextInput
+        ref={ref}
+        {...rest}
+        multiline={multiline}
+        placeholderTextColor={colors.textFaint}
+        textAlignVertical={multiline ? 'top' : 'center'}
+        onFocus={(e) => {
+          setFocused(true);
+          rest.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          rest.onBlur?.(e);
+        }}
+        style={[
+          styles.input,
+          multiline && styles.multiline,
+          large && styles.large,
+          focused && styles.focused,
+          style,
+        ]}
+      />
+    );
+  },
+);
 
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({

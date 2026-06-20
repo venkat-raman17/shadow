@@ -9,6 +9,8 @@ import { decrypt } from '@/lib/crypto';
 import type { ShadowExport } from '@/lib/export';
 import { restoreEntries, restoreParts, restoreSessions, restoreExperiments } from '@/lib/db';
 import { setItem } from '@/lib/kv';
+import { BACKUP_KEYS } from '@/lib/backupKeys';
+import { canAuthenticate } from '@/lib/appLock';
 
 // ─── Result types ────────────────────────────────────────────────────────────
 
@@ -132,16 +134,36 @@ export async function pickAndRestoreBackup(
     restoreExperiments(db, exportObj.experiments ?? [], deviceKey),
   ]);
 
-  // 8. If the backup carried a profile, sign the user back in (skips onboarding).
+  // 8. Restore the SecureStore identity. v2 backups carry the full `prefs` map
+  //    (name, gender, onboarding acknowledgment, theme, favorites, unlocks, and
+  //    the locks); v1 backups only carried `profile` (name/gender).
   let signedIn = false;
-  const profile = exportObj.profile;
-  if (profile && profile.name && profile.gender) {
-    await Promise.all([
-      setItem('shadow.user_name', profile.name),
-      setItem('shadow.user_gender', profile.gender),
-      setItem('shadow.onboarding_complete', 'true'),
-    ]);
-    signedIn = true;
+  const prefs = exportObj.prefs;
+  if (prefs) {
+    const allow = new Set<string>(BACKUP_KEYS);
+    for (const [k, v] of Object.entries(prefs)) {
+      if (!allow.has(k)) continue;
+      // App-lock safety: never re-arm a biometric lock the new device can't
+      // actually satisfy, or the restored user would be stranded.
+      if (k === 'shadow.app_lock_enabled' && v === 'true' && !(await canAuthenticate())) {
+        await setItem(k, 'false');
+      } else {
+        await setItem(k, v);
+      }
+    }
+    signedIn = !!prefs['shadow.user_name'] && !!prefs['shadow.user_gender'];
+    if (signedIn) await setItem('shadow.onboarding_complete', 'true');
+  } else {
+    // Legacy v1 path: only name/gender/onboarding from `profile`.
+    const profile = exportObj.profile;
+    if (profile && profile.name && profile.gender) {
+      await Promise.all([
+        setItem('shadow.user_name', profile.name),
+        setItem('shadow.user_gender', profile.gender),
+        setItem('shadow.onboarding_complete', 'true'),
+      ]);
+      signedIn = true;
+    }
   }
 
   return { entries, parts, sessions, experiments, signedIn };

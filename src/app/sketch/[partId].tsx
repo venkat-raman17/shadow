@@ -22,6 +22,8 @@ export default function SketchScreen() {
   // Only set once the user actually draws — null means "leave the existing one".
   const [data, setData] = useState<SketchData | null>(null);
   const [saving, setSaving] = useState(false);
+  // Lock the page scroll while a stroke is in progress so ink tracks the finger.
+  const [drawing, setDrawing] = useState(false);
 
   async function handleSave() {
     if (!key || !partId || saving) return;
@@ -43,7 +45,7 @@ export default function SketchScreen() {
           headerBackTitle: 'Back',
         }}
       />
-      <Screen>
+      <Screen scrollEnabled={!drawing}>
         <Text style={styles.heading}>Draw it</Text>
         <Text style={styles.tagline}>
           A face, a shape, a colour, a scribble. Active imagination is visual too — there&apos;s no
@@ -54,7 +56,11 @@ export default function SketchScreen() {
           <ActivityIndicator color={colors.accent} style={styles.loading} />
         ) : (
           <>
-            <SketchCanvas initial={parseSketch(part?.sketch)} onChange={setData} />
+            <SketchCanvas
+              initial={parseSketch(part?.sketch)}
+              onChange={setData}
+              onStrokeActiveChange={setDrawing}
+            />
             <Button label={saving ? 'Saving…' : 'Save drawing'} onPress={handleSave} />
           </>
         )}

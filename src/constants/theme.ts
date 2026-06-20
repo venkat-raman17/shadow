@@ -22,8 +22,6 @@ export interface Palette {
   shadowTint: string;
   /** Translucent surface for the tab-bar ledge so content reads faintly behind it. */
   surfaceTranslucent: string;
-  /** Very-low-alpha warm wash for the ambient vignette behind signature screens. */
-  ambientWarm: string;
 }
 
 // The original, calm near-black palette.
@@ -47,7 +45,6 @@ const dark: Palette = {
   overlay: 'rgba(8,7,6,0.72)',
   shadowTint: '#000000',
   surfaceTranslucent: 'rgba(26,25,23,0.82)',
-  ambientWarm: 'rgba(196,149,106,0.06)',
 };
 
 // A warm "aged paper" light palette — the same contemplative mood in daylight,
@@ -72,7 +69,6 @@ const light: Palette = {
   overlay: 'rgba(40,36,32,0.4)',
   shadowTint: '#6f5d46',
   surfaceTranslucent: 'rgba(236,230,219,0.82)',
-  ambientWarm: 'rgba(168,116,63,0.05)',
 };
 
 // A warmer "old book" sepia — yellower paper, browner ink — for a softer,
@@ -97,7 +93,6 @@ const sepia: Palette = {
   overlay: 'rgba(58,47,36,0.42)',
   shadowTint: '#5e4a34',
   surfaceTranslucent: 'rgba(230,220,196,0.82)',
-  ambientWarm: 'rgba(168,112,47,0.06)',
 };
 
 export const palettes = { dark, light, sepia } as const;

@@ -5,5 +5,4 @@ export { SectionHeader } from './SectionHeader';
 export { TextField } from './TextField';
 export { Chip } from './Chip';
 export { FadeSlide } from './FadeSlide';
-export { AmbientBackground } from './AmbientBackground';
 export { TabBarBackground } from './TabBarBackground';

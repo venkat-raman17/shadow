@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 
 import { Spacing, radii, type Palette, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { Screen, Card, AmbientBackground } from '@/components/ui';
+import { Screen, Card } from '@/components/ui';
 import { Illustration } from '@/components/illustrations';
 import { getBook, getReading, readTimeOf, type BookSpine } from '@/lib/readings';
 
@@ -38,7 +38,7 @@ export default function BookScreen() {
           headerBackTitle: 'Library',
         }}
       />
-      <Screen backdrop={<AmbientBackground />}>
+      <Screen>
         {book ? (
           <>
             <View style={styles.coverHead}>

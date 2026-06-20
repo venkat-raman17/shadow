@@ -7,6 +7,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { decrypt, encrypt } from '@/lib/crypto';
 import { getItem } from '@/lib/kv';
+import { BACKUP_KEYS } from '@/lib/backupKeys';
 
 // ─── Internal helper ────────────────────────────────────────────────────────
 
@@ -79,13 +80,16 @@ export interface ShadowProfile {
 }
 
 export interface ShadowExport {
-  version: 1;
+  version: 1 | 2;
   exportedAt: number;
   entries: ExportEntry[];
   parts: ExportPart[];
   sessions: ExportSession[];
   experiments: ExportExperiment[];
+  /** v1 carrier for name/gender. Kept for back-compat; v2 also puts them in `prefs`. */
   profile?: ShadowProfile;
+  /** v2: the full SecureStore identity (BACKUP_KEYS) — name, gender, prefs, unlocks, locks. */
+  prefs?: Record<string, string>;
 }
 
 // ─── Row types (what the DB returns) ────────────────────────────────────────
@@ -214,21 +218,32 @@ export async function exportData(
     reflection: dec(r.reflection_enc, existingKey),
   }));
 
-  // 5. Profile (name/gender) — lets a restore fully sign the user back in.
+  // 5. Profile (name/gender) — kept for older app versions reading this file.
   const profile: ShadowProfile = {
     name: await getItem('shadow.user_name'),
     gender: await getItem('shadow.user_gender'),
   };
 
+  // 5b. The full SecureStore identity: every backup key that's actually set —
+  //     name, gender, onboarding acknowledgment, theme, favorites, unlocks, and
+  //     the locks (app lock + Notebook PIN). The device encryption key is never
+  //     among these (BACKUP_KEYS excludes it).
+  const prefs: Record<string, string> = {};
+  for (const k of BACKUP_KEYS) {
+    const v = await getItem(k);
+    if (v) prefs[k] = v;
+  }
+
   // 6. Assemble plaintext export object
   const exportObj: ShadowExport = {
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     entries,
     parts,
     sessions,
     experiments,
     profile,
+    prefs,
   };
 
   // 6. Derive a new key from the passphrase (100k PBKDF2-SHA256 iterations)

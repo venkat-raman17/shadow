@@ -52,15 +52,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="integration"
-        options={{
-          title: 'Reflections',
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'sparkles', web: 'auto_awesome' }} size={24} tintColor={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="read"
         options={{
           title: 'Library',

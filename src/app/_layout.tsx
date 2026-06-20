@@ -116,7 +116,7 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="reflect/[id]"
-          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Reflections' }}
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Notebook' }}
         />
         <Stack.Screen
           name="entry/[id]"

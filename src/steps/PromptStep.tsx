@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 
 import { Spacing, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
@@ -11,6 +11,14 @@ import type { StepProps } from './types';
 export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<PromptStepType>) {
   const [value, setValue] = useState('');
   const styles = useThemedStyles(makeStyles);
+  const inputRef = useRef<TextInput>(null);
+
+  // Focus after the parent scroll animation has settled (scroll fires at ~60ms,
+  // animation takes ~300ms) so the keyboard opens onto a fully visible question.
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 450);
+    return () => clearTimeout(t);
+  }, []);
 
   const canAdvance = step.optional || value.trim().length > 0;
   const title = resolveTokens(step.title, inputs);
@@ -23,11 +31,11 @@ export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<P
       {body ? <Text style={styles.body}>{body}</Text> : null}
 
       <TextField
+        ref={inputRef}
         multiline={step.multiline}
         value={value}
         onChangeText={setValue}
         placeholder={placeholder}
-        autoFocus
       />
 
       {step.assistChips && step.assistChips.length > 0 ? (

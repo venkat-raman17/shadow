@@ -3,18 +3,12 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { deleteAllData } from '@/lib/db';
 import { setItem } from '@/lib/kv';
 import { cancelNotification } from '@/lib/notifications';
+import { BACKUP_KEYS } from '@/lib/backupKeys';
 
-// Every SecureStore key the app writes, EXCEPT the encryption master key
-// (`shadow.db_key`) — kept so the now-empty DB can still encrypt fresh data.
-const RESET_KEYS = [
-  'shadow.onboarding_complete',
-  'shadow.user_name',
-  'shadow.user_gender',
-  'shadow.favorite_flow_ids',
-  'shadow.depths_seen',
-  'shadow.theme',
-  'shadow.app_lock_enabled',
-];
+// What a wipe clears is exactly what a backup captures — every SecureStore key
+// except the encryption master key (`shadow.enc.key`), which is preserved so the
+// now-empty DB can still encrypt fresh data.
+const RESET_KEYS = BACKUP_KEYS;
 
 /**
  * Erase all journal data and user preferences, returning the app to a fresh

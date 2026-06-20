@@ -14,4 +14,7 @@ export interface StepProps<T extends Step = Step> {
    *  carrying `seedKeys` forward as echo params. */
   onNext: (value?: string | number, goTo?: string, goToFlow?: string, seedKeys?: string[]) => void;
   onExit: () => void;
+  /** Lock/unlock the flow's scroll view (used by the draw step while a stroke is
+   *  active, so the page doesn't scroll out from under the finger). */
+  onScrollLock?: (locked: boolean) => void;
 }

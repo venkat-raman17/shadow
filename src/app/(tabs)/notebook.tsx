@@ -1,14 +1,5 @@
 import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  FlatList,
-  type LayoutChangeEvent,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -18,7 +9,12 @@ import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Card } from '@/components/ui';
 import { ChargeGauge } from '@/components/ChargeGauge';
 import { SketchView, parseSketch } from '@/components/Sketch';
+import { FlipBookPager, type FlipBookPagerHandle } from '@/components/notebook/FlipBookPager';
+import { ReflectionsPage } from '@/components/notebook/ReflectionsPage';
+import { NotebookLockScreen } from '@/components/notebook/NotebookLockScreen';
 import { useRecentEntries } from '@/hooks/useEntries';
+import { useNotebookLock } from '@/hooks/useNotebookLock';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { EntryListItem } from '@/lib/db';
 
 const NOTEBOOK_CAP = 200;
@@ -122,7 +118,7 @@ function PageIndicator({
           onPress={() => onDot(i)}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Page ${i + 1}`}>
+          accessibilityLabel={i === 0 ? 'Reflections' : `Page ${i}`}>
           <View style={[styles.dot, i === index && styles.dotActive]} />
         </Pressable>
       ))}
@@ -130,25 +126,32 @@ function PageIndicator({
   );
 }
 
-export default function NotebookScreen() {
+// The notebook itself: a horizontal flip-book whose first page is your
+// reflections (your inner world) and whose following pages are your entries.
+function NotebookContent() {
   const entries = useRecentEntries(NOTEBOOK_CAP);
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const listRef = useRef<FlatList<EntryListItem[]>>(null);
-  const [pageWidth, setPageWidth] = useState(0);
+  const reduced = useReducedMotion();
+  const { width: winW } = useWindowDimensions();
+  const pagerRef = useRef<FlipBookPagerHandle>(null);
   const [page, setPage] = useState(0);
+  const [pagerHeight, setPagerHeight] = useState(0);
 
-  const pages = chunk(entries, PAGE_SIZE);
-  const safePage = Math.min(page, Math.max(0, pages.length - 1));
+  const pageWidth = Math.min(winW, MaxContentWidth) - Spacing.four * 2;
+  const gridPages = chunk(entries, PAGE_SIZE);
 
-  function onWrapLayout(e: LayoutChangeEvent) {
-    setPageWidth(e.nativeEvent.layout.width);
-  }
-  function onScrollEnd(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    if (pageWidth > 0) setPage(Math.round(e.nativeEvent.contentOffset.x / pageWidth));
-  }
+  const pages: React.ReactNode[] = [
+    <ReflectionsPage key="reflections" width={pageWidth} />,
+    ...gridPages.map((items, i) => (
+      <NotebookPage key={`grid-${i}`} entries={items} pageWidth={pageWidth} />
+    )),
+  ];
+  const pageCount = pages.length;
+  const safePage = Math.min(page, pageCount - 1);
+
   function goToPage(i: number) {
-    listRef.current?.scrollToOffset({ offset: i * pageWidth, animated: true });
+    pagerRef.current?.scrollToPage(i);
     setPage(i);
   }
 
@@ -170,38 +173,46 @@ export default function NotebookScreen() {
           </Pressable>
         </View>
 
-        {entries.length === 0 ? (
-          <Text style={styles.empty}>Nothing yet. Come back after a practice.</Text>
-        ) : (
-          <>
-            <View style={styles.pagerWrap} onLayout={onWrapLayout}>
-              {pageWidth > 0 ? (
-                <FlatList
-                  ref={listRef}
-                  data={pages}
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(_, i) => String(i)}
-                  getItemLayout={(_, index) => ({
-                    length: pageWidth,
-                    offset: pageWidth * index,
-                    index,
-                  })}
-                  onMomentumScrollEnd={onScrollEnd}
-                  renderItem={({ item }) => <NotebookPage entries={item} pageWidth={pageWidth} />}
-                />
-              ) : null}
-            </View>
+        <View
+          style={styles.pagerWrap}
+          onLayout={(e) => setPagerHeight(e.nativeEvent.layout.height)}>
+          <FlipBookPager
+            ref={pagerRef}
+            pages={pages}
+            pageWidth={pageWidth}
+            pageHeight={pagerHeight}
+            reduced={reduced}
+            onPageChange={setPage}
+          />
+        </View>
 
-            {pages.length > 1 ? (
-              <PageIndicator count={pages.length} index={safePage} onDot={goToPage} />
-            ) : null}
-          </>
-        )}
+        {pageCount > 1 ? (
+          <PageIndicator count={pageCount} index={safePage} onDot={goToPage} />
+        ) : null}
       </View>
     </SafeAreaView>
   );
+}
+
+export default function NotebookScreen() {
+  const { enabled, locked, biometricAvailable, unlockWithPin, unlockWithBiometric } =
+    useNotebookLock();
+  const styles = useThemedStyles(makeStyles);
+
+  // While the lock flag loads, show a plain ground rather than flashing content.
+  if (enabled === null) return <View style={styles.safe} />;
+
+  if (enabled && locked) {
+    return (
+      <NotebookLockScreen
+        onSubmitPin={unlockWithPin}
+        onUseBiometric={unlockWithBiometric}
+        biometricAvailable={biometricAvailable}
+      />
+    );
+  }
+
+  return <NotebookContent />;
 }
 
 const makeStyles = ({ colors, typography }: Theme) =>
@@ -219,12 +230,6 @@ const makeStyles = ({ colors, typography }: Theme) =>
     },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     heading: { ...typography.display },
-    empty: {
-      ...typography.serifBody,
-      color: colors.textSecondary,
-      textAlign: 'center',
-      marginTop: Spacing.six,
-    },
 
     pagerWrap: { flex: 1 },
     page: { gap: Spacing.three, paddingTop: Spacing.one },

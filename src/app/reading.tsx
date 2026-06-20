@@ -23,7 +23,7 @@ import {
   type Theme,
 } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { SectionHeader, AmbientBackground, FadeSlide } from '@/components/ui';
+import { SectionHeader, FadeSlide } from '@/components/ui';
 import { Illustration } from '@/components/illustrations';
 import { usePressScale } from '@/hooks/usePressScale';
 import { useSurfacingPatterns, useUsedFlowIds } from '@/hooks/useIntegration';
@@ -144,7 +144,6 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <AmbientBackground />
       <FlatList
         data={grid}
         keyExtractor={(b) => b.id}

@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { Screen, AmbientBackground } from '@/components/ui';
+import { Screen } from '@/components/ui';
 import { Illustration } from '@/components/illustrations';
 import { getReading, parseBody, readTimeOf, type Block } from '@/lib/readings';
 
@@ -78,7 +78,7 @@ export default function ReadingScreen() {
           headerBackTitle: 'Back',
         }}
       />
-      <Screen backdrop={<AmbientBackground />}>
+      <Screen>
         {reading ? (
           <>
             {reading.cover ? (

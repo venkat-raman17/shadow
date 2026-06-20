@@ -10,7 +10,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { Spacing, radii, MaxContentWidth, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
-import { Button, TextField, FadeSlide, AmbientBackground } from '@/components/ui';
+import { Button, TextField, FadeSlide } from '@/components/ui';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
 import {
   saveEntry,
@@ -141,6 +141,11 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
   // The session this run created (meeting flows), so a seeded experiment can
   // remember where it came from and the loop can later close.
   const sessionIdRef = useRef<string | undefined>(undefined);
+  // Locked while a drawing stroke is active so the page can't scroll mid-stroke.
+  const [scrollLocked, setScrollLocked] = useState(false);
+  // Y-offset of the active step container within the inner View, updated via onLayout.
+  // Used to scroll the question top into view before the keyboard opens.
+  const activeStepY = useRef(0);
 
   const [state, dispatch] = useReducer(reducer, {
     stepIndex: 0,
@@ -156,11 +161,22 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
     groundingOffered: false,
   });
 
-  // Keep the freshly-revealed step (or the close) in view as the thread grows.
+  // Keep the freshly-revealed step in view. For text-input steps (prompt/dialogue)
+  // scroll to the question TOP so it's fully readable before the keyboard opens.
+  // For all other steps scroll to the end so the interactive element is at the bottom.
   useEffect(() => {
-    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
+    const stepType = flow.steps[state.stepIndex]?.type;
+    const t = setTimeout(() => {
+      if (stepType === 'prompt' || stepType === 'dialogue') {
+        // Spacing.five is the paddingTop of scrollContent; activeStepY is the step's
+        // y within the inner View — together they give the absolute scroll coordinate.
+        scrollRef.current?.scrollTo({ y: Spacing.five + activeStepY.current, animated: true });
+      } else {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }
+    }, 60);
     return () => clearTimeout(t);
-  }, [state.stepIndex, state.done]);
+  }, [state.stepIndex, state.done, flow.steps]);
 
   const persist = useCallback(
     async (inputs: FlowInputs) => {
@@ -278,7 +294,6 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
   return (
     <SafeAreaView style={styles.safe}>
-      {state.done && <AmbientBackground placement="center" intensity={1.2} />}
       {groundingBanner}
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${Math.min(progressFraction, 1) * 100}%` }]} />
@@ -288,20 +303,24 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!scrollLocked}
         bottomOffset={Spacing.six + Spacing.four}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
             {transcript}
 
             {currentStep && (
-              <FadeSlide key={currentStep.id}>
-                <ActiveStep
-                  step={currentStep}
-                  inputs={state.inputs}
-                  onNext={advance}
-                  onExit={handleExit}
-                />
-              </FadeSlide>
+              <View onLayout={e => { activeStepY.current = e.nativeEvent.layout.y; }}>
+                <FadeSlide key={currentStep.id}>
+                  <ActiveStep
+                    step={currentStep}
+                    inputs={state.inputs}
+                    onNext={advance}
+                    onExit={handleExit}
+                    onScrollLock={setScrollLocked}
+                  />
+                </FadeSlide>
+              </View>
             )}
 
             {state.done && (
@@ -377,7 +396,7 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
   );
 }
 
-function ActiveStep({ step, inputs, onNext, onExit }: StepProps) {
+function ActiveStep({ step, inputs, onNext, onExit, onScrollLock }: StepProps) {
   switch (step.type) {
     case 'prompt':
       return <PromptStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
@@ -394,7 +413,15 @@ function ActiveStep({ step, inputs, onNext, onExit }: StepProps) {
     case 'resource':
       return <ResourceStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
     case 'draw':
-      return <DrawStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
+      return (
+        <DrawStep
+          step={step}
+          inputs={inputs}
+          onNext={onNext}
+          onExit={onExit}
+          onScrollLock={onScrollLock}
+        />
+      );
     case 'exitOffer':
       return <ExitOfferStep step={step} inputs={inputs} onNext={onNext} onExit={onExit} />;
     default:

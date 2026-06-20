@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { Button, FadeSlide, Screen, TextField } from '@/components/ui';
+import { Button, Card, FadeSlide, Screen, TextField } from '@/components/ui';
 import { radii, Spacing, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { setItem } from '@/lib/kv';
@@ -19,8 +19,8 @@ import type { Gender } from '@/hooks/useUserProfile';
 const PANEL_COUNT = 6;
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
-  { value: 'man', label: 'Man' },
-  { value: 'woman', label: 'Woman' },
+  { value: 'man', label: "I'm a man" },
+  { value: 'woman', label: "I'm a woman" },
   { value: 'nonbinary', label: 'Another identity' },
 ];
 
@@ -106,12 +106,12 @@ export default function OnboardingScreen() {
               <Text style={styles.restoredNote}>
                 Your reflections are back. Finish setting up below.
               </Text>
-            ) : !showRestore ? (
-              <Pressable onPress={() => setShowRestore(true)}>
-                <Text style={styles.restoreLink}>Already have a backup? Restore it →</Text>
-              </Pressable>
-            ) : (
+            ) : showRestore ? (
               <View style={styles.restoreForm}>
+                <Text style={styles.body}>
+                  Enter your backup passphrase, then choose the file. Everything comes back — your
+                  reflections, settings, and locks.
+                </Text>
                 <TextField
                   value={restorePassphrase}
                   onChangeText={setRestorePassphrase}
@@ -119,6 +119,7 @@ export default function OnboardingScreen() {
                   placeholder="Backup passphrase…"
                   returnKeyType="done"
                   editable={!restoring}
+                  autoFocus
                 />
                 {restoreError ? <Text style={styles.restoreError}>{restoreError}</Text> : null}
                 <Button
@@ -127,13 +128,28 @@ export default function OnboardingScreen() {
                   disabled={restoring}
                 />
                 <Button
-                  label="Cancel"
+                  label="Back"
                   variant="ghost"
                   onPress={() => {
                     setShowRestore(false);
                     setRestoreError(null);
                   }}
                 />
+              </View>
+            ) : (
+              <View style={styles.chooser}>
+                <Card onPress={next} style={styles.choiceCard}>
+                  <Text style={styles.choiceTitle}>Start fresh</Text>
+                  <Text style={styles.choiceBody}>
+                    Set up a new private space and begin where you are.
+                  </Text>
+                </Card>
+                <Card onPress={() => setShowRestore(true)} style={styles.choiceCard}>
+                  <Text style={styles.choiceTitle}>Restore from a backup</Text>
+                  <Text style={styles.choiceBody}>
+                    Bring everything back from an encrypted backup file.
+                  </Text>
+                </Card>
               </View>
             )}
           </>
@@ -196,10 +212,10 @@ export default function OnboardingScreen() {
 
         {index === 5 && (
           <>
-            <Text style={styles.title}>One thing about your inner landscape.</Text>
+            <Text style={styles.title}>One thing about you.</Text>
             <Text style={styles.body}>
-              In Jungian work, the anima (in men) and the animus (in women) are inner figures worth
-              meeting. Partwise uses this to offer the right reflections for you.
+              This helps Partwise shape reflections that fit you. There&apos;s no wrong answer, and
+              you can change it later.
             </Text>
             <View style={styles.genderRow}>
               {GENDER_OPTIONS.map((opt) => (
@@ -227,11 +243,15 @@ export default function OnboardingScreen() {
             <View key={i} style={[styles.dot, i <= index && styles.dotFilled]} />
           ))}
         </View>
-        <Button
-          label={isLast ? 'I understand — take me in' : 'Continue'}
-          onPress={next}
-          disabled={!canContinue}
-        />
+        {/* Panel 0 offers its own two-card choice; the generic Continue only
+            appears from panel 1 on (or when a legacy backup needs finishing). */}
+        {index !== 0 || restored ? (
+          <Button
+            label={isLast ? 'I understand — take me in' : 'Continue'}
+            onPress={next}
+            disabled={!canContinue}
+          />
+        ) : null}
         {index > 0 && !isLast ? (
           <Button label="Back" variant="ghost" onPress={() => setIndex((i) => i - 1)} />
         ) : null}
@@ -252,7 +272,10 @@ const makeStyles = ({ colors, typography }: Theme) =>
     color: colors.textSecondary,
   },
   body: { ...typography.serifBody, color: colors.textSecondary, lineHeight: 30 },
-  restoreLink: { ...typography.body, color: colors.accentWarm, marginTop: Spacing.two },
+  chooser: { gap: Spacing.two, marginTop: Spacing.three },
+  choiceCard: { gap: Spacing.one, padding: Spacing.four },
+  choiceTitle: { ...typography.displaySmall, color: colors.textPrimary },
+  choiceBody: { ...typography.bodySmall, color: colors.textSecondary },
   restoreForm: { gap: Spacing.two, marginTop: Spacing.two },
   restoreError: { ...typography.caption, color: colors.accentWarm },
   restoredNote: { ...typography.bodySmall, color: colors.accent, marginTop: Spacing.two },

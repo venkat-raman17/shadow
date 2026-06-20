@@ -1,5 +1,6 @@
 import { gcm } from '@noble/ciphers/aes.js';
 import { getItem, setItem } from '@/lib/kv';
+import { toBase64, fromBase64 } from '@/lib/base64';
 
 const KEY_STORE_KEY = 'shadow.enc.key';
 
@@ -7,17 +8,6 @@ function randomBytes(n: number): Uint8Array {
   const buf = new Uint8Array(n);
   crypto.getRandomValues(buf);
   return buf;
-}
-
-function toBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
-}
-
-function fromBase64(b64: string): Uint8Array {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
 }
 
 export async function loadOrCreateKey(): Promise<Uint8Array> {
