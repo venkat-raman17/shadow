@@ -65,7 +65,8 @@
     "build:production:ios": "eas build --platform ios --profile production",
     "build:production:android": "eas build --platform android --profile production",
     "submit:ios": "eas submit --platform ios",
-    "submit:android": "eas submit --platform android"
+    "submit:android": "eas submit --platform android",
+    "submit:preview:ios": "eas submit --platform ios --latest"
   },
   "private": true
 }

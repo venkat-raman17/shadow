@@ -49,6 +49,12 @@ export const FLOWS: Record<string, Flow> = {
 // only sees 'notice'; 'sit' and 'carry' open once there's prior work.
 export type Depth = 'notice' | 'sit' | 'carry' | 'ground';
 
+// A second level of organization inside the (large) 'notice' depth: a themed
+// cluster grouping practices by what you're working *from* (a reaction, the
+// body, a hard feeling…). Only 'notice' practices carry one; the smaller depths
+// stay flat.
+export type NoticeGroup = 'reaction' | 'attraction' | 'body' | 'self' | 'feeling';
+
 export interface Practice {
   id: string;
   title: string;
@@ -57,6 +63,8 @@ export interface Practice {
   depth: Depth;
   estimatedMinutes: number;
   icon: IconName;
+  /** Themed sub-cluster within the 'notice' depth (see NOTICE_GROUPS). */
+  group?: NoticeGroup;
   /** If set, only surface this practice for users whose gender matches. Non-binary users see all. */
   requiresGender?: 'man' | 'woman';
 }
@@ -69,6 +77,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: "What's your body holding?",
     blurb: 'Start from a sensation — no situation or person needed.',
     depth: 'notice',
+    group: 'body',
     icon: { ios: 'figure.mind.and.body', web: 'self_improvement' },
   },
   {
@@ -76,6 +85,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Something just happened',
     blurb: "Catch a reaction while it's still warm — thirty seconds, no setup.",
     depth: 'notice',
+    group: 'reaction',
     icon: { ios: 'bolt.heart', web: 'bolt' },
   },
   {
@@ -83,6 +93,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: "Draw what's here",
     blurb: 'When there are no words yet — let your hand find the shape.',
     depth: 'notice',
+    group: 'body',
     icon: { ios: 'scribble.variable', web: 'draw' },
   },
   {
@@ -90,6 +101,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Who got under your skin?',
     blurb: 'Notice a reaction to someone, and the quality underneath it.',
     depth: 'notice',
+    group: 'reaction',
     icon: { ios: 'person.fill.questionmark', web: 'person' },
   },
   {
@@ -97,6 +109,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Who do you admire?',
     blurb: 'Follow an admiration back to something unlived in you.',
     depth: 'notice',
+    group: 'attraction',
     icon: { ios: 'sparkles', web: 'auto_awesome' },
   },
   {
@@ -104,6 +117,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Who captivates you?',
     blurb: 'Notice when intense attraction is pointing at something unlived in you.',
     depth: 'notice',
+    group: 'attraction',
     icon: { ios: 'figure.2.arms.open', web: 'favorite_border' },
     requiresGender: 'man',
   },
@@ -112,6 +126,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Whose voice is in your head?',
     blurb: 'Notice the inner critic or the pull toward someone who carries your unlived strength.',
     depth: 'notice',
+    group: 'attraction',
     icon: { ios: 'quote.bubble', web: 'record_voice_over' },
     requiresGender: 'woman',
   },
@@ -120,6 +135,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: "Who are you when no one's watching?",
     blurb: 'The gap between the self you show and the self you keep.',
     depth: 'notice',
+    group: 'self',
     icon: { ios: 'theatermasks', web: 'theater_comedy' },
   },
   {
@@ -127,6 +143,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Turn a reaction around',
     blurb: 'Take a strong reaction through three angles — them, you, and I — and find what’s yours.',
     depth: 'notice',
+    group: 'reaction',
     icon: { ios: 'arrow.2.squarepath', web: 'swap_horiz' },
   },
   {
@@ -134,6 +151,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'What shame says about you',
     blurb: 'Not fixing it — just naming it, and meeting it differently.',
     depth: 'notice',
+    group: 'feeling',
     icon: { ios: 'heart.circle', web: 'favorite' },
   },
   {
@@ -141,6 +159,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Turn toward yourself',
     blurb: 'A small practice in meeting your own pain with kindness.',
     depth: 'notice',
+    group: 'feeling',
     icon: { ios: 'heart', web: 'volunteer_activism' },
   },
   {
@@ -148,6 +167,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Write it out',
     blurb: "Free writing to untangle what's knotted — no one reads it but you.",
     depth: 'notice',
+    group: 'self',
     icon: { ios: 'square.and.pencil', web: 'edit_note' },
   },
   {
@@ -155,6 +175,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'When two truths collide',
     blurb: 'Hold two opposing pulls without choosing — and let a third thing surface.',
     depth: 'notice',
+    group: 'self',
     icon: { ios: 'arrow.left.and.right', web: 'sync_alt' },
   },
   {
@@ -162,6 +183,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Meet a hard feeling',
     blurb: 'RAIN — recognize, allow, investigate, and nurture what hurts.',
     depth: 'notice',
+    group: 'feeling',
     icon: { ios: 'cloud.rain', web: 'water_drop' },
   },
   {
@@ -169,6 +191,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Unhook from a thought',
     blurb: 'Step back and watch a sticky thought pass, instead of being inside it.',
     depth: 'notice',
+    group: 'feeling',
     icon: { ios: 'cloud', web: 'cloud' },
   },
   {
@@ -291,6 +314,26 @@ export const DEPTHS: DepthGroup[] = [
 
 export function getPractice(id: string): Practice | undefined {
   return PRACTICES.find((p) => p.id === id);
+}
+
+// The themed clusters inside the 'notice' depth, in display order. Notice holds
+// ~15 practices; these sub-headers turn that wall into a few scannable groups by
+// what you're working *from*. Order here is the order shown.
+export const NOTICE_GROUPS: { group: NoticeGroup; label: string }[] = [
+  { group: 'reaction', label: 'From a reaction' },
+  { group: 'attraction', label: 'Admiration & attraction' },
+  { group: 'body', label: 'Starting from the body' },
+  { group: 'self', label: 'A closer look at yourself' },
+  { group: 'feeling', label: 'Sitting with a hard feeling' },
+];
+
+// The split for the Workshop's time filter: practices that take this long or
+// less are "a few minutes" (≤5: ~14 practices); longer ones are "a longer sit".
+export const QUICK_MAX_MINUTES = 5;
+
+/** Whether a practice fits the "a few minutes" time filter. */
+export function isQuick(p: Practice): boolean {
+  return p.estimatedMinutes <= QUICK_MAX_MINUTES;
 }
 
 // Fallbacks when a flow can't be resolved (e.g. a flow was removed after an

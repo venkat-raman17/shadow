@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 
-import { Spacing, radii, type Theme } from '@/constants/theme';
+import { Spacing, radii, makeElevation, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen } from '@/components/ui';
 import { ChargeGauge } from '@/components/ChargeGauge';
@@ -124,8 +124,9 @@ export default function EntryScreen() {
   );
 }
 
-const makeStyles = ({ colors, typography }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) => {
+  const e = makeElevation(colors);
+  return StyleSheet.create({
   date: { ...typography.caption, color: colors.textSecondary },
   block: { gap: Spacing.two },
   question: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },
@@ -145,6 +146,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderColor: colors.border,
     borderRadius: radii.lg,
     padding: Spacing.three,
+    ...e.subtle,
   },
   footer: {
     flexDirection: 'row',
@@ -158,4 +160,5 @@ const makeStyles = ({ colors, typography }: Theme) =>
   },
   chargeLabel: { ...typography.caption, color: colors.textSecondary },
   errorText: { ...typography.body, color: colors.textSecondary },
-});
+  });
+};

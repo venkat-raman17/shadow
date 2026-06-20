@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { Spacing, radii, type Theme } from '@/constants/theme';
+import { Spacing, radii, makeElevation, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { resolveTokens } from '@/engine/tokens';
 import { SketchView, parseSketch } from '@/components/Sketch';
@@ -120,8 +120,9 @@ function strValue(v: string | number | undefined): string {
   return String(v).trim();
 }
 
-const makeStyles = ({ colors, typography }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) => {
+  const e = makeElevation(colors);
+  return StyleSheet.create({
   turn: { gap: Spacing.two },
   guide: { ...typography.serifBody, color: colors.textSecondary },
   guideQuiet: { ...typography.serifBody, color: colors.textFaint },
@@ -146,6 +147,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderColor: colors.border,
     borderRadius: radii.lg,
     padding: Spacing.two,
+    ...e.subtle,
   },
   pauseTurn: { alignItems: 'center', paddingVertical: Spacing.one },
   pauseDot: {
@@ -154,4 +156,5 @@ const makeStyles = ({ colors, typography }: Theme) =>
     borderRadius: 3,
     backgroundColor: colors.border,
   },
-});
+  });
+};

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { useTheme } from '@/constants/theme-context';
+import { TabBarBackground } from '@/components/ui';
 
 export default function TabsLayout() {
   const { colors, typography } = useTheme();
@@ -12,9 +13,11 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
+        tabBarBackground: () => <TabBarBackground />,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
         },
         tabBarLabelStyle: {
           fontFamily: typography.caption.fontFamily,
@@ -51,16 +54,16 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="integration"
         options={{
-          title: 'Inner World',
+          title: 'Reflections',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'moon', web: 'nightlight' }} size={24} tintColor={color} />
+            <SymbolView name={{ ios: 'sparkles', web: 'auto_awesome' }} size={24} tintColor={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="read"
         options={{
-          title: 'Read',
+          title: 'Library',
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: 'books.vertical', web: 'auto_stories' }} size={24} tintColor={color} />
           ),

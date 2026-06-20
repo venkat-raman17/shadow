@@ -7,9 +7,13 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
+import { usePressScale } from '@/hooks/usePressScale';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 
@@ -38,21 +42,24 @@ export function Button({
   style,
 }: Props) {
   const styles = useThemedStyles(makeStyles);
+  const press = usePressScale();
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
         fullWidth && variant !== 'ghost' && styles.fullWidth,
-        pressed && !disabled && styles.pressed,
         disabled && styles.disabled,
+        !disabled && press.animatedStyle,
         style,
       ]}>
       <View pointerEvents="none">
@@ -66,7 +73,7 @@ export function Button({
           {label}
         </Text>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -90,7 +97,6 @@ const makeStyles = ({ colors, typography }: Theme) =>
     paddingVertical: Spacing.two,
     paddingHorizontal: 0,
   },
-  pressed: { opacity: 0.7 },
   disabled: { opacity: 0.35 },
   label: { ...typography.body, fontWeight: '500' },
   labelPrimary: { color: colors.onAccent },

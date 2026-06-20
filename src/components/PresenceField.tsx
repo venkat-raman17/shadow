@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
-import { Spacing, radii, type Theme } from '@/constants/theme';
+import { Spacing, radii, makeElevation, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { SketchView, parseSketch } from '@/components/Sketch';
 import type { PartListItem } from '@/lib/db';
@@ -79,8 +79,9 @@ function Presence({ part }: { part: PartListItem }) {
   );
 }
 
-const makeStyles = ({ colors, typography }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) => {
+  const e = makeElevation(colors);
+  return StyleSheet.create({
   field: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, alignItems: 'flex-start' },
   figure: { alignItems: 'center', gap: Spacing.one, width: FIGURE_SIZE + Spacing.four * 2 },
   figureFrame: {
@@ -93,7 +94,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    overflow: 'hidden',
+    ...e.subtle,
   },
   figureFrameRecent: { borderColor: colors.borderStrong },
   figureFrameGolden: { backgroundColor: colors.accentSoft, borderColor: colors.accentMuted },
@@ -121,4 +122,5 @@ const makeStyles = ({ colors, typography }: Theme) =>
   dotRecent: { backgroundColor: colors.accentMuted },
   dotGolden: { backgroundColor: colors.accentWarm },
   name: { ...typography.body, color: colors.textPrimary, maxWidth: 220 },
-});
+  });
+};

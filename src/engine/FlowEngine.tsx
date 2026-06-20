@@ -10,7 +10,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { Spacing, radii, MaxContentWidth, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
-import { Button, TextField, FadeSlide } from '@/components/ui';
+import { Button, TextField, FadeSlide, AmbientBackground } from '@/components/ui';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
 import {
   saveEntry,
@@ -278,6 +278,7 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
   return (
     <SafeAreaView style={styles.safe}>
+      {state.done && <AmbientBackground placement="center" intensity={1.2} />}
       {groundingBanner}
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${Math.min(progressFraction, 1) * 100}%` }]} />

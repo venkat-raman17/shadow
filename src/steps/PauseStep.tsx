@@ -11,7 +11,7 @@ import Animated, {
 
 import { Spacing, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
-import { Button } from '@/components/ui';
+import { Button, AmbientBackground } from '@/components/ui';
 import { resolveTokens } from '@/engine/tokens';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { PauseStep as PauseStepType } from '@/types/flow';
@@ -56,6 +56,7 @@ export default function PauseStep({ step, inputs, onNext }: StepProps<PauseStepT
 
   return (
     <View style={styles.block}>
+      <AmbientBackground placement="center" intensity={1.1} />
       {body ? <Text style={styles.body}>{body}</Text> : null}
 
       <View style={styles.circleWrap} accessible={false} importantForAccessibility="no-hide-descendants">

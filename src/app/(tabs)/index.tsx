@@ -5,7 +5,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { Screen, TextField, Button, Card } from '@/components/ui';
+import { Screen, TextField, Button, Card, AmbientBackground } from '@/components/ui';
 import { getItem, setItem } from '@/lib/kv';
 import { routeFromText, suggestFlow } from '@/lib/threshold';
 import { useResurfacing } from '@/hooks/useEntries';
@@ -72,6 +72,17 @@ function getGreeting(name: string | null): string {
   if (h < 17) return `Good afternoon${suffix}.`;
   if (h < 21) return `Good evening${suffix}.`;
   return `Late night${suffix}.`;
+}
+
+// A one-step warmth for the ambient wash — the page reads cooler by day and a
+// touch warmer late, like a lamp coming up. One step, never a gradient (a smooth
+// shift would look like the theme is drifting).
+function timeWarmth(): number {
+  const h = new Date().getHours();
+  if (h < 5 || h >= 21) return 1.3; // late night / pre-dawn — warmest
+  if (h >= 17) return 1.15; // evening
+  if (h < 9) return 0.85; // early morning — coolest
+  return 1; // daytime
 }
 
 // The flow to open when the user says "I'm not sure". Gathers the existing
@@ -305,7 +316,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <Screen withTabBar>
+    <Screen withTabBar backdrop={<AmbientBackground intensity={timeWarmth()} />}>
       <View style={styles.topRow}>
         <Text style={styles.greeting}>{getGreeting(profile?.name ?? null)}</Text>
         <Pressable

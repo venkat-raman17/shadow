@@ -18,6 +18,12 @@ export interface Palette {
   chip: string;
   chipActive: string;
   overlay: string;
+  /** Warm shadow colour for soft, lamplit depth (per theme). */
+  shadowTint: string;
+  /** Translucent surface for the tab-bar ledge so content reads faintly behind it. */
+  surfaceTranslucent: string;
+  /** Very-low-alpha warm wash for the ambient vignette behind signature screens. */
+  ambientWarm: string;
 }
 
 // The original, calm near-black palette.
@@ -39,6 +45,9 @@ const dark: Palette = {
   chip: '#2a2826',
   chipActive: '#3a3632',
   overlay: 'rgba(8,7,6,0.72)',
+  shadowTint: '#000000',
+  surfaceTranslucent: 'rgba(26,25,23,0.82)',
+  ambientWarm: 'rgba(196,149,106,0.06)',
 };
 
 // A warm "aged paper" light palette — the same contemplative mood in daylight,
@@ -61,6 +70,9 @@ const light: Palette = {
   chip: '#e6dfd2',
   chipActive: '#ddd3c2',
   overlay: 'rgba(40,36,32,0.4)',
+  shadowTint: '#6f5d46',
+  surfaceTranslucent: 'rgba(236,230,219,0.82)',
+  ambientWarm: 'rgba(168,116,63,0.05)',
 };
 
 // A warmer "old book" sepia — yellower paper, browner ink — for a softer,
@@ -83,6 +95,9 @@ const sepia: Palette = {
   chip: '#e0d5bd',
   chipActive: '#d6c9ad',
   overlay: 'rgba(58,47,36,0.42)',
+  shadowTint: '#5e4a34',
+  surfaceTranslucent: 'rgba(230,220,196,0.82)',
+  ambientWarm: 'rgba(168,112,47,0.06)',
 };
 
 export const palettes = { dark, light, sepia } as const;
@@ -247,23 +262,28 @@ export const radii = {
   pill: 999,
 } as const;
 
-// Soft shadows — calm means barely-there depth, not heavy cards.
-export const elevation = {
-  subtle: {
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  raised: {
-    shadowColor: '#000',
-    shadowOpacity: 0.26,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-} as const;
+// Soft shadows — calm means barely-there depth, not heavy cards. Theme-aware so
+// the shadow carries each palette's warm tint (lamplight on paper, not grey).
+export function makeElevation(c: Palette) {
+  return {
+    subtle: {
+      shadowColor: c.shadowTint,
+      shadowOpacity: 0.18,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    raised: {
+      shadowColor: c.shadowTint,
+      shadowOpacity: 0.26,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
+  } as const;
+}
+
+export type Elevation = ReturnType<typeof makeElevation>;
 
 // ── Motion tokens ─────────────────────────────────────────────────────────
 // One source of truth for every reanimated transition. Gentle, ease-out.
@@ -273,4 +293,7 @@ export const motion = {
     base: 280,
     slow: 420,
   },
+  /** Press-depress scale target + duration for the shared usePressScale feedback. */
+  press: 0.985,
+  pressDuration: 120,
 } as const;

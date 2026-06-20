@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 
-import { Spacing, radii, type Theme } from '@/constants/theme';
+import { Spacing, radii, makeElevation, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, SectionHeader, Button } from '@/components/ui';
 import { ChargeGauge } from '@/components/ChargeGauge';
@@ -219,8 +219,10 @@ export default function PartScreen() {
         {sketch ? (
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>How you drew it</Text>
-            <View style={[styles.sketchFrame, { width: sketchBox, height: sketchBox }]}>
-              <SketchView data={sketch} width={sketchBox} height={sketchBox} />
+            <View style={styles.sketchLift}>
+              <View style={[styles.sketchFrame, { width: sketchBox, height: sketchBox }]}>
+                <SketchView data={sketch} width={sketchBox} height={sketchBox} />
+              </View>
             </View>
           </View>
         ) : (
@@ -288,8 +290,9 @@ export default function PartScreen() {
   );
 }
 
-const makeStyles = ({ colors, typography }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) => {
+  const e = makeElevation(colors);
+  return StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   name: { ...typography.display, flexShrink: 1 },
   goldenDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accentWarm },
@@ -299,6 +302,15 @@ const makeStyles = ({ colors, typography }: Theme) =>
   field: { gap: Spacing.one },
   fieldLabel: { ...typography.bodySmall, color: colors.textSecondary },
   fieldValue: { ...typography.serifBody, color: colors.textPrimary },
+  // The lift sits on a wrapper so the framed portrait can keep `overflow: hidden`
+  // for clean corners while still casting a soft shadow (iOS clips a shadow on the
+  // same view that clips its bounds).
+  sketchLift: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    ...e.subtle,
+  },
   sketchFrame: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -347,4 +359,5 @@ const makeStyles = ({ colors, typography }: Theme) =>
   turnText: { ...typography.serifBody, flex: 1, color: colors.textPrimary },
 
   errorText: { ...typography.body, color: colors.textSecondary },
-});
+  });
+};

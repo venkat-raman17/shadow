@@ -105,7 +105,8 @@ export default function ReflectionsScreen() {
 
   return (
     <Screen withTabBar>
-      <Text style={styles.heading}>Your inner world</Text>
+      <Text style={styles.heading}>Reflections</Text>
+      <Text style={styles.subtitle}>Your inner world</Text>
       <Text style={styles.tagline}>A mirror of what you&apos;ve been sitting with.</Text>
 
       {isEmpty ? (
@@ -202,6 +203,7 @@ export default function ReflectionsScreen() {
 const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   heading: { ...typography.display },
+  subtitle: { ...typography.displaySmall, color: colors.textSecondary, marginTop: -Spacing.one },
   tagline: { ...typography.body, color: colors.textSecondary },
   section: { gap: Spacing.two },
   sectionNote: { ...typography.bodySmall, color: colors.textSecondary, marginTop: -Spacing.one },

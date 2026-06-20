@@ -105,10 +105,32 @@ export function SketchCanvas({
   // Created once. Handlers only touch refs and stable setState setters, so the
   // empty dep list is intentional (and keeps strokes from resetting mid-draw).
   const pan = useMemo(() => {
+    // Commit the in-progress stroke. A bare tap (only "M x y", no line) becomes a
+    // round dot so a quick mark still registers and counts toward `hasDrawing`.
+    const commitStroke = () => {
+      let d = currentRef.current;
+      if (d && !d.includes('L')) {
+        d = `${d} L ${d.slice(2)}`;
+      }
+      if (d.includes('L')) {
+        pathsRef.current = [...pathsRef.current, d];
+        setPaths(pathsRef.current);
+        const s = sizeRef.current;
+        onChangeRef.current({ w: s.w || 1, h: s.h || 1, paths: pathsRef.current });
+      }
+      currentRef.current = '';
+      setCurrent('');
+    };
     // eslint-disable-next-line react-hooks/refs -- handlers read refs only at gesture time, never during render
     return PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        // Claim the gesture in the capture phase and refuse to yield it mid-stroke.
+        // Without this, RN defaults to surrendering the responder, letting the
+        // surrounding KeyboardAwareScrollView steal the drag and scroll the page.
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
           const { locationX, locationY } = e.nativeEvent;
           currentRef.current = `M ${round(locationX)} ${round(locationY)}`;
@@ -119,16 +141,9 @@ export function SketchCanvas({
           currentRef.current += ` L ${round(locationX)} ${round(locationY)}`;
           setCurrent(currentRef.current);
         },
-        onPanResponderRelease: () => {
-          if (currentRef.current.includes('L')) {
-            pathsRef.current = [...pathsRef.current, currentRef.current];
-            setPaths(pathsRef.current);
-            const s = sizeRef.current;
-            onChangeRef.current({ w: s.w || 1, h: s.h || 1, paths: pathsRef.current });
-          }
-          currentRef.current = '';
-          setCurrent('');
-        },
+        onPanResponderRelease: commitStroke,
+        // If the OS force-terminates the gesture (backgrounded, edge swipe), keep the stroke.
+        onPanResponderTerminate: commitStroke,
       });
   }, []);
 

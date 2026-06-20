@@ -1,13 +1,40 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  FlatList,
+  ScrollView,
+  Dimensions,
+  type LayoutChangeEvent,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import Animated from 'react-native-reanimated';
 
-import { Spacing, radii, type Palette, type Theme } from '@/constants/theme';
+import {
+  Spacing,
+  radii,
+  makeElevation,
+  MaxContentWidth,
+  BottomTabInset,
+  type Palette,
+  type Theme,
+} from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { Screen, SectionHeader } from '@/components/ui';
+import { SectionHeader, AmbientBackground, FadeSlide } from '@/components/ui';
+import { Illustration } from '@/components/illustrations';
+import { usePressScale } from '@/hooks/usePressScale';
 import { useSurfacingPatterns, useUsedFlowIds } from '@/hooks/useIntegration';
 import { rankBooks, type Book, type BookSpine } from '@/lib/readings';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const GAP = Spacing.three;
+const PAD = Spacing.four;
+/** Portrait, like a real book on the shelf. */
+const COVER_RATIO = 1.5;
+const RAIL_W = 150;
 
 function spineColor(colors: Palette, spine: BookSpine): string {
   switch (spine) {
@@ -23,114 +50,173 @@ function spineColor(colors: Palette, spine: BookSpine): string {
   }
 }
 
-function BookCover({ book, reason }: { book: Book; reason?: string | null }) {
+function BookCover({ book, width, height }: { book: Book; width: number; height: number }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
+  const press = usePressScale();
+  const illoH = Math.round(height * 0.4);
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={() => router.push({ pathname: '/book/[id]', params: { id: book.id } })}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       accessibilityRole="button"
       accessibilityLabel={book.title}
-      style={({ pressed }) => [styles.cover, pressed && styles.pressed]}>
-      <View style={[styles.spine, { backgroundColor: spineColor(colors, book.spine) }]} />
-      <View style={styles.coverBody}>
-        <Text style={styles.coverTitle}>{book.title}</Text>
-        <Text style={styles.coverBlurb} numberOfLines={2}>
-          {book.blurb}
-        </Text>
-        {reason ? (
-          <Text style={styles.coverReason}>because “{reason}” keeps surfacing</Text>
-        ) : null}
+      style={[styles.coverShadow, { width, height }, press.animatedStyle]}>
+      <View style={styles.coverClip}>
+        <View style={[styles.spine, { backgroundColor: spineColor(colors, book.spine) }]} />
+        <View style={styles.coverInner}>
+          <View style={[styles.illoWrap, { height: illoH }]}>
+            <Illustration name={book.cover} tone="duo" width={Math.min(width - 48, illoH * 1.4)} height={illoH} />
+          </View>
+          <Text style={styles.coverTitle} numberOfLines={2}>
+            {book.title}
+          </Text>
+          {book.subtitle ? (
+            <Text style={styles.coverSubtitle} numberOfLines={2}>
+              {book.subtitle}
+            </Text>
+          ) : null}
+          <Text style={styles.coverCount}>
+            {book.chapters.length} {book.chapters.length === 1 ? 'chapter' : 'chapters'}
+          </Text>
+        </View>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
-export default function ReadShelfScreen() {
+export default function LibraryScreen() {
   const patterns = useSurfacingPatterns(8);
   const flowIds = useUsedFlowIds();
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const [showAll, setShowAll] = useState(false);
+  const [listW, setListW] = useState(Math.min(Dimensions.get('window').width, MaxContentWidth));
 
   const shelf = rankBooks({ qualityFamilies: patterns.map((p) => p.quality), flowIds });
+  // The whole library is the wall; books surfaced for "now" are lifted into the
+  // featured rail, so nothing is shown twice.
+  const grid = [...shelf.evergreen, ...shelf.rest];
 
-  return (
-    <Screen withTabBar>
-      <Text style={styles.heading}>Read</Text>
+  // Subtract the content padding so two covers + the gutter fit the row exactly.
+  const colW = Math.max(120, Math.floor((listW - PAD * 2 - GAP) / 2));
+  const colH = Math.round(colW * COVER_RATIO);
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && Math.abs(w - listW) > 1) setListW(w);
+  };
+
+  const header = (
+    <View style={styles.headerWrap}>
+      <Text style={styles.heading}>Library</Text>
       <Text style={styles.tagline}>
-        A small library on the ideas behind the practices. Take a book off the shelf when you&apos;re
-        curious — no order, no rush.
+        A small library on the ideas behind the practices. Take a book off the shelf when
+        you&apos;re curious — no order, no rush.
       </Text>
 
       {shelf.suggested.length > 0 && (
         <View style={styles.section}>
           <SectionHeader>For where you are now</SectionHeader>
-          {shelf.suggested.map(({ book, reason }) => (
-            <BookCover key={book.id} book={book} reason={reason} />
-          ))}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rail}>
+            {shelf.suggested.map(({ book, reason }, i) => (
+              <FadeSlide key={book.id} delay={Math.min(i * 60, 180)} style={styles.railItem}>
+                <BookCover book={book} width={RAIL_W} height={Math.round(RAIL_W * COVER_RATIO)} />
+                {reason ? (
+                  <Text style={styles.reason} numberOfLines={2}>
+                    because “{reason}” keeps surfacing
+                  </Text>
+                ) : null}
+              </FadeSlide>
+            ))}
+          </ScrollView>
         </View>
       )}
 
-      <View style={styles.section}>
-        <SectionHeader>Always here</SectionHeader>
-        {shelf.evergreen.map((b) => (
-          <BookCover key={b.id} book={b} />
-        ))}
+      <View style={styles.shelfHeader}>
+        <SectionHeader>{shelf.suggested.length > 0 ? 'On the shelf' : 'The library'}</SectionHeader>
       </View>
+    </View>
+  );
 
-      {shelf.rest.length > 0 &&
-        (showAll ? (
-          <View style={styles.section}>
-            <SectionHeader>More books</SectionHeader>
-            {shelf.rest.map((b) => (
-              <BookCover key={b.id} book={b} />
-            ))}
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => setShowAll(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Browse all books"
-            style={styles.browseRow}>
-            <SymbolView
-              name={{ ios: 'books.vertical', web: 'auto_stories' }}
-              size={15}
-              tintColor={colors.textSecondary}
-            />
-            <Text style={styles.browseText}>Browse all books →</Text>
-          </Pressable>
-        ))}
-    </Screen>
+  return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <AmbientBackground />
+      <FlatList
+        data={grid}
+        keyExtractor={(b) => b.id}
+        numColumns={2}
+        onLayout={onLayout}
+        style={styles.list}
+        ListHeaderComponent={header}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item, index }) => (
+          <FadeSlide rise delay={Math.min(index * 40, 240)}>
+            <BookCover book={item} width={colW} height={colH} />
+          </FadeSlide>
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
-const makeStyles = ({ colors, typography }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, typography }: Theme) => {
+  const e = makeElevation(colors);
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background },
+    list: { flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' },
+    listContent: {
+      padding: PAD,
+      paddingTop: Spacing.five,
+      paddingBottom: BottomTabInset + Spacing.four,
+      gap: GAP,
+    },
+    row: { gap: GAP },
+    headerWrap: { gap: Spacing.four, marginBottom: GAP },
     heading: { ...typography.display },
     tagline: { ...typography.body, color: colors.textSecondary, lineHeight: 26 },
     section: { gap: Spacing.two },
+    shelfHeader: { marginBottom: -Spacing.one },
 
-    cover: {
-      flexDirection: 'row',
-      backgroundColor: colors.surface,
+    rail: { gap: GAP, paddingRight: Spacing.two, paddingBottom: Spacing.one },
+    railItem: { width: RAIL_W, gap: Spacing.two },
+    reason: { ...typography.caption, color: colors.accentWarm, fontStyle: 'italic' },
+
+    // Two layers: the shadow rides an un-clipped wrapper, the inner view clips the
+    // cover art and spine to the rounded corners (iOS drops shadows on overflow:hidden).
+    coverShadow: { borderRadius: radii.lg, backgroundColor: colors.surface, ...e.subtle },
+    coverClip: {
+      flex: 1,
       borderRadius: radii.lg,
+      overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.border,
-      overflow: 'hidden',
+      backgroundColor: colors.surface,
     },
-    pressed: { opacity: 0.7, borderColor: colors.borderStrong },
-    spine: { width: 6 },
-    coverBody: { flex: 1, padding: Spacing.three, gap: Spacing.half },
-    coverTitle: { ...typography.body, fontWeight: '500' },
-    coverBlurb: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 20 },
-    coverReason: {
-      ...typography.caption,
-      color: colors.accentWarm,
-      fontStyle: 'italic',
-      marginTop: Spacing.half,
+    spine: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 7,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderRightColor: 'rgba(255,255,255,0.18)',
     },
-
-    browseRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.two },
-    browseText: { ...typography.body, color: colors.textSecondary },
+    coverInner: {
+      flex: 1,
+      paddingVertical: Spacing.three,
+      paddingLeft: Spacing.three + 7,
+      paddingRight: Spacing.three,
+      gap: Spacing.half,
+    },
+    illoWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.one },
+    coverTitle: { ...typography.displaySmall, fontSize: 18, lineHeight: 23 },
+    coverSubtitle: { ...typography.caption, color: colors.textSecondary, lineHeight: 18 },
+    coverCount: { ...typography.caption, color: colors.textFaint, marginTop: 'auto' },
   });
+};

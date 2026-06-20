@@ -17,6 +17,8 @@ interface Props {
   /** SafeArea edges to apply. Defaults to all. */
   edges?: Edge[];
   contentStyle?: StyleProp<ViewStyle>;
+  /** Absolutely-filled layer rendered behind the content (e.g. AmbientBackground). */
+  backdrop?: React.ReactNode;
   /** Passed through to ScrollView for inputs that should keep focus on tap. */
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
 }
@@ -33,6 +35,7 @@ export function Screen({
   center = false,
   edges,
   contentStyle,
+  backdrop,
   keyboardShouldPersistTaps = 'handled',
 }: Props) {
   const styles = useThemedStyles(makeStyles);
@@ -45,6 +48,7 @@ export function Screen({
 
   return (
     <SafeAreaView style={styles.safe} edges={edges}>
+      {backdrop}
       {scroll ? (
         <KeyboardAwareScrollView
           style={styles.flex}

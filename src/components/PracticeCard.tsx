@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
-import { Spacing, type Theme } from '@/constants/theme';
+import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Card } from '@/components/ui';
 import type { Practice } from '@/lib/practices';
@@ -16,9 +16,10 @@ interface Props {
 }
 
 /**
- * The icon + title + blurb + duration row used on Home and the practices
- * browse list. Tapping opens the practice's flow; an optional pin toggles it in
- * the user's "Yours" shelf.
+ * The icon + title + blurb row used on Home and the practices browse list.
+ * Tapping opens the practice's flow. The duration sits as a compact pill on the
+ * right (rather than a third text line), with an optional pin beneath it that
+ * toggles the practice in the user's "Yours" shelf.
  */
 export function PracticeCard({ practice, isFavorite, onToggleFavorite }: Props) {
   const { colors } = useTheme();
@@ -41,24 +42,28 @@ export function PracticeCard({ practice, isFavorite, onToggleFavorite }: Props) 
         <View style={styles.practiceBody}>
           <Text style={styles.practiceTitle}>{practice.title}</Text>
           <Text style={styles.practiceSubtitle}>{practice.blurb}</Text>
-          <Text style={styles.practiceMeta}>~{practice.estimatedMinutes} min</Text>
         </View>
       </Pressable>
-      {onToggleFavorite ? (
-        <Pressable
-          onPress={() => onToggleFavorite(practice.id)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityRole="button"
-          accessibilityLabel={isFavorite ? `Unpin ${practice.title}` : `Pin ${practice.title}`}
-          accessibilityState={{ selected: !!isFavorite }}
-          style={styles.pin}>
-          <SymbolView
-            name={isFavorite ? { ios: 'pin.fill', web: 'push_pin' } : { ios: 'pin', web: 'push_pin' }}
-            size={16}
-            tintColor={isFavorite ? colors.accentWarm : colors.textFaint}
-          />
-        </Pressable>
-      ) : null}
+      <View style={styles.trailing}>
+        <View style={styles.durationPill}>
+          <Text style={styles.durationText}>~{practice.estimatedMinutes} min</Text>
+        </View>
+        {onToggleFavorite ? (
+          <Pressable
+            onPress={() => onToggleFavorite(practice.id)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={isFavorite ? `Unpin ${practice.title}` : `Pin ${practice.title}`}
+            accessibilityState={{ selected: !!isFavorite }}
+            style={styles.pin}>
+            <SymbolView
+              name={isFavorite ? { ios: 'pin.fill', web: 'push_pin' } : { ios: 'pin', web: 'push_pin' }}
+              size={16}
+              tintColor={isFavorite ? colors.accentWarm : colors.textFaint}
+            />
+          </Pressable>
+        ) : null}
+      </View>
     </Card>
   );
 }
@@ -72,6 +77,14 @@ const makeStyles = ({ colors, typography }: Theme) =>
   practiceBody: { flex: 1, gap: Spacing.half },
   practiceTitle: { ...typography.body, fontWeight: '500' },
   practiceSubtitle: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 20 },
-  practiceMeta: { ...typography.caption, color: colors.textFaint, marginTop: Spacing.half },
-  pin: { paddingLeft: Spacing.two, marginTop: Spacing.half },
+  // Right rail: duration pill on top, optional pin tucked beneath it.
+  trailing: { alignItems: 'flex-end', gap: Spacing.two, marginTop: Spacing.half },
+  durationPill: {
+    backgroundColor: colors.chip,
+    borderRadius: radii.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 1,
+  },
+  durationText: { ...typography.caption, color: colors.textFaint },
+  pin: { paddingLeft: Spacing.two },
 });
