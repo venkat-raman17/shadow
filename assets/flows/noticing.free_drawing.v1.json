@@ -1,0 +1,31 @@
+{
+  "id": "noticing.free_drawing.v1",
+  "kind": "noticing",
+  "title": "Free drawing",
+  "subtitle": "Let your hand find the shape.",
+  "estimatedMinutes": 3,
+  "steps": [
+    {
+      "id": "draw",
+      "type": "draw",
+      "title": "Draw it freely",
+      "body": "No right way — just move.",
+      "inputKey": "sketch",
+      "optional": false
+    },
+    {
+      "id": "name",
+      "type": "prompt",
+      "title": "Give it a name",
+      "body": "A word or two, if you like.",
+      "inputKey": "subject",
+      "multiline": false,
+      "optional": true
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "It's in your notebook.",
+    "celebrate": false
+  }
+}

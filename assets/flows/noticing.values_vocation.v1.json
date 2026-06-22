@@ -1,0 +1,88 @@
+{
+  "id": "noticing.values_vocation.v1",
+  "kind": "noticing",
+  "title": "What matters, underneath",
+  "subtitle": "Listening, under the daily, for the direction you actually want to face.",
+  "estimatedMinutes": 8,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "There are the things that built the life you have. And there may be something underneath the daily that's been waiting for you to turn toward it.\n\nThis is noticing, not fixing. Nothing here is behind schedule, and there's no right answer."
+    },
+    {
+      "id": "too_small",
+      "type": "prompt",
+      "title": "Where did a recent ordinary day feel a size too small?",
+      "body": "A moment that felt cramped, or something you keep deferring 'until later.' Let one come to mind.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Name it, however roughly…"
+    },
+    {
+      "id": "admire",
+      "type": "prompt",
+      "title": "Who do you quietly admire — even envy — and what for?",
+      "body": "Admiration that aches is a clue. Often it points at something already in you, waiting to be claimed.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "I admire ___ for the way they…"
+    },
+    {
+      "id": "direction",
+      "type": "choice",
+      "title": "Which of these would you lean toward, if you could?",
+      "body": "These are directions, not goals — like facing west, not arriving anywhere. None has to fit.",
+      "inputKey": "direction",
+      "options": [
+        { "label": "Connection — being close to people", "value": "connection" },
+        { "label": "Making — building or creating things", "value": "making" },
+        { "label": "Caring — tending to others or a place", "value": "caring" },
+        { "label": "Learning — going deeper into something", "value": "learning" },
+        { "label": "Speaking truly — being honest, in the open", "value": "speaking" },
+        { "label": "None of these quite fit", "value": "none" }
+      ]
+    },
+    {
+      "id": "nearness",
+      "type": "scale",
+      "title": "How close does daily life run to that direction now?",
+      "body": "A compass reading, not a grade — just honest noticing.",
+      "inputKey": "nearness",
+      "min": 0,
+      "max": 10,
+      "minLabel": "far from it",
+      "maxLabel": "close"
+    },
+    {
+      "id": "borrowed",
+      "type": "prompt",
+      "title": "Is that direction truly yours — or an inherited 'should'?",
+      "body": "Some of what we long for is on loan: a parent's unlived life, a borrowed ought. Keep only what feels genuinely your own.",
+      "inputKey": "borrowed",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Or leave this blank…"
+    },
+    {
+      "id": "small_step",
+      "type": "prompt",
+      "title": "One small thing this week that points the right way?",
+      "body": "An act, not an outcome. Small enough to actually happen, freely chosen, with nothing to finish or keep up.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "Something small and real…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You listened for what's underneath, and named one way to face it.[[ This week: {reclaim}.]]\n\nA direction is not a destination — you never arrive at west, you only keep turning toward it. The compass stays here whenever you want it.",
+    "celebrate": false,
+    "readingId": "meaning-and-vocation"
+  }
+}

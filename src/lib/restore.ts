@@ -7,8 +7,14 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { decrypt } from '@/lib/crypto';
 import type { ShadowExport } from '@/lib/export';
-import { restoreEntries, restoreParts, restoreSessions, restoreExperiments } from '@/lib/db';
-import { setItem } from '@/lib/kv';
+import {
+  restoreEntries,
+  restoreParts,
+  restoreSessions,
+  restoreExperiments,
+  restoreGrounding,
+} from '@/lib/db';
+import { getItem, setItem } from '@/lib/kv';
 import { BACKUP_KEYS } from '@/lib/backupKeys';
 import { canAuthenticate } from '@/lib/appLock';
 
@@ -19,6 +25,7 @@ export interface RestoreResult {
   parts: number;
   sessions: number;
   experiments: number;
+  grounding: number;
   /** True when the backup carried a profile and the user was signed back in. */
   signedIn: boolean;
 }
@@ -127,11 +134,12 @@ export async function pickAndRestoreBackup(
   }
 
   // 7. Merge into DB (INSERT OR IGNORE — never overwrites)
-  const [entries, parts, sessions, experiments] = await Promise.all([
+  const [entries, parts, sessions, experiments, grounding] = await Promise.all([
     restoreEntries(db, exportObj.entries ?? [], deviceKey),
     restoreParts(db, exportObj.parts ?? [], deviceKey),
     restoreSessions(db, exportObj.sessions ?? [], deviceKey),
     restoreExperiments(db, exportObj.experiments ?? [], deviceKey),
+    restoreGrounding(db, exportObj.grounding ?? [], deviceKey),
   ]);
 
   // 8. Restore the SecureStore identity. v2 backups carry the full `prefs` map
@@ -166,5 +174,11 @@ export async function pickAndRestoreBackup(
     }
   }
 
-  return { entries, parts, sessions, experiments, signedIn };
+  // Guard: if notebook lock was marked enabled but no PIN hash exists (new-format
+  // backup that excludes PIN credentials, or an old backup on a fresh device),
+  // disable the lock so the user isn't stranded behind a PIN they can't enter.
+  const pinHash = await getItem('shadow.notebook_pin_hash');
+  if (!pinHash) await setItem('shadow.notebook_lock_enabled', 'false');
+
+  return { entries, parts, sessions, experiments, grounding, signedIn };
 }

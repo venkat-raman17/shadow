@@ -64,7 +64,7 @@ export default function BookScreen() {
                   accessibilityLabel={r.title}
                   style={styles.chapter}>
                   <View style={styles.chapterIcon}>
-                    <Illustration name={r.icon ?? book.cover} tone="line" size={30} />
+                    <Illustration name={r.icon ?? book.cover} tone="soft" size={36} />
                   </View>
                   <View style={styles.chapterBody}>
                     <Text style={styles.chapterTitle}>{r.title}</Text>
@@ -99,7 +99,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
     count: { ...typography.caption, color: colors.textFaint, marginTop: Spacing.half },
 
     chapter: { flexDirection: 'row', gap: Spacing.three, alignItems: 'center' },
-    chapterIcon: { width: 34, alignItems: 'center' },
+    chapterIcon: { width: 40, alignItems: 'center' },
     chapterBody: { flex: 1, gap: Spacing.half },
     chapterTitle: { ...typography.body, fontWeight: '500' },
     chapterBlurb: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 20 },

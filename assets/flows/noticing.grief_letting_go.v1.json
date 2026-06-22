@@ -1,0 +1,100 @@
+{
+  "id": "noticing.grief_letting_go.v1",
+  "kind": "noticing",
+  "title": "What you're ready to set down",
+  "subtitle": "Not letting go of what you love. Setting down a little of the weight.",
+  "estimatedMinutes": 8,
+  "entryGate": null,
+  "safety": {
+    "chargeKey": "charge",
+    "threshold": 8,
+    "onHighCharge": "grounding.settle.v1"
+  },
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "Something is being carried. We won't try to be rid of it — we'll just look at it together, slowly.\n\nNothing here erases a bond. You set down only what you're ready to, and you keep everything that matters. You can stop at any point."
+    },
+    {
+      "id": "carried",
+      "type": "prompt",
+      "title": "What feels heaviest to hold today?",
+      "body": "Not the whole loss — just the part of it that sits heaviest right now. However roughly.",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Name it, however roughly…"
+    },
+    {
+      "id": "weight_word",
+      "type": "prompt",
+      "title": "If the weight had one word, what is it?",
+      "body": "Just a felt word — no need to explain it.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Grief, guilt, heaviness, longing…",
+      "assistChips": ["grief", "guilt", "heaviness", "longing", "sadness", "regret"]
+    },
+    {
+      "id": "charge",
+      "type": "scale",
+      "title": "How heavy does this sit right now?",
+      "body": "Just a read on where you are — never a score.",
+      "inputKey": "charge",
+      "min": 0,
+      "max": 10,
+      "minLabel": "barely there",
+      "maxLabel": "a lot to hold",
+      "branch": [
+        { "when": { "inputKey": "charge", "gte": 8 }, "goTo": "settle_pause" },
+        { "when": { "inputKey": "charge", "lte": 7 }, "goTo": "honor" }
+      ]
+    },
+    {
+      "id": "settle_pause",
+      "type": "pause",
+      "seconds": 15,
+      "body": "That's a real weight. Stay here a moment — one slow breath. Some things are meant to be carried with another person, not alone; if this is one, that's worth knowing too."
+    },
+    {
+      "id": "honor",
+      "type": "passage",
+      "body": "Whatever you're carrying, you carried it for a reason. It mattered, or it cost you something, or it was love. The weight and the worth are often the same thing, seen from two sides.\n\nSetting something down is not letting go of who, or what, you loved. The bond doesn't end. It changes shape."
+    },
+    {
+      "id": "set_down",
+      "type": "prompt",
+      "title": "If you set down one piece of this — just for now — which piece?",
+      "body": "It can be a burden, not the person: the guilt, the thing left undone, the need to have been enough. Not the love.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "The part I could set down is…"
+    },
+    {
+      "id": "keep",
+      "type": "prompt",
+      "title": "And what do you want to keep?",
+      "body": "The thread that stays. What you'd never set down.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "What I'm keeping is…"
+    },
+    {
+      "id": "place_down",
+      "type": "pause",
+      "seconds": 15,
+      "body": "If it feels right, let your hands open for a breath — a small gesture of setting it down. Nothing to feel a certain way. Just space."
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You set a little of it down, and kept what matters.[[ You're keeping {reclaim}.]]\n\nNothing here is final. What you set down today, you're allowed to pick back up — setting down is a kindness, not a door you lock.",
+    "celebrate": false,
+    "readingId": "grief-and-letting-go"
+  }
+}

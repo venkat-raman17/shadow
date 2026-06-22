@@ -5,17 +5,19 @@ import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
 } from 'react-native-keyboard-controller';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { Spacing, radii, MaxContentWidth, type Theme } from '@/constants/theme';
 import { useThemedStyles } from '@/constants/theme-context';
 import { Button, TextField, FadeSlide } from '@/components/ui';
+import { Illustration } from '@/components/illustrations';
 import type { Flow, FlowInputs, Step, BranchCondition } from '@/types/flow';
 import {
   saveEntry,
   savePart,
   saveSession,
+  saveGrounding,
   addExperiment,
   touchPart,
   getMostRecentSessionId,
@@ -24,6 +26,8 @@ import { useCrypto } from '@/context/CryptoContext';
 import { resolveTokens } from '@/engine/tokens';
 import { getReading } from '@/lib/readings';
 import { resolveEntryRoute } from '@/lib/threshold';
+import { getPath, pathSteps } from '@/lib/paths';
+import { getPractice, iconForFlow } from '@/lib/practices';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import TranscriptTurn from '@/engine/TranscriptTurn';
 
@@ -100,6 +104,11 @@ interface Props {
    *  (e.g. {priorFelt}, {seedQuality}, {partName} when returning or personifying
    *  a recurring quality). */
   seedInputs?: FlowInputs;
+  /** When following a Path, the path id and this flow's index along it. The exit
+   *  screen then offers the next step on the trail (instead of the flow's own
+   *  exit.next), and a quiet closing when the trail runs out. */
+  pathId?: string;
+  pathStep?: number;
 }
 
 // Maps an exit.next seedKey (an input key) to the flow-runner param that carries
@@ -127,12 +136,26 @@ function paramsFromSeeds(
   return params;
 }
 
-export default function FlowEngine({ flow, onComplete, existingPartId, seedInputs }: Props) {
+export default function FlowEngine({
+  flow,
+  onComplete,
+  existingPartId,
+  seedInputs,
+  pathId,
+  pathStep,
+}: Props) {
   const router = useRouter();
   const db = useSQLiteContext();
   const { key } = useCrypto();
   const profile = useUserProfile();
   const styles = useThemedStyles(makeStyles);
+
+  // If this run is a step along a Path, work out the next step on the trail so
+  // the exit screen can offer it. A path supplies succession, so it replaces the
+  // flow's own exit.next while following the trail.
+  const path = pathId ? getPath(pathId) : undefined;
+  const trail = path ? pathSteps(path, profile?.gender) : null;
+  const nextOnPath = trail && pathStep !== undefined ? trail[pathStep + 1] : undefined;
 
   const [experimentText, setExperimentText] = useState('');
   const [experimentSaved, setExperimentSaved] = useState(false);
@@ -198,8 +221,12 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
             const sourceSessionId = (await getMostRecentSessionId(db)) ?? undefined;
             await addExperiment(db, intention.trim(), key, sourceSessionId);
           }
+        } else if (flow.kind === 'grounding') {
+          // Record the grounding run so it joins the Notebook's practice history.
+          // (The mid-flow grounding *offer* lives inside another flow, so it never
+          // reaches this branch — only a grounding flow run on its own logs here.)
+          await saveGrounding(db, inputs, flow.id, key);
         }
-        // 'grounding' flows: nothing to persist
       } catch (e) {
         console.warn('persist failed', e);
       }
@@ -294,6 +321,7 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
   return (
     <SafeAreaView style={styles.safe}>
+      <Stack.Screen options={{ gestureEnabled: currentStep?.type !== 'draw' }} />
       {groundingBanner}
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${Math.min(progressFraction, 1) * 100}%` }]} />
@@ -325,6 +353,9 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
             {state.done && (
               <FadeSlide duration={420} style={styles.closeBlock}>
+                <View style={styles.closeIllo}>
+                  <Illustration name={iconForFlow(flow.id)} tone="soft" size={56} decorative />
+                </View>
                 <Text style={styles.closeBody}>{resolveTokens(flow.exit.body, state.inputs)}</Text>
 
                 {flow.kind === 'meeting' && !experimentSaved && (
@@ -369,7 +400,33 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
                   ) : null;
                 })()}
 
-                {flow.exit.next && (
+                {/* On a Path: offer the next step on the trail, or a quiet close
+                    when the trail runs out. The path replaces the flow's own
+                    exit.next while it's being followed. */}
+                {path && nextOnPath && (
+                  <Button
+                    label={`Next on this way: ${getPractice(nextOnPath.flowId)?.title ?? 'continue'} →`}
+                    variant="secondary"
+                    onPress={() => {
+                      router.replace({
+                        pathname: '/flow/[id]',
+                        params: {
+                          ...paramsFromSeeds(nextOnPath.flowId, state.inputs, ['quality', 'partName']),
+                          path: pathId!,
+                          pathStep: String((pathStep ?? 0) + 1),
+                        },
+                      });
+                    }}
+                  />
+                )}
+
+                {path && !nextOnPath && (
+                  <Text style={styles.pathClose}>
+                    That’s this way, all the way through. Rest here — you can return whenever you return.
+                  </Text>
+                )}
+
+                {!path && flow.exit.next && (
                   <Button
                     label={flow.exit.next.label}
                     variant="secondary"
@@ -385,7 +442,7 @@ export default function FlowEngine({ flow, onComplete, existingPartId, seedInput
 
                 <Button
                   label="Done"
-                  variant={flow.exit.next ? 'ghost' : 'secondary'}
+                  variant={(!path && flow.exit.next) || (path && nextOnPath) ? 'ghost' : 'secondary'}
                   onPress={onComplete}
                 />
               </FadeSlide>
@@ -447,6 +504,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
     gap: Spacing.five,
   },
   closeBlock: { gap: Spacing.four, paddingTop: Spacing.three },
+  closeIllo: { alignItems: 'center' },
   closeBody: {
     ...typography.display,
     fontSize: 26,
@@ -489,4 +547,5 @@ const makeStyles = ({ colors, typography }: Theme) =>
   readingLabel: { ...typography.caption, color: colors.textFaint },
   readingTitle: { ...typography.body, color: colors.textPrimary },
   readingBlurb: { ...typography.bodySmall, color: colors.textSecondary, fontStyle: 'italic' },
+  pathClose: { ...typography.bodySmall, color: colors.textSecondary, fontStyle: 'italic', lineHeight: 22 },
 });

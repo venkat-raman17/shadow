@@ -3,6 +3,8 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { SectionHeader } from './SectionHeader';
 export { TextField } from './TextField';
+export { SearchField } from './SearchField';
 export { Chip } from './Chip';
+export { ThemePickerDialog } from './ThemePickerDialog';
 export { FadeSlide } from './FadeSlide';
 export { TabBarBackground } from './TabBarBackground';

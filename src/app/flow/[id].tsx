@@ -9,13 +9,19 @@ import FlowEngine from '@/engine/FlowEngine';
 import { FLOWS } from '@/lib/practices';
 
 export default function FlowScreen() {
-  const { id, partId, priorFelt, partName, seedQuality } = useLocalSearchParams<{
+  const { id, partId, priorFelt, partName, seedQuality, path, pathStep } = useLocalSearchParams<{
     id: string;
     partId?: string;
     priorFelt?: string;
     partName?: string;
     seedQuality?: string;
+    /** When following a Path, the path id + this flow's index along it, so the
+     *  exit screen can offer the next step on the trail. */
+    path?: string;
+    pathStep?: string;
   }>();
+
+  const pathStepIndex = typeof pathStep === 'string' ? parseInt(pathStep, 10) : 0;
 
   const flow = useMemo<Flow | null>(() => {
     if (!id || typeof id !== 'string') return null;
@@ -57,6 +63,8 @@ export default function FlowScreen() {
         flow={flow}
         existingPartId={partId}
         seedInputs={seedInputs}
+        pathId={typeof path === 'string' ? path : undefined}
+        pathStep={Number.isFinite(pathStepIndex) ? pathStepIndex : 0}
         onComplete={() => router.back()}
       />
     </>

@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
 import { useSQLiteContext } from 'expo-sqlite';
+import { Image } from 'expo-image';
 
 import { Button, Card, FadeSlide, Screen, TextField } from '@/components/ui';
 import { radii, Spacing, type Theme } from '@/constants/theme';
@@ -90,11 +90,14 @@ export default function OnboardingScreen() {
       <FadeSlide key={index} style={styles.panel}>
         {index === 0 && (
           <>
-            <Image
-              source={require('@/assets/images/logo-mark.png')}
-              style={styles.logo}
-              contentFit="contain"
-            />
+            <View style={styles.logo}>
+              <Image
+                source={require('@/assets/images/logo-mark.png')}
+                style={styles.logoImg}
+                contentFit="contain"
+                accessibilityIgnoresInvertColors
+              />
+            </View>
             <Text style={styles.title}>Welcome to Partwise.</Text>
             <Text style={styles.body}>
               Partwise is a space for slow inner work — noticing your reactions, meeting the parts of
@@ -264,6 +267,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   StyleSheet.create({
   panel: { gap: Spacing.three },
   logo: { width: 96, height: 96, alignSelf: 'center' },
+  logoImg: { width: 96, height: 96 },
   title: { ...typography.display, marginBottom: Spacing.two },
   label: {
     ...typography.bodySmall,

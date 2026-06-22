@@ -1,0 +1,22 @@
+{
+  "id": "noticing.free_writing.v1",
+  "kind": "noticing",
+  "title": "Free writing",
+  "subtitle": "Whatever's here, in your own words.",
+  "estimatedMinutes": 5,
+  "steps": [
+    {
+      "id": "write",
+      "type": "prompt",
+      "title": "What's here right now?",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": false
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "It's on the page now.",
+    "celebrate": false
+  }
+}

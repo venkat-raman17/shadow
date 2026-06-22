@@ -1,0 +1,94 @@
+{
+  "id": "noticing.boundaries.v1",
+  "kind": "noticing",
+  "title": "The line you haven't drawn",
+  "subtitle": "Following the resentment back to the boundary it's been pointing at.",
+  "estimatedMinutes": 8,
+  "entryGate": null,
+  "steps": [
+    {
+      "id": "orient",
+      "type": "passage",
+      "body": "There's someone whose behaviour leaves a residue in you — a tightness, the conversation replayed in the shower.\n\nWe're not here to decide whether they're wrong. We're here to listen to what the residue is pointing at."
+    },
+    {
+      "id": "who",
+      "type": "prompt",
+      "title": "Bring one person to mind you quietly resent right now.",
+      "body": "No need to explain or justify. When you picture the last moment with them — what's the feeling in your body?",
+      "inputKey": "subject",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "Who, and what you feel…"
+    },
+    {
+      "id": "feeling_word",
+      "type": "prompt",
+      "title": "If the feeling had one word, what is it?",
+      "body": "Just the felt word underneath it.",
+      "inputKey": "quality",
+      "multiline": false,
+      "optional": true,
+      "placeholder": "Resentment, anger, hurt…",
+      "assistChips": ["resentment", "anger", "hurt", "envy", "contempt"]
+    },
+    {
+      "id": "their_act",
+      "type": "prompt",
+      "title": "What do they do that lands as too much, or not fair?",
+      "body": "Keep it to the concrete moment — the specific thing, not their whole character.",
+      "inputKey": "theirAct",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "The thing they do is…"
+    },
+    {
+      "id": "told",
+      "type": "scale",
+      "title": "How often have you told them, plainly, that it doesn't work for you?",
+      "body": "Out loud, in words — not hinted. No judgment either way.",
+      "inputKey": "told",
+      "min": 0,
+      "max": 10,
+      "minLabel": "never",
+      "maxLabel": "often"
+    },
+    {
+      "id": "reframe",
+      "type": "passage",
+      "body": "Sometimes the people we resent are doing the very thing we haven't let ourselves do — taking up space, saying no, asking plainly.\n\nNot a verdict, just a question worth sitting with: what might they be modelling that you've kept on a short leash in yourself?"
+    },
+    {
+      "id": "the_line",
+      "type": "prompt",
+      "title": "Finish this: 'The line I haven't drawn is…'",
+      "body": "The limit the resentment has been pointing at all along.",
+      "inputKey": "echo",
+      "multiline": true,
+      "optional": true,
+      "placeholder": "The line I haven't drawn is…"
+    },
+    {
+      "id": "if_then",
+      "type": "prompt",
+      "title": "Turn it into one small, kind boundary you could actually keep.",
+      "body": "In your own words: 'If [it happens again], I will [one plain sentence I can say or do].' One occasion, one sentence — small enough to keep.",
+      "inputKey": "reclaim",
+      "multiline": true,
+      "optional": true,
+      "exitOffer": true,
+      "placeholder": "If… then I will…"
+    }
+  ],
+  "exit": {
+    "type": "close",
+    "body": "You found the line the resentment was pointing at, and made it small enough to keep.[[ Your boundary: {reclaim}.]]\n\nIf drawing it still feels like too much, that's not failure — the wanting-to and the not-yet are both worth noticing. A kept boundary is a kindness to both of you.",
+    "celebrate": false,
+    "next": {
+      "label": "Carry it into your week",
+      "flowId": "integration.after_meeting.v1",
+      "seedKeys": ["quality"]
+    },
+    "readingId": "the-shadow-in-relationships"
+  }
+}

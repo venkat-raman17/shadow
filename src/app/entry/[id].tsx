@@ -7,8 +7,9 @@ import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen } from '@/components/ui';
 import { ChargeGauge } from '@/components/ChargeGauge';
 import { SketchView, parseSketch } from '@/components/Sketch';
+import { Illustration } from '@/components/illustrations';
 import { useEntry } from '@/hooks/useEntries';
-import { readbackFields } from '@/lib/practices';
+import { readbackFields, iconForFlow, getPractice } from '@/lib/practices';
 
 /** Size of the drawing shown on an entry it belongs to. */
 const ENTRY_SKETCH_SIZE = 260;
@@ -85,13 +86,16 @@ export default function EntryScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'A moment you noticed',
+          title: getPractice(entry.flow_id ?? '')?.title ?? 'A moment you noticed',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textSecondary,
           headerBackTitle: '',
         }}
       />
       <Screen>
+        <View style={styles.headerIllo}>
+          <Illustration name={iconForFlow(entry.flow_id)} tone="soft" width={120} height={106} decorative />
+        </View>
         <Text style={styles.date}>{formatDate(entry.created_at)}</Text>
 
         {written.map((f) => (
@@ -127,6 +131,7 @@ export default function EntryScreen() {
 const makeStyles = ({ colors, typography }: Theme) => {
   const e = makeElevation(colors);
   return StyleSheet.create({
+  headerIllo: { alignItems: 'center', marginBottom: Spacing.two },
   date: { ...typography.caption, color: colors.textSecondary },
   block: { gap: Spacing.two },
   question: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 22 },

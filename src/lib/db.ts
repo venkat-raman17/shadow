@@ -1,7 +1,13 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 import { encrypt, decrypt } from './crypto';
-import type { ExportEntry, ExportPart, ExportSession, ExportExperiment } from './export';
+import type {
+  ExportEntry,
+  ExportPart,
+  ExportSession,
+  ExportExperiment,
+  ExportGrounding,
+} from './export';
 import type { FlowInputs } from '@/types/flow';
 
 function generateId(): string {
@@ -18,6 +24,8 @@ function generateId(): string {
 export interface EntryListItem {
   id: string;
   created_at: number;
+  /** The practice (flow) that produced this entry — used to label it in history. */
+  flow_id: string | null;
   quality: string | null;
   charge: number | null;
   /** Decrypted first line of the entry's subject — used as a readable teaser. */
@@ -29,6 +37,7 @@ export interface EntryListItem {
 interface EntryListRow {
   id: string;
   created_at: number;
+  flow_id: string | null;
   quality: string | null;
   charge: number | null;
   subject_enc: string | null;
@@ -46,6 +55,7 @@ function toListItem(row: EntryListRow, key: Uint8Array): EntryListItem {
   return {
     id: row.id,
     created_at: row.created_at,
+    flow_id: row.flow_id,
     quality: row.quality,
     charge: row.charge,
     subject: row.subject_enc ? firstLine(decrypt(row.subject_enc, key)) : null,
@@ -92,7 +102,7 @@ export async function getRecentEntries(
   limit = 20,
 ): Promise<EntryListItem[]> {
   const rows = await db.getAllAsync<EntryListRow>(
-    `SELECT id, created_at, quality, charge, subject_enc, sketch_enc
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, sketch_enc
      FROM entries
      ORDER BY created_at DESC
      LIMIT ?`,
@@ -112,7 +122,7 @@ export async function getEntriesByQuality(
   // decrypt the rows we actually return.
   const target = qualityFamily(quality);
   const rows = await db.getAllAsync<EntryListRow>(
-    `SELECT id, created_at, quality, charge, subject_enc, sketch_enc
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, sketch_enc
      FROM entries
      WHERE quality IS NOT NULL AND TRIM(quality) != ''
      ORDER BY created_at DESC`,
@@ -121,6 +131,133 @@ export async function getEntriesByQuality(
     .filter((row) => row.quality && qualityFamily(row.quality) === target)
     .slice(0, limit)
     .map((row) => toListItem(row, key));
+}
+
+/**
+ * One dated moment in the Notebook's unified practice history. A discriminated
+ * union so the journal can render and route each kind differently:
+ *  - `entry`      — a noticing (→ /entry/[id])
+ *  - `session`    — a meeting with a part (→ /part/[id])
+ *  - `grounding`  — a regulation practice that was run (no detail screen)
+ *  - `experiment` — a carried commitment (→ /reflect/[id]); merged in by the hook
+ *                   from the mutable experiments table, not by getNotebookTimeline.
+ * `at` is the created_at timestamp; items are newest-first.
+ */
+export type TimelineItem =
+  | {
+      kind: 'entry';
+      id: string;
+      at: number;
+      flowId: string | null;
+      quality: string | null;
+      charge: number | null;
+      subject: string | null;
+      sketch: string | null;
+    }
+  | {
+      kind: 'session';
+      id: string;
+      at: number;
+      flowId: string | null;
+      partId: string | null;
+      partName: string | null;
+      chargeBefore: number | null;
+      chargeAfter: number | null;
+    }
+  | {
+      kind: 'grounding';
+      id: string;
+      at: number;
+      flowId: string | null;
+      note: string | null;
+    }
+  | {
+      kind: 'experiment';
+      id: string;
+      at: number;
+      description: string;
+      status: 'open' | 'done' | 'let-go';
+    };
+
+/**
+ * The unified, reverse-chronological record of practices for the Notebook:
+ * noticings + part meetings + grounding runs. Experiments are deliberately NOT
+ * queried here — they're mutable, so the hook merges them in from useExperiments
+ * to keep its optimistic open→done/let-go updates working. Each source is capped
+ * before the merge (the merged top-`cap` can never need more than `cap` from any
+ * one source), bounding how much we decrypt.
+ */
+export async function getNotebookTimeline(
+  db: SQLiteDatabase,
+  key: Uint8Array,
+  cap = 200,
+): Promise<TimelineItem[]> {
+  const entryRows = await db.getAllAsync<EntryListRow>(
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, sketch_enc
+     FROM entries ORDER BY created_at DESC LIMIT ?`,
+    [cap],
+  );
+  const sessionRows = await db.getAllAsync<{
+    id: string;
+    created_at: number;
+    flow_id: string | null;
+    part_id: string | null;
+    part_name: string | null;
+    charge_before: number | null;
+    charge_after: number | null;
+  }>(
+    `SELECT s.id, s.created_at, s.flow_id, s.part_id, p.name AS part_name,
+            s.charge_before, s.charge_after
+     FROM sessions s LEFT JOIN parts p ON s.part_id = p.id
+     ORDER BY s.created_at DESC LIMIT ?`,
+    [cap],
+  );
+  const groundingRows = await db.getAllAsync<{
+    id: string;
+    created_at: number;
+    flow_id: string | null;
+    note_enc: string | null;
+  }>(
+    `SELECT id, created_at, flow_id, note_enc
+     FROM grounding_logs ORDER BY created_at DESC LIMIT ?`,
+    [cap],
+  );
+
+  const items: TimelineItem[] = [];
+  for (const r of entryRows) {
+    items.push({
+      kind: 'entry',
+      id: r.id,
+      at: r.created_at,
+      flowId: r.flow_id,
+      quality: r.quality,
+      charge: r.charge,
+      subject: r.subject_enc ? firstLine(decrypt(r.subject_enc, key)) : null,
+      sketch: r.sketch_enc ? decrypt(r.sketch_enc, key) : null,
+    });
+  }
+  for (const r of sessionRows) {
+    items.push({
+      kind: 'session',
+      id: r.id,
+      at: r.created_at,
+      flowId: r.flow_id,
+      partId: r.part_id,
+      partName: r.part_name,
+      chargeBefore: r.charge_before,
+      chargeAfter: r.charge_after,
+    });
+  }
+  for (const r of groundingRows) {
+    items.push({
+      kind: 'grounding',
+      id: r.id,
+      at: r.created_at,
+      flowId: r.flow_id,
+      note: r.note_enc ? decrypt(r.note_enc, key) : null,
+    });
+  }
+  return items.sort((a, b) => b.at - a.at).slice(0, cap);
 }
 
 export interface EntryDetail {
@@ -209,6 +346,7 @@ export async function searchEntries(
   const rows = await db.getAllAsync<{
     id: string;
     created_at: number;
+    flow_id: string | null;
     quality: string | null;
     charge: number | null;
     subject_enc: string | null;
@@ -216,7 +354,7 @@ export async function searchEntries(
     reclaim_enc: string | null;
     sketch_enc: string | null;
   }>(
-    `SELECT id, created_at, quality, charge, subject_enc, echo_enc, reclaim_enc, sketch_enc
+    `SELECT id, created_at, flow_id, quality, charge, subject_enc, echo_enc, reclaim_enc, sketch_enc
      FROM entries
      ORDER BY created_at DESC`,
   );
@@ -231,6 +369,7 @@ export async function searchEntries(
     results.push({
       id: row.id,
       created_at: row.created_at,
+      flow_id: row.flow_id,
       quality: row.quality,
       charge: row.charge,
       subject: firstLine(subject),
@@ -374,6 +513,21 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase): Promise<void> {
     await db.execAsync(`ALTER TABLE entries ADD COLUMN sketch_enc TEXT`);
     await db.execAsync('PRAGMA user_version = 3');
   }
+
+  if (version < 4) {
+    // Grounding practices used to leave no trace. Record each run (practice +
+    // time + an optional encrypted anchor note) so it joins the Notebook's
+    // unified practice history. Additive — no backfill of past grounding.
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS grounding_logs (
+        id TEXT PRIMARY KEY NOT NULL,
+        flow_id TEXT,
+        created_at INTEGER NOT NULL,
+        note_enc TEXT
+      );
+    `);
+    await db.execAsync('PRAGMA user_version = 4');
+  }
 }
 
 export async function savePart(
@@ -492,6 +646,29 @@ export async function saveEntry(
   );
 }
 
+/**
+ * Record that a grounding practice was run. Grounding flows capture at most one
+ * optional free-text anchor ("name three things you can see"); store it as a
+ * private, encrypted note so the history can show a teaser. The mid-flow grounding
+ * *offer* inside a noticing/meeting is not a grounding flow, so it never logs here.
+ */
+export async function saveGrounding(
+  db: SQLiteDatabase,
+  inputs: FlowInputs,
+  flowId: string,
+  key: Uint8Array,
+): Promise<void> {
+  const id = generateId();
+  const now = Date.now();
+  const note =
+    typeof inputs.anchor === 'string' && inputs.anchor.trim() ? inputs.anchor.trim() : null;
+  await db.runAsync(
+    `INSERT INTO grounding_logs (id, created_at, flow_id, note_enc)
+     VALUES (?, ?, ?, ?)`,
+    [id, now, flowId, note ? encrypt(note, key) : null],
+  );
+}
+
 // ─── Integration read-side ────────────────────────────────────────────────────
 
 export interface PartListItem {
@@ -533,6 +710,8 @@ export async function getParts(db: SQLiteDatabase, key: Uint8Array): Promise<Par
 export interface PartSessionItem {
   id: string;
   created_at: number;
+  /** The meeting flow that produced this session — used to show its motif. */
+  flow_id: string | null;
   charge_before: number | null;
   charge_after: number | null;
   /** Decrypted dialogue JSON ({d1..d5} for difficult, {origin} for golden). */
@@ -582,12 +761,13 @@ export async function getPartById(
   const sessionRows = await db.getAllAsync<{
     id: string;
     created_at: number;
+    flow_id: string | null;
     charge_before: number | null;
     charge_after: number | null;
     dialogue_enc: string | null;
     need_enc: string | null;
   }>(
-    `SELECT id, created_at, charge_before, charge_after, dialogue_enc, need_enc
+    `SELECT id, created_at, flow_id, charge_before, charge_after, dialogue_enc, need_enc
      FROM sessions WHERE part_id = ? ORDER BY created_at DESC`,
     [id],
   );
@@ -606,6 +786,7 @@ export async function getPartById(
     sessions: sessionRows.map((s) => ({
       id: s.id,
       created_at: s.created_at,
+      flow_id: s.flow_id,
       charge_before: s.charge_before,
       charge_after: s.charge_after,
       dialogue: dec(s.dialogue_enc),
@@ -656,33 +837,8 @@ export async function deleteAllData(db: SQLiteDatabase): Promise<void> {
     DELETE FROM parts;
     DELETE FROM sessions;
     DELETE FROM experiments;
+    DELETE FROM grounding_logs;
   `);
-}
-
-export interface ReturnablePart {
-  id: string;
-  name: string | null;
-  last_met_at: number | null;
-}
-
-/**
- * Parts that have a CLOSED experiment linked to one of their sessions — the
- * integration loop is open to a return ("sit with this again — what's shifted?").
- * Provenance comes from experiments.source_session_id, populated whether the
- * experiment was seeded inline at the end of a meeting or carried later via the
- * standalone integration flow (attributed to the most recent meeting).
- * Longest-since-met first.
- */
-export async function getReturnableParts(db: SQLiteDatabase): Promise<ReturnablePart[]> {
-  return db.getAllAsync<ReturnablePart>(
-    `SELECT p.id as id, p.name as name, p.last_met_at as last_met_at
-     FROM experiments e
-     JOIN sessions s ON e.source_session_id = s.id
-     JOIN parts p ON s.part_id = p.id
-     WHERE e.source_session_id IS NOT NULL AND e.status != 'open'
-     GROUP BY p.id
-     ORDER BY p.last_met_at ASC`,
-  );
 }
 
 export interface SurfacingPattern {
@@ -880,6 +1036,23 @@ export async function restoreExperiments(
         e.status,
         e.reflection ? encrypt(e.reflection, key) : null,
       ],
+    );
+    if (result.changes > 0) inserted++;
+  }
+  return inserted;
+}
+
+export async function restoreGrounding(
+  db: SQLiteDatabase,
+  logs: ExportGrounding[],
+  key: Uint8Array,
+): Promise<number> {
+  let inserted = 0;
+  for (const g of logs) {
+    const result = await db.runAsync(
+      `INSERT OR IGNORE INTO grounding_logs (id, created_at, flow_id, note_enc)
+       VALUES (?, ?, ?, ?)`,
+      [g.id, g.created_at, g.flow_id, g.note ? encrypt(g.note, key) : null],
     );
     if (result.changes > 0) inserted++;
   }

@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 
 import { Spacing, radii, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Card } from '@/components/ui';
+import { Illustration } from '@/components/illustrations/Illustration';
 import type { Practice } from '@/lib/practices';
 
 interface Props {
@@ -33,12 +33,9 @@ export function PracticeCard({ practice, isFavorite, onToggleFavorite }: Props) 
         accessibilityRole="button"
         accessibilityLabel={practice.title}
         style={({ pressed }) => [styles.openArea, pressed && styles.pressed]}>
-        <SymbolView
-          name={practice.icon}
-          size={22}
-          tintColor={colors.accent}
-          style={styles.practiceIcon}
-        />
+        <View style={styles.practiceIcon}>
+          <Illustration name={practice.icon} tone="soft" size={36} decorative />
+        </View>
         <View style={styles.practiceBody}>
           <Text style={styles.practiceTitle}>{practice.title}</Text>
           <Text style={styles.practiceSubtitle}>{practice.blurb}</Text>
@@ -56,10 +53,12 @@ export function PracticeCard({ practice, isFavorite, onToggleFavorite }: Props) 
             accessibilityLabel={isFavorite ? `Unpin ${practice.title}` : `Pin ${practice.title}`}
             accessibilityState={{ selected: !!isFavorite }}
             style={styles.pin}>
-            <SymbolView
-              name={isFavorite ? { ios: 'pin.fill', web: 'push_pin' } : { ios: 'pin', web: 'push_pin' }}
-              size={16}
-              tintColor={isFavorite ? colors.accentWarm : colors.textFaint}
+            <Illustration
+              name={isFavorite ? 'ui-pin-filled' : 'ui-pin'}
+              size={18}
+              maxStroke={9}
+              color={isFavorite ? colors.accentWarm : colors.textFaint}
+              decorative
             />
           </Pressable>
         ) : null}
@@ -73,7 +72,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   practiceCard: { flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' },
   openArea: { flex: 1, flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start' },
   pressed: { opacity: 0.7 },
-  practiceIcon: { marginTop: Spacing.half, width: 22, height: 22 },
+  practiceIcon: { marginTop: Spacing.half, width: 36, height: 36 },
   practiceBody: { flex: 1, gap: Spacing.half },
   practiceTitle: { ...typography.body, fontWeight: '500' },
   practiceSubtitle: { ...typography.bodySmall, color: colors.textSecondary, lineHeight: 20 },

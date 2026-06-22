@@ -3,7 +3,7 @@ import { View, Text, Switch, ActivityIndicator, StyleSheet, Platform } from 'rea
 import { useSQLiteContext } from 'expo-sqlite';
 import { router } from 'expo-router';
 
-import { Spacing, type Theme, type ThemePreference } from '@/constants/theme';
+import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader, TextField, Button, Chip } from '@/components/ui';
 import { useCrypto } from '@/context/CryptoContext';
@@ -35,19 +35,12 @@ const TIME_SLOTS = [
   { label: 'Night', hour: 21, minute: 0 },
 ] as const;
 
-const THEME_OPTIONS: { value: ThemePreference; label: string; swatch: string }[] = [
-  { value: 'system', label: 'System', swatch: '#2b2923' },
-  { value: 'light', label: 'Light', swatch: '#f4eedf' },
-  { value: 'dark', label: 'Dark', swatch: '#1a1915' },
-  { value: 'sepia', label: 'Sepia', swatch: '#f0e6d0' },
-];
-
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
   const db = useSQLiteContext();
   const { key } = useCrypto();
-  const { colors, preference, setPreference } = useTheme();
+  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
 
   // ── Export state ──────────────────────────────────────────────────────────
@@ -74,6 +67,7 @@ export default function SettingsScreen() {
   const [pinError, setPinError] = useState<string | null>(null);
   const [allowBiometric, setAllowBiometric] = useState(false);
   const [pinBiometricUnavailable, setPinBiometricUnavailable] = useState(false);
+  const [pinSaving, setPinSaving] = useState(false);
 
   // ── Back-up-&-delete state ────────────────────────────────────────────────
   // A two-step destructive flow: always back up FIRST, then confirm the wipe —
@@ -192,27 +186,47 @@ export default function SettingsScreen() {
 
   async function handleSavePin() {
     if (!/^\d{4,6}$/.test(pinValue)) {
-      setPinError('Choose a PIN of 4 to 6 digits.');
+      setPinError("Choose a PIN of 4 to 6 digits.");
       return;
     }
     if (pinValue !== pinConfirm) {
-      setPinError('Those PINs don’t match.');
+      setPinError("Those PINs don't match.");
       return;
     }
-    await saveNotebookPin(pinValue);
-    setPinLockOn(true);
-    cancelPinForm();
+    setPinSaving(true);
+    setPinError(null);
+    // Yield to the macrotask queue so the loading state renders before
+    // the PBKDF2 stretch (200k iterations) occupies the JS thread.
+    await new Promise<void>((resolve) => setTimeout(resolve, 32));
+    try {
+      await saveNotebookPin(pinValue);
+      setPinLockOn(true);
+      cancelPinForm();
+    } catch {
+      setPinError('Could not save PIN. Please try again.');
+    } finally {
+      setPinSaving(false);
+    }
   }
 
   async function handleConfirmDisable() {
-    if (!(await verifyNotebookPin(pinCurrent))) {
-      setPinError('That PIN didn’t match.');
-      return;
+    setPinSaving(true);
+    setPinError(null);
+    await new Promise<void>((resolve) => setTimeout(resolve, 32));
+    try {
+      if (!(await verifyNotebookPin(pinCurrent))) {
+        setPinError("That PIN didn't match.");
+        return;
+      }
+      await disableNotebookLock();
+      setPinLockOn(false);
+      setAllowBiometric(false);
+      cancelPinForm();
+    } catch {
+      setPinError('Could not verify PIN. Please try again.');
+    } finally {
+      setPinSaving(false);
     }
-    await disableNotebookLock();
-    setPinLockOn(false);
-    setAllowBiometric(false);
-    cancelPinForm();
   }
 
   async function handlePinBiometricToggle(value: boolean) {
@@ -294,54 +308,6 @@ export default function SettingsScreen() {
   return (
     <Screen keyboardShouldPersistTaps="handled">
       <Text style={styles.heading}>Settings</Text>
-
-      {/* ── Back up ────────────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <SectionHeader>Back up</SectionHeader>
-        <Text style={styles.sectionBody}>
-          Save everything — your reflections, parts, drawings, settings, and locks — in one
-          encrypted file. Only someone with your passphrase can open it. Keep it in Files, iCloud
-          Drive, or anywhere you trust, and restore it later from the welcome screen.
-        </Text>
-
-        {!showExportForm ? (
-          <Button
-            label="Back up everything"
-            variant="secondary"
-            fullWidth={false}
-            onPress={() => setShowExportForm(true)}
-            style={styles.selfStart}
-          />
-        ) : (
-          <Card style={styles.form}>
-            <Text style={styles.formLabel}>
-              Choose a passphrase for this backup. You&apos;ll need it to restore — keep it somewhere
-              safe.
-            </Text>
-            <TextField
-              value={exportPassphrase}
-              onChangeText={setExportPassphrase}
-              secureTextEntry
-              placeholder="Passphrase (8+ characters)…"
-              returnKeyType="done"
-              autoFocus
-              editable={!exporting}
-            />
-            {exportError ? <Text style={styles.errorText}>{exportError}</Text> : null}
-            {exporting ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator color={colors.accent} size="small" />
-                <Text style={styles.loadingText}>Encrypting…</Text>
-              </View>
-            ) : (
-              <>
-                <Button label="Back up" onPress={handleExport} />
-                <Button label="Cancel" variant="ghost" onPress={handleExportCancel} />
-              </>
-            )}
-          </Card>
-        )}
-      </View>
 
       {/* ── Daily reminder ─────────────────────────────────────────────────── */}
       {Platform.OS === 'web' ? (
@@ -449,8 +415,12 @@ export default function SettingsScreen() {
               placeholder="Confirm PIN"
             />
             {pinError ? <Text style={styles.errorText}>{pinError}</Text> : null}
-            <Button label="Save PIN" onPress={handleSavePin} />
-            <Button label="Cancel" variant="ghost" onPress={cancelPinForm} />
+            <Button
+              label={pinSaving ? 'Saving…' : 'Save PIN'}
+              onPress={handleSavePin}
+              disabled={pinSaving}
+            />
+            <Button label="Cancel" variant="ghost" onPress={cancelPinForm} disabled={pinSaving} />
           </Card>
         )}
 
@@ -467,8 +437,12 @@ export default function SettingsScreen() {
               autoFocus
             />
             {pinError ? <Text style={styles.errorText}>{pinError}</Text> : null}
-            <Button label="Turn off lock" onPress={handleConfirmDisable} />
-            <Button label="Cancel" variant="ghost" onPress={cancelPinForm} />
+            <Button
+              label={pinSaving ? 'Verifying…' : 'Turn off lock'}
+              onPress={handleConfirmDisable}
+              disabled={pinSaving}
+            />
+            <Button label="Cancel" variant="ghost" onPress={cancelPinForm} disabled={pinSaving} />
           </Card>
         )}
 
@@ -502,26 +476,6 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      {/* ── Appearance ─────────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <SectionHeader>Appearance</SectionHeader>
-        <Text style={styles.sectionBody}>
-          Choose how Partwise looks — it changes instantly. &ldquo;System&rdquo; follows your
-          device&apos;s light or dark setting.
-        </Text>
-        <View style={styles.timeSlots}>
-          {THEME_OPTIONS.map((opt) => (
-            <Chip
-              key={opt.value}
-              label={opt.label}
-              swatch={opt.swatch}
-              selected={preference === opt.value}
-              onPress={() => setPreference(opt.value)}
-            />
-          ))}
-        </View>
-      </View>
-
       {/* ── Privacy ────────────────────────────────────────────────────────── */}
       <View style={styles.section}>
         <SectionHeader>Privacy</SectionHeader>
@@ -545,23 +499,60 @@ export default function SettingsScreen() {
         </Card>
       </View>
 
-      {/* ── Back up & delete ───────────────────────────────────────────────── */}
+      {/* ── Your data ──────────────────────────────────────────────────────── */}
       <View style={styles.section}>
-        <SectionHeader>Back up &amp; delete</SectionHeader>
+        <SectionHeader>Your data</SectionHeader>
         <Text style={styles.sectionBody}>
-          Save a full encrypted backup, then erase everything on this device and start fresh. You
-          can restore the backup any time from the welcome screen. The wipe can&apos;t be undone —
-          but your backup keeps it all.
+          Everything you write stays on this device. A backup is a single encrypted{' '}
+          <Text style={styles.mono}>.shadow</Text> file — store it anywhere you trust (Files,
+          iCloud Drive, a USB drive) and restore it into any copy of Partwise from the welcome
+          screen. Only your passphrase can open it.
         </Text>
 
-        {deleteStage === 'idle' && (
-          <Button
-            label="Back up & delete"
-            variant="secondary"
-            fullWidth={false}
-            onPress={startBackupDelete}
-            style={styles.selfStart}
-          />
+        {!showExportForm && deleteStage === 'idle' && (
+          <View style={styles.form}>
+            <Button
+              label="Back up everything"
+              variant="secondary"
+              onPress={() => setShowExportForm(true)}
+            />
+            <Button
+              label="Back up & delete"
+              variant="secondary"
+              onPress={startBackupDelete}
+              style={styles.dangerBtnOutline}
+            />
+          </View>
+        )}
+
+        {showExportForm && (
+          <Card style={styles.form}>
+            <Text style={styles.formLabel}>
+              Choose a passphrase for this backup. You&apos;ll need it to restore — keep it somewhere
+              safe.
+            </Text>
+            <TextField
+              value={exportPassphrase}
+              onChangeText={setExportPassphrase}
+              secureTextEntry
+              placeholder="Passphrase (8+ characters)…"
+              returnKeyType="done"
+              autoFocus
+              editable={!exporting}
+            />
+            {exportError ? <Text style={styles.errorText}>{exportError}</Text> : null}
+            {exporting ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator color={colors.accent} size="small" />
+                <Text style={styles.loadingText}>Encrypting…</Text>
+              </View>
+            ) : (
+              <>
+                <Button label="Back up" onPress={handleExport} />
+                <Button label="Cancel" variant="ghost" onPress={handleExportCancel} />
+              </>
+            )}
+          </Card>
         )}
 
         {deleteStage === 'backup' && (
@@ -644,5 +635,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleLabel: { ...typography.body },
   timeSlots: { flexDirection: 'row', gap: Spacing.two, flexWrap: 'wrap' },
+  mono: { fontFamily: 'monospace', color: colors.textPrimary },
   deleteBtn: { backgroundColor: colors.danger },
+  dangerBtnOutline: { borderColor: colors.danger },
 });

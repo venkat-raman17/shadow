@@ -15,8 +15,9 @@ type FlowId = string;
 
 /** Resolve the contrasexual flows by gender; non-binary users get the golden
  *  shadow route, which carries the same "unlived quality" work without the
- *  gendered framing. */
-function captivatedFlow(gender: Gender | null | undefined): FlowId {
+ *  gendered framing. Exported so Paths can resolve the "dazzled" trail's first
+ *  step the same way the doorways and entry routes do. */
+export function captivatedFlow(gender: Gender | null | undefined): FlowId {
   if (gender === 'man') return 'noticing.anima_projection.v1';
   if (gender === 'woman') return 'noticing.animus_projection.v1';
   return 'noticing.golden_shadow.v1';
@@ -58,6 +59,29 @@ export function doorwaysFor(gender: Gender | null | undefined): Doorway[] {
   return doorways;
 }
 
+export interface Situation {
+  /** A plain, first-person line of where someone is right now. */
+  label: string;
+  /** The flow that fits that moment. */
+  flowId: FlowId;
+}
+
+/**
+ * The "Not sure where to begin?" situations on the Workshop — a small set of
+ * felt moments, each mapped to the flow that fits, so a user can pick by what's
+ * happening rather than by method. Shares the routing vocabulary with the
+ * doorways and the text router; gender is accepted for parity (and future use).
+ */
+export function situationsFor(_gender: Gender | null | undefined): Situation[] {
+  return [
+    { label: 'Something just happened', flowId: 'noticing.in_the_moment.v1' },
+    { label: 'Someone got under my skin', flowId: 'noticing.projection_recall.v1' },
+    { label: 'A feeling won’t lift', flowId: 'noticing.rain.v1' },
+    { label: 'I admire someone I can’t stop thinking about', flowId: 'noticing.golden_shadow.v1' },
+    { label: 'I need to steady myself', flowId: 'grounding.settle.v1' },
+  ];
+}
+
 /**
  * Resolve an entryway option's deferred route ("resolve:<key>") at runtime,
  * where the destination depends on data a flow JSON can't branch on (gender,
@@ -74,54 +98,6 @@ export function resolveEntryRoute(key: string, gender: Gender | null | undefined
     default:
       return 'noticing.somatic.v1';
   }
-}
-
-// Keyword groups, scanned in priority order. Acute-overwhelm first (settle
-// before going deep), then the container-first shame work, then the rest.
-const RULES: { test: RegExp; resolve: (g: Gender | null | undefined) => FlowId }[] = [
-  {
-    // Acute overwhelm: settle before any depth (titration). Never route a
-    // flooded user into the 3-2-1 reclamation work.
-    test: /\b(overwhelm|panic|spinning|racing|can'?t focus|scattered|too much going|frantic|busy mind)/,
-    resolve: () => 'grounding.settle.v1',
-  },
-  {
-    test: /\b(ashamed|shame|not enough|worthless|embarrassed|humiliat|hate myself|never enough|small|exposed)/,
-    resolve: () => 'noticing.facing_shame.v1',
-  },
-  {
-    test: /\b(tight|tension|chest|gut|throat|shoulders|heavy|clench|knot|ache|aching|body|breathe|numb|exhaust|tired)/,
-    resolve: () => 'noticing.somatic.v1',
-  },
-  {
-    test: /\b(admire|admiring|envy|envious|jealous|inspired|look up to|wish i|idol|in awe)/,
-    resolve: () => 'noticing.golden_shadow.v1',
-  },
-  {
-    test: /\b(captivat|drawn to|obsess|infatuat|crush|can'?t stop thinking|smitten|enchant)/,
-    resolve: captivatedFlow,
-  },
-  {
-    test: /\b(voice in my head|inner critic|critical|criticiz|judging me|i should|harsh on myself)/,
-    resolve: voiceFlow,
-  },
-  {
-    test: /\b(angry|anger|irritat|annoyed|furious|frustrat|someone|rude|arrogan|can'?t stand|got under|hate (him|her|them|that))/,
-    resolve: () => 'noticing.projection_recall.v1',
-  },
-];
-
-/**
- * Map free text to a flow id, or null when nothing matches (caller falls back
- * to the adaptive suggestion). Purely lexical and offline.
- */
-export function routeFromText(text: string, gender: Gender | null | undefined): FlowId | null {
-  const t = text.trim().toLowerCase();
-  if (!t) return null;
-  for (const rule of RULES) {
-    if (rule.test.test(t)) return rule.resolve(gender);
-  }
-  return null;
 }
 
 /**

@@ -5,7 +5,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
-import { Screen, TextField, Card } from '@/components/ui';
+import { Screen, SearchField, Card } from '@/components/ui';
 import { ChargeGauge } from '@/components/ChargeGauge';
 import { useCrypto } from '@/context/CryptoContext';
 import { useParts } from '@/hooks/useIntegration';
@@ -82,12 +82,7 @@ export default function SearchScreen() {
               For finding something you wrote before — a gentle return, not a checking-up on yourself.
             </Text>
 
-            <TextField
-              value={query}
-              onChangeText={setQuery}
-              placeholder="A word or a name…"
-              returnKeyType="search"
-            />
+            <SearchField value={query} onChangeText={setQuery} placeholder="A word or a name…" />
 
             {searched && results.length === 0 ? (
               <Text style={styles.empty}>Nothing matches that yet.</Text>

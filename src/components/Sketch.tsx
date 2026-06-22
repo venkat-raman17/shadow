@@ -26,7 +26,13 @@ export function parseSketch(json: string | null | undefined): SketchData | null 
   try {
     const v = JSON.parse(json);
     if (v && Array.isArray(v.paths) && typeof v.w === 'number' && typeof v.h === 'number') {
-      return { w: v.w, h: v.h, paths: v.paths.filter((p: unknown) => typeof p === 'string') };
+      return {
+        w: v.w,
+        h: v.h,
+        // Drop non-strings and any path corrupted with NaN (e.g. saved before the
+        // coord guard existed) — one NaN breaks the entire <Path> render.
+        paths: v.paths.filter((p: unknown) => typeof p === 'string' && !p.includes('NaN')),
+      };
     }
   } catch {
     // ignore corrupt value
@@ -35,6 +41,10 @@ export function parseSketch(json: string | null | undefined): SketchData | null 
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
+// Pointer events can occasionally yield undefined/NaN coordinates (some web and
+// edge-swipe cases). Coerce to a finite, rounded number so NaN never reaches the
+// SVG `d` string — a single NaN there breaks the whole <Path> render.
+const coord = (n: number) => (Number.isFinite(n) ? round(n) : 0);
 const STROKE = 2.5;
 // Ignore pointer moves shorter than this (px): fewer points means fewer
 // re-renders on long strokes, and the curve smoothing hides the coarser sampling.
@@ -48,7 +58,9 @@ const MAX_CANVAS_FRACTION = 0.5;
  * curves through the midpoints of successive points (each raw point is the
  * control handle). One point renders as a round dot; two as a straight segment.
  */
-function buildPath(pts: { x: number; y: number }[]): string {
+function buildPath(input: { x: number; y: number }[]): string {
+  // Drop any non-finite points so a single bad sample can't poison the path.
+  const pts = input.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
   if (pts.length === 0) return '';
   const p0 = pts[0];
   if (pts.length === 1) return `M ${p0.x} ${p0.y} L ${p0.x} ${p0.y}`;
@@ -172,7 +184,7 @@ export function SketchCanvas({
           // Lock the parent scroll for the duration of the stroke.
           onStrokeActiveRef.current?.(true);
           const { locationX, locationY } = e.nativeEvent;
-          pointsRef.current = [{ x: round(locationX), y: round(locationY) }];
+          pointsRef.current = [{ x: coord(locationX), y: coord(locationY) }];
           setCurrent(buildPath(pointsRef.current));
         },
         onPanResponderMove: (e: GestureResponderEvent) => {
@@ -185,7 +197,7 @@ export function SketchCanvas({
             const dy = locationY - last.y;
             if (dx * dx + dy * dy < MIN_STEP * MIN_STEP) return;
           }
-          pts.push({ x: round(locationX), y: round(locationY) });
+          pts.push({ x: coord(locationX), y: coord(locationY) });
           setCurrent(buildPath(pts));
         },
         onPanResponderRelease: commitStroke,

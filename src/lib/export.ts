@@ -73,6 +73,13 @@ export interface ExportExperiment {
   reflection: string | null;
 }
 
+export interface ExportGrounding {
+  id: string;
+  flow_id: string | null;
+  created_at: number;
+  note: string | null;
+}
+
 /** Optional so a restore can fully sign the user back in (older backups omit it). */
 export interface ShadowProfile {
   name: string | null;
@@ -86,6 +93,8 @@ export interface ShadowExport {
   parts: ExportPart[];
   sessions: ExportSession[];
   experiments: ExportExperiment[];
+  /** Grounding runs. Optional so older backups (without it) still parse. */
+  grounding?: ExportGrounding[];
   /** v1 carrier for name/gender. Kept for back-compat; v2 also puts them in `prefs`. */
   profile?: ShadowProfile;
   /** v2: the full SecureStore identity (BACKUP_KEYS) — name, gender, prefs, unlocks, locks. */
@@ -136,6 +145,13 @@ interface ExperimentRow {
   created_at: number;
   status: string;
   reflection_enc: string | null;
+}
+
+interface GroundingRow {
+  id: string;
+  flow_id: string | null;
+  created_at: number;
+  note_enc: string | null;
 }
 
 // ─── Main export function ────────────────────────────────────────────────────
@@ -218,6 +234,17 @@ export async function exportData(
     reflection: dec(r.reflection_enc, existingKey),
   }));
 
+  // 4b. Query and decrypt grounding logs
+  const groundingRows = await db.getAllAsync<GroundingRow>(
+    'SELECT id, flow_id, created_at, note_enc FROM grounding_logs ORDER BY created_at DESC',
+  );
+  const grounding: ExportGrounding[] = groundingRows.map((r) => ({
+    id: r.id,
+    flow_id: r.flow_id,
+    created_at: r.created_at,
+    note: dec(r.note_enc, existingKey),
+  }));
+
   // 5. Profile (name/gender) — kept for older app versions reading this file.
   const profile: ShadowProfile = {
     name: await getItem('shadow.user_name'),
@@ -225,11 +252,24 @@ export async function exportData(
   };
 
   // 5b. The full SecureStore identity: every backup key that's actually set —
-  //     name, gender, onboarding acknowledgment, theme, favorites, unlocks, and
-  //     the locks (app lock + Notebook PIN). The device encryption key is never
-  //     among these (BACKUP_KEYS excludes it).
+  //     name, gender, onboarding acknowledgment, theme, favorites, and locks.
+  //     The device encryption key is never among these (BACKUP_KEYS excludes it).
+  //
+  //     PIN credentials (hash, salt, length, biometric flag) are intentionally
+  //     omitted: the PIN is a per-device physical-access credential, not identity
+  //     data. A 4–6-digit PIN hash is offline-brute-forceable (≤1M guesses), so
+  //     including it would make the backup file a vector for PIN disclosure to
+  //     anyone who also has the passphrase. On restore the lock is re-armed only
+  //     when a hash is present; without it, the user simply sets a new PIN.
+  const PIN_SKIP = new Set([
+    'shadow.notebook_pin_salt',
+    'shadow.notebook_pin_hash',
+    'shadow.notebook_pin_len',
+    'shadow.notebook_pin_biometric',
+  ]);
   const prefs: Record<string, string> = {};
   for (const k of BACKUP_KEYS) {
+    if (PIN_SKIP.has(k)) continue;
     const v = await getItem(k);
     if (v) prefs[k] = v;
   }
@@ -242,6 +282,7 @@ export async function exportData(
     parts,
     sessions,
     experiments,
+    grounding,
     profile,
     prefs,
   };

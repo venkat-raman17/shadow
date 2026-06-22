@@ -1,9 +1,9 @@
-import type { SymbolViewProps } from 'expo-symbols';
 import type { Flow, FlowInputs } from '@/types/flow';
+import type { IllustrationKey } from '@/components/illustrations';
 import { resolveTokens } from '@/engine/tokens';
 
-/** The platform-aware symbol name object accepted by expo-symbols' SymbolView. */
-type IconName = SymbolViewProps['name'];
+/** Safe default motif if a practice ever lacks a mapped icon. */
+export const FALLBACK_ICON: IllustrationKey = 'generic-practice';
 
 // ─── Bundled flows ──────────────────────────────────────────────────────────
 // Single source of truth for both the flow runner (src/app/flow/[id].tsx) and
@@ -27,6 +27,14 @@ export const FLOWS: Record<string, Flow> = {
   'noticing.rain.v1': require('@/assets/flows/noticing.rain.v1.json'),
   'noticing.defusion.v1': require('@/assets/flows/noticing.defusion.v1.json'),
   'noticing.nightmare.v1': require('@/assets/flows/noticing.nightmare.v1.json'),
+  'noticing.grief_letting_go.v1': require('@/assets/flows/noticing.grief_letting_go.v1.json'),
+  'noticing.values_vocation.v1': require('@/assets/flows/noticing.values_vocation.v1.json'),
+  'noticing.boundaries.v1': require('@/assets/flows/noticing.boundaries.v1.json'),
+  // Home-only quick captures: registered for the runner + Notebook labels, but
+  // intentionally kept out of the CATALOGUE (Library/Workshop). Free writing
+  // saves straight from Home; free drawing runs canvas-first as a short flow.
+  'noticing.free_writing.v1': require('@/assets/flows/noticing.free_writing.v1.json'),
+  'noticing.free_drawing.v1': require('@/assets/flows/noticing.free_drawing.v1.json'),
   'grounding.settle.v1': require('@/assets/flows/grounding.settle.v1.json'),
   'grounding.body_scan.v1': require('@/assets/flows/grounding.body_scan.v1.json'),
   'grounding.urge_surf.v1': require('@/assets/flows/grounding.urge_surf.v1.json'),
@@ -62,7 +70,7 @@ export interface Practice {
   blurb: string;
   depth: Depth;
   estimatedMinutes: number;
-  icon: IconName;
+  icon: IllustrationKey;
   /** Themed sub-cluster within the 'notice' depth (see NOTICE_GROUPS). */
   group?: NoticeGroup;
   /** If set, only surface this practice for users whose gender matches. Non-binary users see all. */
@@ -78,7 +86,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Start from a sensation — no situation or person needed.',
     depth: 'notice',
     group: 'body',
-    icon: { ios: 'figure.mind.and.body', web: 'self_improvement' },
+    icon: 'body-held',
   },
   {
     id: 'noticing.in_the_moment.v1',
@@ -86,7 +94,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: "Catch a reaction while it's still warm — thirty seconds, no setup.",
     depth: 'notice',
     group: 'reaction',
-    icon: { ios: 'bolt.heart', web: 'bolt' },
+    icon: 'ui-bolt-heart',
   },
   {
     id: 'noticing.draw_whats_here.v1',
@@ -94,7 +102,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'When there are no words yet — let your hand find the shape.',
     depth: 'notice',
     group: 'body',
-    icon: { ios: 'scribble.variable', web: 'draw' },
+    icon: 'hand-finding-shape',
   },
   {
     id: 'noticing.projection_recall.v1',
@@ -102,7 +110,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Notice a reaction to someone, and the quality underneath it.',
     depth: 'notice',
     group: 'reaction',
-    icon: { ios: 'person.fill.questionmark', web: 'person' },
+    icon: 'reflected-other',
   },
   {
     id: 'noticing.golden_shadow.v1',
@@ -110,7 +118,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Follow an admiration back to something unlived in you.',
     depth: 'notice',
     group: 'attraction',
-    icon: { ios: 'sparkles', web: 'auto_awesome' },
+    icon: 'admire-star',
   },
   {
     id: 'noticing.anima_projection.v1',
@@ -118,7 +126,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Notice when intense attraction is pointing at something unlived in you.',
     depth: 'notice',
     group: 'attraction',
-    icon: { ios: 'figure.2.arms.open', web: 'favorite_border' },
+    icon: 'captivation',
     requiresGender: 'man',
   },
   {
@@ -127,7 +135,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Notice the inner critic or the pull toward someone who carries your unlived strength.',
     depth: 'notice',
     group: 'attraction',
-    icon: { ios: 'quote.bubble', web: 'record_voice_over' },
+    icon: 'borrowed-voice',
     requiresGender: 'woman',
   },
   {
@@ -136,7 +144,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'The gap between the self you show and the self you keep.',
     depth: 'notice',
     group: 'self',
-    icon: { ios: 'theatermasks', web: 'theater_comedy' },
+    icon: 'mask-gap',
   },
   {
     id: 'noticing.321.v1',
@@ -144,7 +152,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Take a strong reaction through three angles — them, you, and I — and find what’s yours.',
     depth: 'notice',
     group: 'reaction',
-    icon: { ios: 'arrow.2.squarepath', web: 'swap_horiz' },
+    icon: 'charge-uturn',
   },
   {
     id: 'noticing.facing_shame.v1',
@@ -152,7 +160,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Not fixing it — just naming it, and meeting it differently.',
     depth: 'notice',
     group: 'feeling',
-    icon: { ios: 'heart.circle', web: 'favorite' },
+    icon: 'unclench-shame',
   },
   {
     id: 'noticing.self_compassion.v1',
@@ -160,7 +168,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'A small practice in meeting your own pain with kindness.',
     depth: 'notice',
     group: 'feeling',
-    icon: { ios: 'heart', web: 'volunteer_activism' },
+    icon: 'turn-toward',
   },
   {
     id: 'noticing.expressive_writing.v1',
@@ -168,7 +176,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: "Free writing to untangle what's knotted — no one reads it but you.",
     depth: 'notice',
     group: 'self',
-    icon: { ios: 'square.and.pencil', web: 'edit_note' },
+    icon: 'writing-page',
   },
   {
     id: 'noticing.tensions.v1',
@@ -176,7 +184,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Hold two opposing pulls without choosing — and let a third thing surface.',
     depth: 'notice',
     group: 'self',
-    icon: { ios: 'arrow.left.and.right', web: 'sync_alt' },
+    icon: 'two-pans',
   },
   {
     id: 'noticing.rain.v1',
@@ -184,7 +192,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'RAIN — recognize, allow, investigate, and nurture what hurts.',
     depth: 'notice',
     group: 'feeling',
-    icon: { ios: 'cloud.rain', web: 'water_drop' },
+    icon: 'four-drops',
   },
   {
     id: 'noticing.defusion.v1',
@@ -192,91 +200,114 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     blurb: 'Step back and watch a sticky thought pass, instead of being inside it.',
     depth: 'notice',
     group: 'feeling',
-    icon: { ios: 'cloud', web: 'cloud' },
+    icon: 'unhook-thought',
+  },
+  {
+    id: 'noticing.grief_letting_go.v1',
+    title: "What you're ready to set down",
+    blurb: 'Set down a little of what you carry — without letting go of what you love.',
+    depth: 'notice',
+    group: 'feeling',
+    icon: 'open-hand-leaf',
+  },
+  {
+    id: 'noticing.values_vocation.v1',
+    title: 'What matters, underneath',
+    blurb: 'Listen, under the daily, for the direction you actually want to face.',
+    depth: 'notice',
+    group: 'self',
+    icon: 'inner-heading',
   },
   {
     id: 'meeting.active_imagination.v1',
     title: 'Sit with what keeps coming up',
     blurb: 'Meet a part of yourself in a written back-and-forth.',
     depth: 'sit',
-    icon: { ios: 'bubble.left.and.bubble.right', web: 'forum' },
+    icon: 'facing-chairs',
   },
   {
     id: 'meeting.inner_child.v1',
     title: 'Meet your younger self',
     blurb: 'A gentle written meeting with the child you once were.',
     depth: 'sit',
-    icon: { ios: 'figure.child', web: 'child_care' },
+    icon: 'crouch-to-child',
   },
   {
     id: 'meeting.dream_figure.v1',
     title: 'A figure from a dream',
     blurb: 'Meet someone or something from a dream — not to decode it, to hear it.',
     depth: 'sit',
-    icon: { ios: 'moon.stars', web: 'bedtime' },
+    icon: 'night-visitor',
   },
   {
     id: 'meeting.archetypal_encounter.v1',
     title: 'Sit with what you already know',
     blurb: 'A quieter dialogue with the steadier, deeper part of you.',
     depth: 'sit',
-    icon: { ios: 'mountain.2', web: 'landscape' },
+    icon: 'deep-knowing',
   },
   {
     id: 'noticing.unlived_expression.v1',
     title: 'What did you set aside?',
     blurb: 'Follow an unlived part of you back to what still wants expression.',
     depth: 'sit',
-    icon: { ios: 'leaf', web: 'eco' },
+    icon: 'unfurling-sprout',
   },
   {
     id: 'noticing.nightmare.v1',
     title: 'Rewrite a recurring dream',
     blurb: 'Gently give a returning nightmare a new shape, while you’re awake.',
     depth: 'sit',
-    icon: { ios: 'moon.zzz', web: 'nightlight' },
+    icon: 'reshaped-dream',
   },
   {
     id: 'integration.after_meeting.v1',
     title: 'Carry something into your week',
     blurb: 'Turn what you found into one small, real thing to try.',
     depth: 'carry',
-    icon: { ios: 'arrow.forward.circle', web: 'arrow_forward' },
+    icon: 'carry-step',
   },
   {
     id: 'noticing.reclaim_ritual.v1',
     title: "Set down what's not yours",
     blurb: 'A quiet closing: release the burden a part carried, keep the part.',
     depth: 'carry',
-    icon: { ios: 'wind', web: 'air' },
+    icon: 'release-birds',
+  },
+  {
+    id: 'noticing.boundaries.v1',
+    title: "The line you haven't drawn",
+    blurb: 'Follow the resentment back to one small boundary you could keep.',
+    depth: 'carry',
+    icon: 'drawn-line',
   },
   {
     id: 'grounding.settle.v1',
     title: 'Slow down and settle',
     blurb: 'Breath and anchors to come back when things speed up.',
     depth: 'ground',
-    icon: { ios: 'lungs', web: 'spa' },
+    icon: 'slow-exhale',
   },
   {
     id: 'grounding.body_scan.v1',
     title: 'A short body scan',
     blurb: 'Come back into your body, one place at a time.',
     depth: 'ground',
-    icon: { ios: 'figure.stand', web: 'accessibility_new' },
+    icon: 'scan-sweep',
   },
   {
     id: 'grounding.urge_surf.v1',
     title: 'Ride the urge',
     blurb: 'An urge rises, crests, and falls — ride it instead of fighting it.',
     depth: 'ground',
-    icon: { ios: 'water.waves', web: 'waves' },
+    icon: 'cresting-wave',
   },
   {
     id: 'grounding.tipp.v1',
     title: 'Turn the dial down fast',
     blurb: 'When distress is very high, the quickest way back is through the body.',
     depth: 'ground',
-    icon: { ios: 'snowflake', web: 'ac_unit' },
+    icon: 'frost-star',
   },
 ];
 
@@ -316,15 +347,27 @@ export function getPractice(id: string): Practice | undefined {
   return PRACTICES.find((p) => p.id === id);
 }
 
+/**
+ * The motif for a stored flow id — used to surface a practice's icon wherever its
+ * record appears (flow exit, notebook rows, history, part sessions). Entryway /
+ * grounding / null flows that aren't in the CATALOGUE fall back to a quiet generic
+ * mark, so the lookup is always safe.
+ */
+export function iconForFlow(flowId: string | null | undefined): IllustrationKey {
+  return (flowId ? getPractice(flowId)?.icon : undefined) ?? FALLBACK_ICON;
+}
+
 // The themed clusters inside the 'notice' depth, in display order. Notice holds
 // ~15 practices; these sub-headers turn that wall into a few scannable groups by
-// what you're working *from*. Order here is the order shown.
-export const NOTICE_GROUPS: { group: NoticeGroup; label: string }[] = [
-  { group: 'reaction', label: 'From a reaction' },
-  { group: 'attraction', label: 'Admiration & attraction' },
-  { group: 'body', label: 'Starting from the body' },
-  { group: 'self', label: 'A closer look at yourself' },
-  { group: 'feeling', label: 'Sitting with a hard feeling' },
+// what you're working *from*. The one-line intro names the moment each cluster
+// is for, so the long section reads as a few clear doors rather than a list.
+// Order here is the order shown.
+export const NOTICE_GROUPS: { group: NoticeGroup; label: string; intro: string }[] = [
+  { group: 'reaction', label: 'From a reaction', intro: 'When something someone did is still working on you.' },
+  { group: 'attraction', label: 'Admiration & attraction', intro: 'When a pull toward someone is pointing at something in you.' },
+  { group: 'body', label: 'Starting from the body', intro: 'When there’s a sensation but no words for it yet.' },
+  { group: 'self', label: 'A closer look at yourself', intro: 'When you want to turn the lamp on quietly, on your own.' },
+  { group: 'feeling', label: 'Sitting with a hard feeling', intro: 'When something painful is here and asking to be met.' },
 ];
 
 // The split for the Workshop's time filter: practices that take this long or

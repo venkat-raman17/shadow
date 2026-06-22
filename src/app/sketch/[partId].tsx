@@ -43,6 +43,7 @@ export default function SketchScreen() {
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textSecondary,
           headerBackTitle: 'Back',
+          gestureEnabled: false, // focused drawing: no accidental iOS edge swipe-back
         }}
       />
       <Screen scrollEnabled={!drawing}>

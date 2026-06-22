@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 
 import { Spacing, type Theme } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, Card, SectionHeader } from '@/components/ui';
+import { Illustration } from '@/components/illustrations';
 import { ChargeGauge } from '@/components/ChargeGauge';
+import { iconForFlow } from '@/lib/practices';
 import { useRecentEntries, useEntriesByQuality } from '@/hooks/useEntries';
 import type { EntryListItem } from '@/lib/db';
 
@@ -27,15 +28,18 @@ function EntryRow({ entry }: { entry: EntryListItem }) {
   const styles = useThemedStyles(makeStyles);
   return (
     <Card onPress={() => router.push({ pathname: '/entry/[id]', params: { id: entry.id } })}>
-      {entry.subject ? (
-        <Text style={styles.entryTitle} numberOfLines={2}>
-          {entry.subject}
-        </Text>
-      ) : (
-        <Text style={[styles.entryTitle, styles.entryTitleEmpty]} numberOfLines={1}>
-          A quiet noticing
-        </Text>
-      )}
+      <View style={styles.titleRow}>
+        <Illustration name={iconForFlow(entry.flow_id)} tone="line" size={24} decorative />
+        {entry.subject ? (
+          <Text style={styles.entryTitle} numberOfLines={2}>
+            {entry.subject}
+          </Text>
+        ) : (
+          <Text style={[styles.entryTitle, styles.entryTitleEmpty]} numberOfLines={1}>
+            A quiet noticing
+          </Text>
+        )}
+      </View>
       <View style={styles.entryMeta}>
         <Text style={styles.entryDate}>{formatDate(entry.created_at)}</Text>
         {entry.quality ? <Text style={styles.entryQuality}>{entry.quality}</Text> : null}
@@ -82,11 +86,7 @@ export default function HistoryScreen() {
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityRole="button"
               accessibilityLabel="Search your reflections">
-              <SymbolView
-                name={{ ios: 'magnifyingglass', web: 'search' }}
-                size={18}
-                tintColor={colors.textSecondary}
-              />
+              <Illustration name="ui-search" size={20} maxStroke={9} color={colors.textSecondary} decorative />
             </Pressable>
           ),
         }}
@@ -118,7 +118,8 @@ const makeStyles = ({ colors, typography }: Theme) =>
   content: { paddingTop: Spacing.three },
   list: { gap: Spacing.two },
   monthHeader: { marginTop: Spacing.two },
-  entryTitle: { ...typography.body, fontWeight: '500', lineHeight: 24 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  entryTitle: { ...typography.body, fontWeight: '500', lineHeight: 24, flexShrink: 1 },
   entryTitleEmpty: { fontWeight: '400', fontStyle: 'italic', color: colors.textSecondary },
   entryMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   entryDate: { ...typography.caption, color: colors.textSecondary },

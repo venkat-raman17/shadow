@@ -8,13 +8,11 @@ import {
   getPartById,
   getSurfacingPatterns,
   getExperiments,
-  getReturnableParts,
   getUsedFlowIds,
   PartListItem,
   PartDetail,
   SurfacingPattern,
   ExperimentItem,
-  ReturnablePart,
 } from '@/lib/db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -104,31 +102,6 @@ export function useSurfacingPatterns(limit = 5): SurfacingPattern[] {
   );
 
   return patterns;
-}
-
-/**
- * A part that's ripe to return to: it has a closed experiment behind it and
- * hasn't been met in a while. A gentle, dismissible nudge — never a notification.
- */
-export function useReturnInvitation(minDaysSinceMet = 5): ReturnablePart | null {
-  const db = useSQLiteContext();
-  const [part, setPart] = useState<ReturnablePart | null>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      getReturnableParts(db).then((rows) => {
-        if (!active) return;
-        const cutoff = Date.now() - minDaysSinceMet * DAY_MS;
-        setPart(rows.find((r) => !r.last_met_at || r.last_met_at < cutoff) ?? null);
-      }).catch(e => console.warn('[useIntegration]', e));
-      return () => {
-        active = false;
-      };
-    }, [db, minDaysSinceMet]),
-  );
-
-  return part;
 }
 
 export function useExperiments(): {

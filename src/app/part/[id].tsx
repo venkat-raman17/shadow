@@ -7,8 +7,10 @@ import { useTheme, useThemedStyles } from '@/constants/theme-context';
 import { Screen, SectionHeader, Button } from '@/components/ui';
 import { ChargeGauge } from '@/components/ChargeGauge';
 import { SketchView, parseSketch } from '@/components/Sketch';
+import { Illustration } from '@/components/illustrations';
 import { usePart } from '@/hooks/useIntegration';
 import { feltSenseBand } from '@/lib/feltSense';
+import { iconForFlow } from '@/lib/practices';
 import type { PartSessionItem } from '@/lib/db';
 
 const MEETING_FLOW_ID = 'meeting.active_imagination.v1';
@@ -70,10 +72,13 @@ function SessionBlock({
   return (
     <View style={styles.session}>
       <View style={styles.sessionDateRow}>
-        <Text style={styles.sessionDate}>
-          {index === 0 ? 'Most recent · ' : ''}
-          {formatDate(session.created_at)}
-        </Text>
+        <View style={styles.sessionDateLeft}>
+          <Illustration name={iconForFlow(session.flow_id)} tone="line" size={20} decorative />
+          <Text style={styles.sessionDate}>
+            {index === 0 ? 'Most recent · ' : ''}
+            {formatDate(session.created_at)}
+          </Text>
+        </View>
         {index > 0 && (
           <Pressable onPress={onToggle}>
             <Text style={styles.sessionToggle}>{expanded ? 'Hide ↑' : 'Show ↓'}</Text>
@@ -340,6 +345,7 @@ const makeStyles = ({ colors, typography }: Theme) => {
     borderTopColor: colors.border,
   },
   sessionDateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sessionDateLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 1 },
   sessionDate: { ...typography.caption, color: colors.textSecondary },
   sessionToggle: { ...typography.caption, color: colors.accent },
   chargeRow: { flexDirection: 'row', gap: Spacing.five, flexWrap: 'wrap' },

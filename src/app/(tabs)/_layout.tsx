@@ -1,9 +1,9 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 
 import { useTheme } from '@/constants/theme-context';
 import { TabBarBackground } from '@/components/ui';
+import { Illustration } from '@/components/illustrations';
 
 export default function TabsLayout() {
   const { colors, typography } = useTheme();
@@ -11,6 +11,9 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Paint the scene container the app background so a detached/re-attached
+        // tab scene never reveals the bare (white) window beneath it.
+        sceneStyle: { backgroundColor: colors.background },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarBackground: () => <TabBarBackground />,
@@ -29,7 +32,7 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'house', web: 'home' }} size={24} tintColor={color} />
+            <Illustration name="tab-home" size={30} maxStroke={8} color={color} decorative />
           ),
         }}
       />
@@ -38,7 +41,7 @@ export default function TabsLayout() {
         options={{
           title: 'Practice',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'figure.mind.and.body', web: 'self_improvement' }} size={24} tintColor={color} />
+            <Illustration name="tab-practice" size={30} maxStroke={8} color={color} decorative />
           ),
         }}
       />
@@ -47,7 +50,7 @@ export default function TabsLayout() {
         options={{
           title: 'Notebook',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'note.text', web: 'article' }} size={24} tintColor={color} />
+            <Illustration name="tab-notebook" size={30} maxStroke={8} color={color} decorative />
           ),
         }}
       />
@@ -56,7 +59,7 @@ export default function TabsLayout() {
         options={{
           title: 'Library',
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'books.vertical', web: 'auto_stories' }} size={24} tintColor={color} />
+            <Illustration name="tab-library" size={30} maxStroke={8} color={color} decorative />
           ),
         }}
       />
