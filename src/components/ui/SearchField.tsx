@@ -82,5 +82,5 @@ const makeStyles = ({ colors, typography }: Theme) =>
       minHeight: 52,
     },
     focused: { borderColor: colors.accentMuted },
-    input: { flex: 1, ...typography.body, color: colors.textPrimary, paddingVertical: Spacing.two },
+    input: { flex: 1, fontFamily: typography.body.fontFamily, fontSize: typography.body.fontSize, color: colors.textPrimary, paddingVertical: Spacing.two },
   });

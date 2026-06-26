@@ -1,5 +1,6 @@
 import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { Platform } from 'react-native';
 
 import { getItem, setItem } from '@/lib/kv';
 import { toBase64, fromBase64 } from '@/lib/base64';
@@ -22,14 +23,21 @@ const BIOMETRIC_KEY = 'shadow.notebook_pin_biometric';
 // can auto-submit (supports 4–6 digits). Only the length is stored, never the
 // PIN, and the hash it guards is already hardware-protected in SecureStore.
 const LEN_KEY = 'shadow.notebook_pin_len';
+// The PBKDF2 iteration count used when the PIN was set, stored so we can change
+// the default per-platform without invalidating existing hashes.
+const ITERS_KEY = 'shadow.notebook_pin_iters';
 
 export const MIN_PIN_LENGTH = 4;
 export const MAX_PIN_LENGTH = 6;
 
-// Low-entropy PIN (≤6 digits) → lean on iterations. ~tens of ms per guess on
-// device, which (with hardware-backed SecureStore) is ample for a privacy
-// curtain without scrypt's memory cost.
-const PBKDF2_ITERS = 200_000;
+// Web: @noble/hashes detects crypto.subtle and delegates to the browser's
+// native WebCrypto (C++) → 200k iterations completes in <1ms.
+// Native: no crypto.subtle → pure-JS PBKDF2 → 200k blocks the JS thread for
+// ~10s. 10k keeps it under ~100ms while remaining ample for a privacy curtain
+// backed by hardware-protected SecureStore.
+const DEFAULT_PBKDF2_ITERS = Platform.OS === 'web' ? 200_000 : 10_000;
+// Fallback for hashes written before ITERS_KEY was introduced.
+const LEGACY_PBKDF2_ITERS = 200_000;
 const DK_LEN = 32;
 const SALT_LEN = 16;
 
@@ -39,8 +47,8 @@ function randomBytes(n: number): Uint8Array {
   return buf;
 }
 
-async function hashPin(pin: string, salt: Uint8Array): Promise<Uint8Array> {
-  return pbkdf2Async(sha256, pin, salt, { c: PBKDF2_ITERS, dkLen: DK_LEN });
+async function hashPin(pin: string, salt: Uint8Array, iters: number): Promise<Uint8Array> {
+  return pbkdf2Async(sha256, pin, salt, { c: iters, dkLen: DK_LEN });
 }
 
 /** Constant-time byte comparison — never short-circuits on the first mismatch. */
@@ -64,10 +72,12 @@ export async function hasPinSet(): Promise<boolean> {
 /** Set (or rotate) the PIN: fresh salt + stretched hash, and enable the lock. */
 export async function setPin(pin: string): Promise<void> {
   const salt = randomBytes(SALT_LEN);
-  const hash = await hashPin(pin, salt);
+  const iters = DEFAULT_PBKDF2_ITERS;
+  const hash = await hashPin(pin, salt, iters);
   await setItem(SALT_KEY, toBase64(salt));
   await setItem(HASH_KEY, toBase64(hash));
   await setItem(LEN_KEY, String(pin.length));
+  await setItem(ITERS_KEY, String(iters));
   await setItem(ENABLED_KEY, 'true');
 }
 
@@ -84,7 +94,10 @@ export async function verifyPin(pin: string): Promise<boolean> {
     const saltB64 = await getItem(SALT_KEY);
     const hashB64 = await getItem(HASH_KEY);
     if (!saltB64 || !hashB64) return false;
-    const computed = await hashPin(pin, fromBase64(saltB64));
+    const rawIters = await getItem(ITERS_KEY);
+    const parsed = rawIters ? parseInt(rawIters, 10) : NaN;
+    const iters = Number.isFinite(parsed) ? parsed : LEGACY_PBKDF2_ITERS;
+    const computed = await hashPin(pin, fromBase64(saltB64), iters);
     return timingSafeEqual(computed, fromBase64(hashB64));
   } catch {
     return false;
@@ -97,6 +110,7 @@ export async function disableNotebookLock(): Promise<void> {
   await setItem(HASH_KEY, '');
   await setItem(SALT_KEY, '');
   await setItem(LEN_KEY, '');
+  await setItem(ITERS_KEY, '');
   await setItem(BIOMETRIC_KEY, '');
 }
 

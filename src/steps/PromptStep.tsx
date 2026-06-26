@@ -8,6 +8,10 @@ import { resolveTokens } from '@/engine/tokens';
 import type { PromptStep as PromptStepType } from '@/types/flow';
 import type { StepProps } from './types';
 
+// Lead-in above the example chips, so they read as optional suggestions rather
+// than required tags. Authors can override per-step via `assistLabel`.
+const ASSIST_DEFAULT = 'For example —';
+
 export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<PromptStepType>) {
   const [value, setValue] = useState('');
   const styles = useThemedStyles(makeStyles);
@@ -39,14 +43,19 @@ export default function PromptStep({ step, inputs, onNext, onExit }: StepProps<P
       />
 
       {step.assistChips && step.assistChips.length > 0 ? (
-        <View style={styles.chips}>
-          {step.assistChips.map((chip) => (
-            <Chip
-              key={chip}
-              label={chip}
-              onPress={() => setValue((prev) => (prev.trim() ? `${prev.trim()}, ${chip}` : chip))}
-            />
-          ))}
+        <View style={styles.chipsBlock}>
+          <Text style={styles.assistLabel}>
+            {resolveTokens(step.assistLabel, inputs) || ASSIST_DEFAULT}
+          </Text>
+          <View style={styles.chips}>
+            {step.assistChips.map((chip) => (
+              <Chip
+                key={chip}
+                label={chip}
+                onPress={() => setValue((prev) => (prev.trim() ? `${prev.trim()}, ${chip}` : chip))}
+              />
+            ))}
+          </View>
         </View>
       ) : null}
 
@@ -68,5 +77,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   block: { gap: Spacing.three },
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
+  chipsBlock: { gap: Spacing.one },
+  assistLabel: { ...typography.caption, color: colors.textFaint },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });

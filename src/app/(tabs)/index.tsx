@@ -184,13 +184,13 @@ export default function HomeScreen() {
             onPress={() => setThemeOpen(true)}
             accessibilityLabel="Change theme"
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Illustration name="ui-theme" size={24} maxStroke={9} color={colors.textSecondary} decorative />
+            <Illustration name="ui-theme" size={24} maxStroke={9} color={colors.textPrimary} decorative />
           </Pressable>
           <Pressable
             onPress={() => router.push('/settings')}
             accessibilityLabel="Settings"
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Illustration name="ui-sliders" size={24} maxStroke={9} color={colors.textSecondary} decorative />
+            <Illustration name="ui-gear" size={24} maxStroke={9} color={colors.textPrimary} decorative />
           </Pressable>
         </View>
       </View>

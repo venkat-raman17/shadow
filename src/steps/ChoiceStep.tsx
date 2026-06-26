@@ -21,13 +21,15 @@ export default function ChoiceStep({ step, inputs, onNext }: StepProps<ChoiceSte
       <View style={styles.options}>
         {step.options.map((opt) => {
           const optLabel = resolveTokens(opt.label, inputs);
+          const optHint = resolveTokens(opt.hint, inputs);
           return (
             <Card
               key={opt.value}
               onPress={() => onNext(opt.value, opt.goTo, opt.goToFlow, opt.seedKeys)}
-              accessibilityLabel={optLabel}
+              accessibilityLabel={optHint ? `${optLabel}. ${optHint}` : optLabel}
               style={styles.option}>
               <Text style={styles.optionText}>{optLabel}</Text>
+              {optHint ? <Text style={styles.optionHint}>{optHint}</Text> : null}
             </Card>
           );
         })}
@@ -42,6 +44,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   title: { ...typography.serifPrompt },
   body: { ...typography.body, color: colors.textSecondary },
   options: { gap: Spacing.two },
-  option: { paddingVertical: Spacing.three + Spacing.half },
+  option: { paddingVertical: Spacing.three + Spacing.half, gap: Spacing.half },
   optionText: { ...typography.body },
+  optionHint: { ...typography.bodySmall, color: colors.textSecondary },
 });

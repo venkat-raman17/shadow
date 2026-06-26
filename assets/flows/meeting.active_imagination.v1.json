@@ -50,10 +50,12 @@
       "options": [
         {
           "label": "Sit with something difficult",
+          "hint": "A part you've kept at arm's length",
           "value": "difficult"
         },
         {
           "label": "Meet something you've admired from afar",
+          "hint": "A quality in someone that pulls at you",
           "value": "golden",
           "goTo": "g_subject"
         }

@@ -265,6 +265,7 @@ export async function exportData(
     'shadow.notebook_pin_salt',
     'shadow.notebook_pin_hash',
     'shadow.notebook_pin_len',
+    'shadow.notebook_pin_iters',
     'shadow.notebook_pin_biometric',
   ]);
   const prefs: Record<string, string> = {};

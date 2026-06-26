@@ -96,6 +96,27 @@ export function qualityFamily(quality: string): string {
   return QUALITY_SYNONYMS[k] ?? k;
 }
 
+// family -> its variants, the inverse of QUALITY_SYNONYMS, built once.
+const FAMILY_VARIANTS: Record<string, string[]> = (() => {
+  const m: Record<string, string[]> = {};
+  for (const [variant, family] of Object.entries(QUALITY_SYNONYMS)) {
+    (m[family] ??= []).push(variant);
+  }
+  return m;
+})();
+
+/**
+ * A query word plus its morphological siblings (variant<->family), de-duped —
+ * so "angry" also matches text holding "anger" and vice-versa. NOT a semantic
+ * thesaurus: only word-form variants of the same felt quality (see
+ * QUALITY_SYNONYMS). Used by the Workshop practice search.
+ */
+export function expandQuality(word: string): string[] {
+  const w = word.trim().toLowerCase();
+  const family = QUALITY_SYNONYMS[w] ?? w;
+  return Array.from(new Set([w, family, ...(FAMILY_VARIANTS[family] ?? [])]));
+}
+
 export async function getRecentEntries(
   db: SQLiteDatabase,
   key: Uint8Array,

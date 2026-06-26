@@ -53,5 +53,7 @@ const makeStyles = ({ colors, typography }: Theme) =>
   pressed: { opacity: 0.7 },
   label: { ...typography.caption, color: colors.textSecondary },
   labelSelected: { color: colors.accent },
-  swatch: { width: 12, height: 12, borderRadius: 6 },
+  // A hairline ring so a swatch whose colour is near the chip background (e.g. the
+  // Dark swatch on the dark theme, the Light swatch on the light theme) still reads.
+  swatch: { width: 12, height: 12, borderRadius: 6, borderWidth: 1, borderColor: colors.textFaint },
 });

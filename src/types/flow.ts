@@ -34,6 +34,10 @@ export interface PromptStep extends BaseStep {
   optional?: boolean;
   placeholder?: string;
   assistChips?: string[];
+  /** Faint lead-in shown above the assistChips (e.g. "For example —") so the
+   *  chips read as optional suggestions, never required tags. Defaults to a
+   *  constant in PromptStep when omitted. */
+  assistLabel?: string;
   exitOffer?: boolean;
 }
 
@@ -51,6 +55,9 @@ export interface ScaleStep extends BaseStep {
 export interface ChoiceOption {
   label: string;
   value: string;
+  /** Optional one-line gloss shown under the label, so the user understands
+   *  what the answer means / what's expected. Resolved for echo tokens. */
+  hint?: string;
   goTo?: string;
   /** Hand off to another flow instead of jumping within this one — the entryway
    *  spine. A "resolve:<key>" value is resolved at runtime (e.g. gender-aware

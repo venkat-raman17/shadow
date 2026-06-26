@@ -1,27 +1,29 @@
 """
-Generate every Partwise brand image asset from two refined source images.
+Generate every Partwise brand image asset from one refined source image.
 
-Sources (assets/brand/):
-  app-icon-source.png  1254^2 opaque — beveled figure on a dark panel over black;
-                       the launcher / home-screen icon, "with effect".
-  logo-source.png      1254^2 opaque — figure on a dark rounded panel over white;
-                       the in-app logo (splash + onboarding welcome mark).
+Source (assets/brand/):
+  icon-source.png      1254^2 opaque — the figure on a dark rounded panel over
+                       black; the canonical launcher / home-screen icon. Its
+                       sage/warm figure is also keyed out to a transparent
+                       emblem for every in-app and adaptive mark.
 
 Run:  pnpm generate:brand        (-> python scripts/generate-brand-assets.py)
       python scripts/generate-brand-assets.py --preview   (also dumps previews)
 
 Outputs (all under assets/images/) — exactly the set app.json references:
 
-  icon.png                    1024 opaque  iOS / base launcher icon       <- app-icon-source
-  favicon.png                  256 opaque  web favicon                    <- app-icon-source
-  android-icon-foreground.png 1024 RGBA    adaptive icon foreground       <- logo emblem
-  splash-icon.png             1024 RGBA    splash logo                    <- logo emblem
-  logo-mark.png                512 RGBA    in-app onboarding mark          <- logo emblem
-  android-icon-monochrome.png 1024 RGBA    Android 13+ themed (white)     <- logo emblem, filled
-  notification-icon.png         96 RGBA    status-bar notification (white) <- logo emblem, filled
+  icon.png                    1024 opaque  iOS light / base launcher icon <- icon-source
+  icon-dark.png               1024 opaque  iOS 18 dark appearance         <- icon-source, panel->black
+  icon-tinted.png             1024 opaque  iOS 18 tinted appearance       <- icon-source, grayscale
+  favicon.png                  256 opaque  web favicon                    <- icon-source
+  android-icon-foreground.png 1024 RGBA    adaptive icon foreground       <- keyed emblem
+  splash-icon.png             1024 RGBA    splash logo                    <- keyed emblem
+  logo-mark.png                512 RGBA    in-app onboarding mark          <- keyed emblem
+  android-icon-monochrome.png 1024 RGBA    Android 13+ themed (white)     <- keyed emblem, filled
+  notification-icon.png         96 RGBA    status-bar notification (white) <- keyed emblem, filled
 
-The emblem is lifted from logo-source by keying out its near-uniform dark panel
-(a luminance gate) and its white field (a per-channel-min gate), eroding the
+The emblem is lifted from icon-source by keying out its near-uniform dark panel
+(a luminance gate) and any white field (a per-channel-min gate), eroding the
 panel edge so the rounded-tile boundary leaves no halo, then trimming and
 recentring so the sage/warm figure floats on transparency over any background.
 """
@@ -34,8 +36,7 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BRAND = os.path.join(ROOT, "assets", "brand")
 IMG = os.path.join(ROOT, "assets", "images")
-APP_ICON_SRC = os.path.join(BRAND, "app-icon-source.png")
-LOGO_SRC = os.path.join(BRAND, "logo-source.png")
+ICON_SRC = os.path.join(BRAND, "icon-source.png")
 PREVIEW_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_preview")
 
 DARK = (14, 13, 12)          # #0e0d0c — app + splash background
@@ -104,6 +105,33 @@ def flatten(src, size):
     return bg
 
 
+def recolor_bg(src, size, bg):
+    """Opaque icon with the dark panel + black field swapped for `bg`, figure kept.
+
+    The iOS 18 *dark* appearance: same framing as the light tile (rays, figure,
+    tail) but the warm-dark panel drops to true black so it sits cleanly on the
+    dark home screen. Strokes (luminance above the panel) pass through untouched.
+    """
+    rgb = src.convert("RGB").resize((size, size), Image.LANCZOS)
+    arr = np.asarray(rgb).copy()
+    lum = np.asarray(rgb.convert("L"))
+    arr[lum <= LUM_LO] = bg
+    return Image.fromarray(arr, "RGB")
+
+
+def grayscale_on_black(src, size):
+    """Contrast-stretched grayscale figure on black — the iOS 18 *tinted* layer.
+
+    iOS recolours this by luminance, so the figure becomes near-white and the
+    panel falls to black, giving the system a clean monochrome mask to tint.
+    """
+    gray = src.convert("RGB").resize((size, size), Image.LANCZOS).convert("L").point(
+        lambda v: 0 if v <= LUM_LO else (255 if v >= LUM_HI else int((v - LUM_LO) * 255 / (LUM_HI - LUM_LO)))
+    )
+    g = np.asarray(gray)
+    return Image.fromarray(np.stack([g, g, g], axis=2).astype(np.uint8), "RGB")
+
+
 def save(img, name):
     img.save(os.path.join(IMG, name))
     print(f"  {name:30s} {img.size[0]}x{img.size[1]} {img.mode}")
@@ -126,14 +154,17 @@ def preview(emblem):
 def main():
     do_preview = "--preview" in sys.argv
     print("Generating Partwise brand assets...")
-    app_icon = Image.open(APP_ICON_SRC)
-    logo = Image.open(LOGO_SRC)
-    emblem = emblem_rgba(logo)
-    print(f"  emblem cut: {emblem.size[0]}x{emblem.size[1]} (from {logo.size[0]}x{logo.size[1]} logo)")
+    source = Image.open(ICON_SRC)
+    emblem = emblem_rgba(source)
+    print(f"  emblem cut: {emblem.size[0]}x{emblem.size[1]} (from {source.size[0]}x{source.size[1]} source)")
 
     # Launcher icon + favicon: the designed tile, opaque.
-    save(flatten(app_icon, 1024), "icon.png")
-    save(flatten(app_icon, 256), "favicon.png")
+    save(flatten(source, 1024), "icon.png")
+    save(flatten(source, 256), "favicon.png")
+
+    # iOS 18 appearance variants (light == icon.png above).
+    save(recolor_bg(source, 1024, (0, 0, 0)), "icon-dark.png")
+    save(grayscale_on_black(source, 1024), "icon-tinted.png")
 
     # In-app + adaptive: the figure emblem on transparency.
     save(place(emblem, 1024, 614), "android-icon-foreground.png")   # within Android 66% safe zone

@@ -58,7 +58,8 @@
       "inputKey": "quality",
       "multiline": false,
       "optional": true,
-      "placeholder": "Helpless, trapped, alone…"
+      "placeholder": "Helpless, trapped, alone…",
+      "assistChips": ["dread", "helpless", "trapped", "frozen", "exposed", "alone"]
     },
     {
       "id": "rescript",

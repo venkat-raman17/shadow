@@ -38,11 +38,11 @@
       "body": "These are directions, not goals — like facing west, not arriving anywhere. None has to fit.",
       "inputKey": "direction",
       "options": [
-        { "label": "Connection — being close to people", "value": "connection" },
-        { "label": "Making — building or creating things", "value": "making" },
-        { "label": "Caring — tending to others or a place", "value": "caring" },
-        { "label": "Learning — going deeper into something", "value": "learning" },
-        { "label": "Speaking truly — being honest, in the open", "value": "speaking" },
+        { "label": "Connection", "hint": "being close to people", "value": "connection" },
+        { "label": "Making", "hint": "building or creating things", "value": "making" },
+        { "label": "Caring", "hint": "tending to others or a place", "value": "caring" },
+        { "label": "Learning", "hint": "going deeper into something", "value": "learning" },
+        { "label": "Speaking truly", "hint": "being honest, in the open", "value": "speaking" },
         { "label": "None of these quite fit", "value": "none" }
       ]
     },

@@ -24,7 +24,8 @@
       "inputKey": "subject",
       "multiline": false,
       "optional": true,
-      "placeholder": "Fear. Anger. A heaviness…"
+      "placeholder": "Fear. Anger. A heaviness…",
+      "assistChips": ["fear", "anger", "sadness", "shame", "grief", "numbness"]
     },
     {
       "id": "charge",
@@ -59,7 +60,8 @@
       "inputKey": "quality",
       "multiline": false,
       "optional": true,
-      "placeholder": "Chest, throat, gut, everywhere…"
+      "placeholder": "Chest, throat, gut, everywhere…",
+      "assistChips": ["chest", "throat", "gut", "belly", "shoulders", "jaw"]
     },
     {
       "id": "investigate_need",

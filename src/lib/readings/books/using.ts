@@ -29,10 +29,10 @@ export const readings: Reading[] = [
     body: `Partwise is small on purpose. There’s no dashboard to manage and nothing to keep up with — just four rooms you can wander into when you want. Here’s what each is for.
 
 ## Home
-The threshold. It asks, gently, what’s here right now, and offers a few ways in — catch something while it’s warm, draw it, or step into one of the deeper practices. If you’ve done some work before, it may quietly offer to pick something back up. Nothing here is a task.
+The threshold. It asks, gently, what’s here right now — write it freely and turn the page to keep it, or draw it instead. Beneath that sit a few ways in: notice what’s here, sit with a figure, carry & return, steady yourself. If you’ve done some work before, it may quietly suggest a path to pick up — a way through, if you’d like one. Nothing here is a task.
 
 ## Practice
-The library of ways in, arranged by depth — notice, sit with a figure, carry something forward, steady yourself. Some of the deeper practices open up once you’ve done a little of the lighter work — not as a reward, but because they make more sense once there’s something to bring to them.
+The workshop. Rather than a flat menu, it opens with a question — where would you like to begin? — and a few doors grouped by what you’ve brought, not by how hard they are. Nearby are a handful of worn **trails** for common moments, and a shelf that quietly gathers the practices you’ve pinned. The whole set is still here, laid out by depth — notice, sit with a figure, carry something forward, steady yourself — one tap away behind “browse everything.” Some of the deeper doors open once you’ve done a little of the lighter work — not as a reward, but because they make more sense once there’s something to bring to them.
 
 ~ four-rooms | four rooms, no map required
 
@@ -43,6 +43,8 @@ Two things live here, side by side. Its first page is your **inner world** — a
 Where you are now — the ideas behind the practices, in short pieces you can take off the shelf when you’re curious.
 
 There’s also a **Support** screen, reached from Settings, with crisis lines and directories for finding a therapist or analyst. It’s there if you ever need a person rather than a page.
+
+Settings is also where an optional daily reminder lives — off by default, a quiet nudge only if you ask for one.
 
 [note] None of these rooms keeps score. There are no streaks, no completion bars, no “X of Y.” That absence is deliberate — you can’t fall behind on something that isn’t a ladder.`,
   },
@@ -169,7 +171,7 @@ Days later, your Notebook’s inner-world page might gently ask how that small i
 
 Even the search runs entirely on your device — it decrypts and scans in the moment, and never builds a copy of your words anywhere.
 
-You can also set a separate PIN on the Notebook, so even on an unlocked phone the most personal pages — your reflections and drawings — stay behind one more door.
+Two locks are there if you want them, both off by default. An **app lock** asks for Face ID, Touch ID, or your device passcode whenever you return to Partwise — though it never interrupts a practice you’re in the middle of. And a separate **Notebook PIN** guards just the Notebook, so even on an already-unlocked phone the most personal pages — your reflections and drawings — stay behind one more door.
 
 If you ever want a backup, Settings has **Back up everything**: it gathers your reflections, drawings, and settings into a single encrypted file, sealed with a passphrase that only you hold. You keep the file wherever you like; without the passphrase it’s just noise. There’s also a **Back up & delete**, for when you want to clear this device but keep the file safe. To bring a backup back, you restore it from the welcome screen the next time you set up the app.
 

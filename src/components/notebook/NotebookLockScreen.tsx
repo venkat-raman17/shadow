@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -42,6 +42,7 @@ export function NotebookLockScreen({
   // stored length resolves a beat after the first taps.
   const pinLengthRef = useRef(MAX_PIN_LENGTH);
   const submitting = useRef(false);
+  const [verifying, setVerifying] = useState(false);
   const shake = useSharedValue(0);
 
   useEffect(() => {
@@ -80,8 +81,10 @@ export function NotebookLockScreen({
   async function attempt(value: string) {
     if (submitting.current) return;
     submitting.current = true;
+    setVerifying(true);
     const ok = await onSubmitPin(value);
     submitting.current = false;
+    setVerifying(false);
     if (!ok) fail();
     // On success the parent flips `locked` and unmounts this screen.
   }
@@ -111,9 +114,13 @@ export function NotebookLockScreen({
       )}
 
       <Animated.View style={[styles.dots, dotsStyle]} accessibilityLabel={`${pin.length} of ${pinLength} digits entered`}>
-        {Array.from({ length: pinLength }, (_, i) => (
-          <View key={i} style={[styles.dot, i < pin.length && styles.dotFilled]} />
-        ))}
+        {verifying ? (
+          <ActivityIndicator color={colors.accent} />
+        ) : (
+          Array.from({ length: pinLength }, (_, i) => (
+            <View key={i} style={[styles.dot, i < pin.length && styles.dotFilled]} />
+          ))
+        )}
       </Animated.View>
 
       <View style={styles.pad}>
@@ -121,6 +128,7 @@ export function NotebookLockScreen({
           <Pressable
             key={d}
             onPress={() => press(d)}
+            disabled={verifying}
             style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
             accessibilityRole="button"
             accessibilityLabel={d}>
@@ -133,7 +141,7 @@ export function NotebookLockScreen({
           onPress={() => {
             if (biometricAvailable && onUseBiometric) void onUseBiometric();
           }}
-          disabled={!biometricAvailable}
+          disabled={!biometricAvailable || verifying}
           style={({ pressed }) => [styles.key, pressed && biometricAvailable && styles.keyPressed]}
           accessibilityRole="button"
           accessibilityLabel="Use Face ID or Touch ID">
@@ -144,6 +152,7 @@ export function NotebookLockScreen({
 
         <Pressable
           onPress={() => press('0')}
+          disabled={verifying}
           style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
           accessibilityRole="button"
           accessibilityLabel="0">
@@ -152,6 +161,7 @@ export function NotebookLockScreen({
 
         <Pressable
           onPress={backspace}
+          disabled={verifying}
           style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}
           accessibilityRole="button"
           accessibilityLabel="Delete">

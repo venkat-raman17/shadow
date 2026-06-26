@@ -105,7 +105,7 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Protected guard={!!onboardingDone}>
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(tabs)" options={{ title: '' }} />
         <Stack.Screen
           name="flow/[id]"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
@@ -130,7 +130,10 @@ function RootNavigator() {
           name="practices"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Home' }}
         />
-        <Stack.Screen name="history" />
+        <Stack.Screen
+          name="history"
+          options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
+        />
         <Stack.Screen
           name="search"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
@@ -151,6 +154,8 @@ function RootNavigator() {
           name="sketch/[partId]"
           options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textSecondary, headerBackTitle: 'Back' }}
         />
+        <Stack.Screen name="path/[id]" options={{ title: '' }} />
+        <Stack.Screen name="resources" options={{ title: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={!onboardingDone}>
         <Stack.Screen name="onboarding" />

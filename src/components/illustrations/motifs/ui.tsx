@@ -14,15 +14,18 @@ export const uiMotifs = {
     </>
   ),
 
-  // Settings as three soft sliders — gentler than a mechanical gear, on-brand.
-  'ui-sliders': (c: MotifColors) => (
+  // Settings as a soft cog — rounded teeth and an open hub, one even weight. The
+  // round linejoin takes the edge off the teeth so it reads gentle, not mechanical.
+  'ui-gear': (c: MotifColors) => (
     <>
-      <Line x1="18" y1="30" x2="82" y2="30" stroke={c.primary} strokeWidth={c.sw} {...cap} />
-      <Line x1="18" y1="50" x2="82" y2="50" stroke={c.primary} strokeWidth={c.sw} {...cap} />
-      <Line x1="18" y1="70" x2="82" y2="70" stroke={c.primary} strokeWidth={c.sw} {...cap} />
-      <Circle cx="64" cy="30" r="7" fill={c.fill} stroke={c.primary} strokeWidth={c.sw} />
-      <Circle cx="36" cy="50" r="7" fill={c.fill} stroke={c.primary} strokeWidth={c.sw} />
-      <Circle cx="58" cy="70" r="7" fill={c.fill} stroke={c.primary} strokeWidth={c.sw} />
+      <Path
+        d="M79.4 44.1 L79.4 55.9 L70.6 54.1 L67.5 61.7 L74.9 66.7 L66.7 74.9 L61.7 67.5 L54.1 70.6 L55.9 79.4 L44.1 79.4 L45.9 70.6 L38.3 67.5 L33.3 74.9 L25.1 66.7 L32.5 61.7 L29.4 54.1 L20.6 55.9 L20.6 44.1 L29.4 45.9 L32.5 38.3 L25.1 33.3 L33.3 25.1 L38.3 32.5 L45.9 29.4 L44.1 20.6 L55.9 20.6 L54.1 29.4 L61.7 32.5 L66.7 25.1 L74.9 33.3 L67.5 38.3 L70.6 45.9 Z"
+        fill={c.fill}
+        stroke={c.primary}
+        strokeWidth={c.sw}
+        {...cap}
+      />
+      <Circle cx="50" cy="50" r="9" fill={c.fill} stroke={c.primary} strokeWidth={c.sw} />
     </>
   ),
 

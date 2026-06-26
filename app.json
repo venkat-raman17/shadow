@@ -2,13 +2,18 @@
   "expo": {
     "name": "Partwise",
     "slug": "shadow",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "shadow",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.venkatramanks.shadow",
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
+      },
       "supportsTabletMode": true,
       "requireFullScreen": false,
       "infoPlist": {

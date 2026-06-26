@@ -57,11 +57,15 @@ export const FLOWS: Record<string, Flow> = {
 // only sees 'notice'; 'sit' and 'carry' open once there's prior work.
 export type Depth = 'notice' | 'sit' | 'carry' | 'ground';
 
-// A second level of organization inside the (large) 'notice' depth: a themed
-// cluster grouping practices by what you're working *from* (a reaction, the
-// body, a hard feeling…). Only 'notice' practices carry one; the smaller depths
-// stay flat.
-export type NoticeGroup = 'reaction' | 'attraction' | 'body' | 'self' | 'feeling';
+// A themed "door" — the second level of organization, now spanning every depth.
+// Each practice belongs to one theme door, grouping practices by what you're
+// working *from* or *toward* (a reaction, the body, a figure, carrying it
+// forward…). The Workshop's question-first front door is built from these.
+export type ThemeGroup =
+  | 'reaction' | 'attraction' | 'body' | 'self' | 'feeling' // notice
+  | 'figures' | 'unlived' // sit
+  | 'carry' // carry
+  | 'steady'; // ground
 
 export interface Practice {
   id: string;
@@ -71,10 +75,16 @@ export interface Practice {
   depth: Depth;
   estimatedMinutes: number;
   icon: IllustrationKey;
-  /** Themed sub-cluster within the 'notice' depth (see NOTICE_GROUPS). */
-  group?: NoticeGroup;
+  /** Themed door this practice lives in (see THEME_GROUPS). Every catalogue
+   *  practice carries one; it drives the question-first Workshop. */
+  group?: ThemeGroup;
   /** If set, only surface this practice for users whose gender matches. Non-binary users see all. */
   requiresGender?: 'man' | 'woman';
+  /** Hidden search terms NOT already in title/blurb — the feelings/qualities the
+   *  practice addresses (family form), method names (RAIN, active imagination…),
+   *  and situational phrases ("got under my skin"). Names the topic/method, never
+   *  an outcome. Authored in PRACTICE_KEYWORDS, merged in below. */
+  keywords?: string[];
 }
 
 // Curated catalogue. Titles stay evocative; the blurb says plainly what you'll
@@ -223,6 +233,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Sit with what keeps coming up',
     blurb: 'Meet a part of yourself in a written back-and-forth.',
     depth: 'sit',
+    group: 'figures',
     icon: 'facing-chairs',
   },
   {
@@ -230,6 +241,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Meet your younger self',
     blurb: 'A gentle written meeting with the child you once were.',
     depth: 'sit',
+    group: 'figures',
     icon: 'crouch-to-child',
   },
   {
@@ -237,6 +249,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'A figure from a dream',
     blurb: 'Meet someone or something from a dream — not to decode it, to hear it.',
     depth: 'sit',
+    group: 'figures',
     icon: 'night-visitor',
   },
   {
@@ -244,6 +257,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Sit with what you already know',
     blurb: 'A quieter dialogue with the steadier, deeper part of you.',
     depth: 'sit',
+    group: 'figures',
     icon: 'deep-knowing',
   },
   {
@@ -251,6 +265,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'What did you set aside?',
     blurb: 'Follow an unlived part of you back to what still wants expression.',
     depth: 'sit',
+    group: 'unlived',
     icon: 'unfurling-sprout',
   },
   {
@@ -258,6 +273,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Rewrite a recurring dream',
     blurb: 'Gently give a returning nightmare a new shape, while you’re awake.',
     depth: 'sit',
+    group: 'unlived',
     icon: 'reshaped-dream',
   },
   {
@@ -265,6 +281,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Carry something into your week',
     blurb: 'Turn what you found into one small, real thing to try.',
     depth: 'carry',
+    group: 'carry',
     icon: 'carry-step',
   },
   {
@@ -272,6 +289,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: "Set down what's not yours",
     blurb: 'A quiet closing: release the burden a part carried, keep the part.',
     depth: 'carry',
+    group: 'carry',
     icon: 'release-birds',
   },
   {
@@ -279,6 +297,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: "The line you haven't drawn",
     blurb: 'Follow the resentment back to one small boundary you could keep.',
     depth: 'carry',
+    group: 'carry',
     icon: 'drawn-line',
   },
   {
@@ -286,6 +305,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Slow down and settle',
     blurb: 'Breath and anchors to come back when things speed up.',
     depth: 'ground',
+    group: 'steady',
     icon: 'slow-exhale',
   },
   {
@@ -293,6 +313,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'A short body scan',
     blurb: 'Come back into your body, one place at a time.',
     depth: 'ground',
+    group: 'steady',
     icon: 'scan-sweep',
   },
   {
@@ -300,6 +321,7 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Ride the urge',
     blurb: 'An urge rises, crests, and falls — ride it instead of fighting it.',
     depth: 'ground',
+    group: 'steady',
     icon: 'cresting-wave',
   },
   {
@@ -307,17 +329,61 @@ const CATALOGUE: Omit<Practice, 'estimatedMinutes'>[] = [
     title: 'Turn the dial down fast',
     blurb: 'When distress is very high, the quickest way back is through the body.',
     depth: 'ground',
+    group: 'steady',
     icon: 'frost-star',
   },
 ];
 
+// Hidden search keywords per practice — only terms NOT already in title/blurb,
+// so the Workshop search finds a practice by how it feels (family-form qualities),
+// the method it uses, or the moment it's for. Topic/method only, never an outcome.
+// Merged into PRACTICES below; consumed by src/lib/practiceSearch.ts.
+const PRACTICE_KEYWORDS: Record<string, string[]> = {
+  'noticing.somatic.v1': ['tension', 'tightness', 'heaviness', 'numbness', 'dread', 'restlessness', 'felt sense', 'no trigger', 'wordless', 'gut', 'chest', 'throat'],
+  'noticing.in_the_moment.v1': ['triggered', 'in the moment', 'quick', 'heat of the moment', 'reacted', 'flared up', 'annoyed', 'irritation', 'anger', 'snapped'],
+  'noticing.draw_whats_here.v1': ['drawing', 'sketch', 'image', 'no words', 'wordless', 'visual', 'picture', 'art', 'shapeless', 'colour'],
+  'noticing.projection_recall.v1': ['projection', 'they bother me', 'annoyed me', 'anger', 'resentment', 'irritation', 'arrogance', 'neediness', 'judging someone', 'triggered by someone', 'what is mine'],
+  'noticing.golden_shadow.v1': ['envy', 'longing', 'look up to', 'wish I could', 'golden shadow', 'jealous of', 'role model', 'aspire', 'what they have', 'drawn to'],
+  'noticing.anima_projection.v1': ['infatuation', 'longing', 'crush', 'obsessed with someone', 'anima', 'feminine', "can't stop thinking about", 'idealize', 'projection', 'smitten'],
+  'noticing.animus_projection.v1': ['animus', 'masculine', 'self-criticism', 'harsh voice', 'judging voice', 'should', 'projection', 'longing', 'pull toward someone'],
+  'noticing.persona.v1': ['persona', 'mask', 'hidden self', 'authenticity', 'people-pleasing', 'performing', 'front', 'pretending', 'image', 'exhausting', 'two faces'],
+  'noticing.321.v1': ['3-2-1', '321', 'three two one', 'shadow process', 'wilber', 'face it talk to it be it', 'projection', 'reclaim', 'perspective'],
+  'noticing.facing_shame.v1': ['guilt', 'unworthy', 'not enough', 'inner critic', 'self-loathing', 'embarrassed', 'exposed', 'too much', 'humiliation', 'self-worth'],
+  'noticing.self_compassion.v1': ['self-compassion', 'self-kindness', 'self-care', 'be kind to yourself', 'self-soothe', 'gentleness', 'harsh on myself', 'comfort', 'reassure'],
+  'noticing.expressive_writing.v1': ['expressive writing', 'journaling', 'vent', 'process', 'pennebaker', 'get it out', 'clear my head', 'write it down', 'brain dump'],
+  'noticing.tensions.v1': ['ambivalence', 'torn', 'two minds', 'dilemma', 'opposites', 'paradox', 'both true', 'indecision', 'stuck between', 'conflicted', 'transcendent function'],
+  'noticing.rain.v1': ['sit with a feeling', 'overwhelm', 'difficult emotion', 'mindfulness', 'tara brach', 'fear', 'anger', 'sadness', 'grief', 'anxiety', 'allow it'],
+  'noticing.defusion.v1': ['defusion', 'cognitive defusion', 'rumination', 'overthinking', 'intrusive thought', 'act', 'acceptance commitment', 'spiraling', 'looping thought', 'obsessive thought'],
+  'noticing.grief_letting_go.v1': ['grief', 'loss', 'mourning', 'bereavement', 'sadness', 'heaviness', 'release', 'continuing bonds', 'someone I lost', 'burden'],
+  'noticing.values_vocation.v1': ['values', 'meaning', 'purpose', 'vocation', 'calling', 'what matters', 'midlife', 'life direction', 'priorities', 'restless for change'],
+  'meeting.active_imagination.v1': ['active imagination', 'parts', 'ifs', 'internal family systems', 'inner figure', 'dialogue', 'protector', 'jung', 'imaginal', 'talk to a part', 'recurring'],
+  'meeting.inner_child.v1': ['inner child', 'childhood', 'reparenting', 'little me', 'child within', 'wounded child', 'vulnerable part', 'growing up', 'as a kid'],
+  'meeting.dream_figure.v1': ['dream figure', 'dream character', 'dreamwork', 'dream image', 'symbol', 'recurring dream', 'dream meaning', 'night'],
+  'meeting.archetypal_encounter.v1': ['archetype', 'the self', 'wise self', 'inner wisdom', 'inner guide', 'guidance', 'quiet knowing', 'centre', 'deeper part'],
+  'noticing.unlived_expression.v1': ['unlived life', 'suppressed', 'repressed', 'what I gave up', 'lost part', 'potential', 'unexpressed', 'dormant', 'gave up on', 'put away'],
+  'noticing.nightmare.v1': ['bad dream', 'dream rehearsal', 'rescripting', 'imagery rehearsal', 'night terror', 'frightening dream', 'dread', 'trapped', 'helpless'],
+  'integration.after_meeting.v1': ['integration', 'intention', 'if-then', 'implementation intention', 'one small step', 'behaviour change', 'what next', 'experiment', 'put into practice'],
+  'noticing.reclaim_ritual.v1': ['reclaim', 'not mine', 'give it back', 'unburden', 'closing ritual', 'carried for someone', 'ancestral', 'let it go'],
+  'noticing.boundaries.v1': ['boundary', 'boundaries', 'say no', 'overcommitted', 'people-pleasing', 'assertive', 'limits', 'protect my time', 'resent', 'taken advantage'],
+  'grounding.settle.v1': ['grounding', 'calm down', 'panic', 'anxiety', 'overwhelmed', 'breathing', 'box breathing', '5-4-3-2-1', 'regulate', 'too much', 'nervous system'],
+  'grounding.body_scan.v1': ['grounding', 'relaxation', 'progressive relaxation', 'tension release', 'mindfulness of body', 'present moment', 'settle', 'calm'],
+  'grounding.urge_surf.v1': ['urge surfing', 'craving', 'impulse', 'temptation', 'addiction', 'resist', 'wave', 'ride it out', 'relapse', 'self-control', 'dbt'],
+  'grounding.tipp.v1': ['tipp', 'crisis', 'panic', 'overwhelm', 'cold water', 'intense emotion', 'dbt', 'calm down fast', 'emergency', 'spike', 'too much'],
+};
+
 export const PRACTICES: Practice[] = CATALOGUE.map((p) => ({
   ...p,
   estimatedMinutes: FLOWS[p.id]?.estimatedMinutes ?? 0,
+  keywords: PRACTICE_KEYWORDS[p.id],
 }));
 
 export function practicesByDepth(depth: Depth): Practice[] {
   return PRACTICES.filter((p) => p.depth === depth);
+}
+
+/** The practices behind a single theme door — drives the Workshop's theme view. */
+export function practicesByGroup(group: ThemeGroup): Practice[] {
+  return PRACTICES.filter((p) => p.group === group);
 }
 
 export interface DepthGroup {
@@ -357,17 +423,38 @@ export function iconForFlow(flowId: string | null | undefined): IllustrationKey 
   return (flowId ? getPractice(flowId)?.icon : undefined) ?? FALLBACK_ICON;
 }
 
-// The themed clusters inside the 'notice' depth, in display order. Notice holds
-// ~15 practices; these sub-headers turn that wall into a few scannable groups by
-// what you're working *from*. The one-line intro names the moment each cluster
-// is for, so the long section reads as a few clear doors rather than a list.
-// Order here is the order shown.
-export const NOTICE_GROUPS: { group: NoticeGroup; label: string; intro: string }[] = [
-  { group: 'reaction', label: 'From a reaction', intro: 'When something someone did is still working on you.' },
-  { group: 'attraction', label: 'Admiration & attraction', intro: 'When a pull toward someone is pointing at something in you.' },
-  { group: 'body', label: 'Starting from the body', intro: 'When there’s a sensation but no words for it yet.' },
-  { group: 'self', label: 'A closer look at yourself', intro: 'When you want to turn the lamp on quietly, on your own.' },
-  { group: 'feeling', label: 'Sitting with a hard feeling', intro: 'When something painful is here and asking to be met.' },
+/**
+ * A themed "door" into the catalogue. The Workshop opens by asking where the
+ * user is starting from and offers these as the ways in; picking one reveals
+ * only that door's practices. `match.qualities` lets a door float to the top
+ * when it speaks to what's been surfacing in the user's recent work — the
+ * qualities MUST be in family form (the `qualityFamily` / `QUALITY_SYNONYMS`
+ * targets in db.ts), since surfacing patterns are family-normalized.
+ */
+export interface ThemeDoor {
+  group: ThemeGroup;
+  depth: Depth;
+  /** Door title — a plain place to begin, never a method name. */
+  label: string;
+  /** One line naming the moment this door is for. */
+  intro: string;
+  icon: IllustrationKey;
+  match?: { qualities?: string[] };
+}
+
+// The theme doors, in display order. Each practice in the catalogue belongs to
+// exactly one. Deeper doors (sit / carry) follow the same prior-work gate as
+// their depth; the steady door is always open.
+export const THEME_GROUPS: ThemeDoor[] = [
+  { group: 'reaction', depth: 'notice', label: 'From a reaction', intro: 'When something someone did is still working on you.', icon: 'charge-uturn', match: { qualities: ['anger', 'resentment', 'jealousy', 'envy'] } },
+  { group: 'attraction', depth: 'notice', label: 'Admiration & attraction', intro: 'When a pull toward someone is pointing at something in you.', icon: 'admire-star', match: { qualities: ['longing', 'envy'] } },
+  { group: 'body', depth: 'notice', label: 'Starting from the body', intro: 'When there’s a sensation but no words for it yet.', icon: 'body-held', match: { qualities: ['tightness', 'heaviness', 'numbness', 'restlessness'] } },
+  { group: 'self', depth: 'notice', label: 'A closer look at yourself', intro: 'When you want to turn the lamp on quietly, on your own.', icon: 'mask-gap' },
+  { group: 'feeling', depth: 'notice', label: 'Sitting with a hard feeling', intro: 'When something painful is here and asking to be met.', icon: 'four-drops', match: { qualities: ['shame', 'guilt', 'grief', 'sadness', 'fear', 'anxiety', 'loneliness'] } },
+  { group: 'figures', depth: 'sit', label: 'Meeting a figure', intro: 'When something keeps coming up and wants to be heard.', icon: 'facing-chairs', match: { qualities: ['numbness', 'heaviness', 'restlessness', 'longing'] } },
+  { group: 'unlived', depth: 'sit', label: 'What you set aside', intro: 'When a part of you was put away and still wants out.', icon: 'unfurling-sprout' },
+  { group: 'carry', depth: 'carry', label: 'Carry it forward', intro: 'When you want to turn what you found into something real.', icon: 'carry-step' },
+  { group: 'steady', depth: 'ground', label: 'Steady yourself', intro: 'When you need to come back and settle — anytime.', icon: 'slow-exhale' },
 ];
 
 // The split for the Workshop's time filter: practices that take this long or
